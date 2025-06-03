@@ -92,11 +92,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('users/trashed', [AdminUserController::class, 'trashedIndex'])->name('users.trashed');
         Route::put('users/{id}/restore', [AdminUserController::class, 'restore'])->name('users.restore');  
         Route::delete('users/{id}/force-delete', [AdminUserController::class, 'forceDelete'])->name('users.forceDelete'); // Ditambahkan dari respons sebelumnya
+        Route::get('/kpi-analysis', [AdminDashboardController::class, 'kpiAnalysis'])->name('kpi.analysis'); // Anda bisa buat controller baru jika prefer
+        Route::resource('revenue-targets', AdminRevenueTargetController::class)->except(['show']);
 
         // --- HANYA SATU DEFINISI ROUTE::RESOURCE UNTUK PROPERTIES ---
         Route::resource('properties', AdminPropertyController::class)->except([
             // 'destroy' // Aktifkan jika Anda sudah siap dengan logika destroy
         ]);
+
         // Baris Route::get('/properties/create', ...) yang duplikat sudah dihapus karena dicakup oleh Route::resource
     });
 

@@ -15,17 +15,22 @@
                             <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
                                 {{ __('Dashboard Admin') }}
                             </x-nav-link>
+                            <x-nav-link :href="route('admin.kpi.analysis')" :active="request()->routeIs('admin.kpi.analysis')">
+                                {{ __('Pusat Analisis Kinerja') }}
+                            </x-nav-link>
+                            {{-- !! LINK BARU UNTUK MANAJEMEN TARGET !! --}}
+                            <x-nav-link :href="route('admin.revenue-targets.index')" :active="request()->routeIs('admin.revenue-targets.*')">
+                                {{ __('Manajemen Target') }}
+                            </x-nav-link>
                             <x-nav-link :href="route('admin.properties.compare.form')" :active="request()->routeIs('admin.properties.compare.form') || request()->routeIs('admin.properties.compare.results')">
                                 {{ __('Bandingkan Properti') }}
                             </x-nav-link>
-                            {{-- !! LINK BARU UNTUK MANAJEMEN PENGGUNA !! --}}
-                            <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.index') || request()->routeIs('admin.users.create') || request()->routeIs('admin.users.edit')">
+                            <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.index') || request()->routeIs('admin.users.create') || request()->routeIs('admin.users.edit') || request()->routeIs('admin.users.trashed')">
                                 {{ __('Manajemen Pengguna') }}
                             </x-nav-link>
-                            <x-nav-link :href="route('admin.properties.index')" :active="request()->routeIs('admin.properties.index') || request()->routeIs('admin.properties.create') || request()->routeIs('admin.properties.edit')">
+                            <x-nav-link :href="route('admin.properties.index')" :active="request()->routeIs('admin.properties.index') || request()->routeIs('admin.properties.create') || request()->routeIs('admin.properties.edit') || request()->routeIs('admin.properties.show')">
                                 {{ __('Manajemen Properti') }}
                             </x-nav-link>
-                            {{-- Tambahkan link admin lain di sini jika perlu, misalnya Manajemen Pengguna nanti --}}
 
                         @elseif(Auth::user()->role === 'pengguna_properti')
                             <x-nav-link :href="route('property.dashboard')" :active="request()->routeIs('property.dashboard')">
@@ -123,16 +128,23 @@
                     <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
                         {{ __('Dashboard Admin') }}
                     </x-responsive-nav-link>
+                     {{-- !! LINK MOBILE KE PUSAT ANALISIS KINERJA !! --}}
+                    <x-responsive-nav-link :href="route('admin.kpi.analysis')" :active="request()->routeIs('admin.kpi.analysis')">
+                        {{ __('Pusat Analisis Kinerja') }}
+                    </x-responsive-nav-link>
+                    {{-- !! LINK BARU MOBILE UNTUK MANAJEMEN TARGET !! --}}
+                    <x-responsive-nav-link :href="route('admin.revenue-targets.index')" :active="request()->routeIs('admin.revenue-targets.*')">
+                        {{ __('Manajemen Target') }}
+                    </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('admin.properties.compare.form')" :active="request()->routeIs('admin.properties.compare.form') || request()->routeIs('admin.properties.compare.results')">
                         {{ __('Bandingkan Properti') }}
                     </x-responsive-nav-link>
-                    {{-- !! LINK BARU UNTUK MANAJEMEN PENGGUNA (MOBILE) !! --}}
-                    {{-- 
-                     <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.index') || request()->routeIs('admin.users.create') || request()->routeIs('admin.users.edit')">
+                    <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.index') || request()->routeIs('admin.users.create') || request()->routeIs('admin.users.edit') || request()->routeIs('admin.users.trashed')">
                         {{ __('Manajemen Pengguna') }}
                     </x-responsive-nav-link>
-                    --}}
-                    {{-- Tambahkan link admin lain di sini --}}
+                     <x-responsive-nav-link :href="route('admin.properties.index')" :active="request()->routeIs('admin.properties.index') || request()->routeIs('admin.properties.create') || request()->routeIs('admin.properties.edit') || request()->routeIs('admin.properties.show')">
+                        {{ __('Manajemen Properti') }}
+                    </x-responsive-nav-link>
 
                 @elseif(Auth::user()->role === 'pengguna_properti')
                     <x-responsive-nav-link :href="route('property.dashboard')" :active="request()->routeIs('property.dashboard')">
