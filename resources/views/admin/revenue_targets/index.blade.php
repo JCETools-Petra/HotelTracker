@@ -9,7 +9,7 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
-                    <div class="flex justify-between items-center mb-4">
+                    <div class="flex justify-end mb-4">
                         <a href="{{ route('admin.revenue-targets.create') }}" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-500 active:bg-green-700 focus:outline-none focus:border-green-700 focus:ring ring-green-300 disabled:opacity-25 transition ease-in-out duration-150">
                             {{ __('Tambah Target Pendapatan') }}
                         </a>
@@ -19,13 +19,16 @@
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label for="property_id_filter" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Filter Properti</label>
+                                {{-- Pastikan variabel $properties dikirim dari controller index() --}}
                                 <select name="property_id_filter" id="property_id_filter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
                                     <option value="">Semua Properti</option>
-                                    @foreach ($properties as $property)
-                                        <option value="{{ $property->id }}" {{ request('property_id_filter') == $property->id ? 'selected' : '' }}>
-                                            {{ $property->name }}
-                                        </option>
-                                    @endforeach
+                                    @if(isset($properties)) {{-- Controller mengirim $properties untuk filter --}}
+                                        @foreach ($properties as $property)
+                                            <option value="{{ $property->id }}" {{ request('property_id_filter') == $property->id ? 'selected' : '' }}>
+                                                {{ $property->name }}
+                                            </option>
+                                        @endforeach
+                                    @endif
                                 </select>
                             </div>
                             <div>
@@ -73,12 +76,14 @@
                                 </tr>
                             </thead>
                             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                {{-- Loop melalui data target pendapatan. Gunakan $targets dari controller. --}}
                                 @forelse ($targets as $target)
                                     <tr>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                                            {{ $target->property->name ?? 'N/A' }}
+                                            {{ $target->property->name ?? 'N/A' }} {{-- Asumsi ada relasi 'property' di model RevenueTarget --}}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                            {{-- Format field month_year --}}
                                             {{ \Carbon\Carbon::parse($target->month_year)->translatedFormat('F Y') }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
@@ -103,8 +108,12 @@
                             </tbody>
                         </table>
                     </div>
+                    {{-- Link Paginasi --}}
                     <div class="mt-4">
-                        {{ $targets->appends(request()->query())->links() }} {{-- Menambahkan parameter filter ke pagination links --}}
+                        {{-- Gunakan $targets->links() dan tambahkan query string filter jika ada --}}
+                        @if(isset($targets))
+                            {{ $targets->appends(request()->query())->links() }}
+                        @endif
                     </div>
                 </div>
             </div>

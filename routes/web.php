@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Log; // Opsional
 use App\Http\Controllers\Admin\UserController as AdminUserController;
-
+use App\Http\Controllers\Admin\RevenueTargetController; 
 
 /*
 |--------------------------------------------------------------------------
@@ -93,7 +93,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('users/{id}/restore', [AdminUserController::class, 'restore'])->name('users.restore');  
         Route::delete('users/{id}/force-delete', [AdminUserController::class, 'forceDelete'])->name('users.forceDelete'); // Ditambahkan dari respons sebelumnya
         Route::get('/kpi-analysis', [AdminDashboardController::class, 'kpiAnalysis'])->name('kpi.analysis'); // Anda bisa buat controller baru jika prefer
-        Route::resource('revenue-targets', AdminRevenueTargetController::class)->except(['show']);
+        //Route::resource('revenue-targets', AdminRevenueTargetController::class)->except(['show']);
+        Route::resource('revenue-targets', RevenueTargetController::class);
 
         // --- HANYA SATU DEFINISI ROUTE::RESOURCE UNTUK PROPERTIES ---
         Route::resource('properties', AdminPropertyController::class)->except([
