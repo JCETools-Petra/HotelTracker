@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\RevenueTarget;
-use App\Models\Property; // Untuk mengambil daftar properti di form
+use App\Models\Property; // Tambahkan ini
 use Illuminate\Http\Request;
-use Carbon\Carbon; // Untuk manipulasi tanggal
+use Illuminate\Validation\Rule; // Tambahkan ini
+use Carbon\Carbon;
+
 
 class RevenueTargetController extends Controller
 {
@@ -42,9 +44,12 @@ class RevenueTargetController extends Controller
     /**
      * Show the form for creating a new resource.
      */
+    // app\Http\Controllers\Admin\RevenueTargetController.php
     public function create()
     {
         $properties = Property::orderBy('name')->get();
+        ($properties); // PASTIKAN INI MASIH ADA UNTUK SEKARANG
+
         if ($properties->isEmpty()) {
             return redirect()->route('admin.revenue-targets.index')->with('error', 'Tidak ada properti yang tersedia untuk menetapkan target. Silakan tambahkan properti terlebih dahulu.');
         }
@@ -95,12 +100,12 @@ class RevenueTargetController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(RevenueTarget $revenueTarget) // Route Model Binding
+    public function edit(RevenueTarget $revenueTarget)
     {
-        $properties = Property::orderBy('name')->get();
+        $properties = Property::orderBy('name')->get(); // Juga butuh ini untuk edit
         // Format month_year ke YYYY-MM untuk ditampilkan di input type="month"
         $revenueTarget->month_year_form = Carbon::parse($revenueTarget->month_year)->format('Y-m');
-        return view('admin.revenue_targets.edit', compact('revenueTarget', 'properties'));
+        return view('admin.revenue_targets.edit', compact('revenueTarget', 'properties')); // Mengirim variabel $properties ke view
     }
 
     /**
