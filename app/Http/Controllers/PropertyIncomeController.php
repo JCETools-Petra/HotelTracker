@@ -94,25 +94,18 @@ class PropertyIncomeController extends Controller
      * Menampilkan form untuk membuat data pendapatan harian baru.
      * Pengguna bisa memilih tanggal yang diinginkan.
      */
-    public function create()
+     public function create()
     {
         $user = Auth::user();
-        if (!$user) {
-            return redirect()->route('login');
-        }
         $property = $user->property;
 
         if (!$property) {
             return redirect('/')->with('error', 'Anda tidak terkait dengan properti manapun.');
         }
 
-        // Form akan selalu ditampilkan.
-        // 'date' di bawah akan menjadi nilai default untuk input tanggal di form.
-        // Menggunakan old('date') agar jika ada error validasi di store dan kembali ke form,
-        // tanggal yang sebelumnya dipilih pengguna tetap ada.
         return view('property.income.create', [
             'property' => $property,
-            'date' => old('date', Carbon::today()->toDateString()) // Default ke hari ini, bisa diubah di form
+            'date' => old('date', Carbon::today()->toDateString())
         ]);
     }
 
@@ -123,57 +116,53 @@ class PropertyIncomeController extends Controller
     public function store(Request $request)
     {
         $user = Auth::user();
-        if (!$user) {
-            return redirect()->route('login');
-        }
         $property = $user->property;
 
         if (!$property) {
             return redirect('/')->with('error', 'Tidak dapat menyimpan data, Anda tidak terkait dengan properti.');
         }
 
+        // Tambahkan validasi untuk semua field baru
         $validatedData = $request->validate([
-            // Aturan validasi ini memastikan bahwa kombinasi 'date' dan 'property_id' adalah unik.
-            // Jadi, pengguna tidak bisa memasukkan dua entri untuk tanggal yang sama pada properti yang sama.
             'date' => 'required|date|unique:daily_incomes,date,NULL,id,property_id,'.$property->id,
+            'offline_rooms' => 'required|integer|min:0',
+            'offline_room_income' => 'required|numeric|min:0',
+            'online_rooms' => 'required|integer|min:0',
+            'online_room_income' => 'required|numeric|min:0',
+            'ta_rooms' => 'required|integer|min:0',
+            'ta_income' => 'required|numeric|min:0',
+            'gov_rooms' => 'required|integer|min:0',
+            'gov_income' => 'required|numeric|min:0',
+            'corp_rooms' => 'required|integer|min:0',
+            'corp_income' => 'required|numeric|min:0',
+            'compliment_rooms' => 'required|integer|min:0',
+            'compliment_income' => 'required|numeric|min:0',
+            'house_use_rooms' => 'required|integer|min:0',
+            'house_use_income' => 'required|numeric|min:0',
             'mice_income' => 'required|numeric|min:0',
             'fnb_income' => 'required|numeric|min:0',
-            'offline_room_income' => 'required|numeric|min:0',
-            'online_room_income' => 'required|numeric|min:0',
             'others_income' => 'required|numeric|min:0',
         ], [
-            // Pesan error kustom untuk aturan unique (opsional)
-            'date.unique' => 'Pendapatan untuk tanggal ini sudah pernah dicatat untuk properti ini. Anda bisa mengedit data yang sudah ada jika perlu.',
+            'date.unique' => 'Pendapatan untuk tanggal ini sudah pernah dicatat.',
         ]);
 
-        DailyIncome::create([
-            'property_id' => $property->id,
-            'user_id' => $user->id, // Menyimpan ID pengguna yang mencatat
-            'date' => $validatedData['date'],
-            'mice_income' => $validatedData['mice_income'],
-            'fnb_income' => $validatedData['fnb_income'],
-            'offline_room_income' => $validatedData['offline_room_income'],
-            'online_room_income' => $validatedData['online_room_income'],
-            'others_income' => $validatedData['others_income'],
-        ]);
+        $incomeData = $validatedData;
+        $incomeData['property_id'] = $property->id;
+        $incomeData['user_id'] = $user->id;
 
-        // Arahkan ke halaman riwayat atau dashboard dengan pesan sukses
-        return redirect()->route('property.income.index')->with('success', 'Pendapatan harian untuk tanggal ' . Carbon::parse($validatedData['date'])->isoFormat('D MMMM YYYY') . ' berhasil dicatat.');
+        DailyIncome::create($incomeData);
+
+        return redirect()->route('property.income.index')->with('success', 'Pendapatan harian berhasil dicatat.');
     }
 
     /**
      * Menampilkan form untuk mengedit data pendapatan harian yang sudah ada.
      */
-    public function edit(DailyIncome $dailyIncome) // Menggunakan Route Model Binding
+    public function edit(DailyIncome $dailyIncome)
     {
         $user = Auth::user();
-        if (!$user) {
-            return redirect()->route('login');
-        }
         $property = $user->property;
 
-        // Otorisasi: Pastikan data pendapatan ($dailyIncome) benar-benar milik properti pengguna yang sedang login.
-        // Dan pastikan pengguna terhubung dengan sebuah properti.
         if (!$property || $dailyIncome->property_id !== $property->id) {
             abort(403, 'Akses tidak diizinkan untuk mengedit data ini.');
         }
@@ -184,35 +173,42 @@ class PropertyIncomeController extends Controller
     /**
      * Memperbarui data pendapatan harian yang sudah ada di database.
      */
-    public function update(Request $request, DailyIncome $dailyIncome) // Menggunakan Route Model Binding
+    public function update(Request $request, DailyIncome $dailyIncome)
     {
         $user = Auth::user();
-        if (!$user) {
-            return redirect()->route('login');
-        }
         $property = $user->property;
 
-        // Otorisasi
         if (!$property || $dailyIncome->property_id !== $property->id) {
             abort(403, 'Akses tidak diizinkan untuk memperbarui data ini.');
         }
 
+        // Tambahkan validasi untuk semua field baru
         $validatedData = $request->validate([
-            // Aturan unique di sini sedikit berbeda: ia mengabaikan record $dailyIncome->id saat ini saat memeriksa keunikan.
-            // Ini memungkinkan pengguna menyimpan form tanpa mengubah tanggal, atau mengubah ke tanggal lain yang belum dipakai.
             'date' => 'required|date|unique:daily_incomes,date,' . $dailyIncome->id . ',id,property_id,' . $property->id,
+            'offline_rooms' => 'required|integer|min:0',
+            'offline_room_income' => 'required|numeric|min:0',
+            'online_rooms' => 'required|integer|min:0',
+            'online_room_income' => 'required|numeric|min:0',
+            'ta_rooms' => 'required|integer|min:0',
+            'ta_income' => 'required|numeric|min:0',
+            'gov_rooms' => 'required|integer|min:0',
+            'gov_income' => 'required|numeric|min:0',
+            'corp_rooms' => 'required|integer|min:0',
+            'corp_income' => 'required|numeric|min:0',
+            'compliment_rooms' => 'required|integer|min:0',
+            'compliment_income' => 'required|numeric|min:0',
+            'house_use_rooms' => 'required|integer|min:0',
+            'house_use_income' => 'required|numeric|min:0',
             'mice_income' => 'required|numeric|min:0',
             'fnb_income' => 'required|numeric|min:0',
-            'offline_room_income' => 'required|numeric|min:0',
-            'online_room_income' => 'required|numeric|min:0',
             'others_income' => 'required|numeric|min:0',
         ], [
-            'date.unique' => 'Pendapatan untuk tanggal ini sudah pernah dicatat untuk properti ini (untuk entri lain).',
+            'date.unique' => 'Pendapatan untuk tanggal ini sudah ada.',
         ]);
 
         $dailyIncome->update($validatedData);
 
-        return redirect()->route('property.income.index')->with('success', 'Data pendapatan untuk tanggal ' . Carbon::parse($dailyIncome->date)->isoFormat('D MMMM YYYY') . ' berhasil diperbarui.');
+        return redirect()->route('property.income.index')->with('success', 'Data pendapatan berhasil diperbarui.');
     }
 
     /**

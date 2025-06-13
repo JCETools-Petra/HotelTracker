@@ -9,14 +9,11 @@
 <?php endif; ?>
 <?php $component->withAttributes([]); ?>
      <?php $__env->slot('header', null, []); ?> 
-        
         <div class="flex flex-wrap justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
                 <?php echo e(__('Admin Dashboard')); ?>
 
             </h2>
-
-            
             <nav class="flex space-x-4">
                 <?php if (isset($component)) { $__componentOriginalc295f12dca9d42f28a259237a5724830 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginalc295f12dca9d42f28a259237a5724830 = $attributes; } ?>
@@ -68,12 +65,39 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Ringkasan Pendapatan Keseluruhan</h3>
+            
+            <div class="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                <form action="<?php echo e(route('admin.dashboard')); ?>" method="GET" class="flex flex-col md:flex-row md:items-end md:space-x-4 space-y-4 md:space-y-0">
+                    <div class="flex-1">
+                        <label for="property_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Pilih Properti</label>
+                        <select name="property_id" id="property_id" class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" onchange="this.form.submit()">
+                            <option value="">Semua Properti</option>
+                            <?php $__currentLoopData = $allPropertiesForFilter; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $property): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($property->id); ?>" <?php echo e($propertyId == $property->id ? 'selected' : ''); ?>>
+                                    <?php echo e($property->name); ?>
 
+                                </option>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        </select>
+                    </div>
+
+                    <div class="flex-shrink-0">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Pilih Periode</label>
+                        <div class="mt-1 flex rounded-md shadow-sm filter-button-group">
+                            <button type="submit" name="period" value="today" class="filter-button rounded-l-md <?php echo e($period == 'today' ? 'active' : ''); ?>">Hari Ini</button>
+                            <button type="submit" name="period" value="month" class="filter-button -ml-px <?php echo e($period == 'month' ? 'active' : ''); ?>">Bulan Ini</button>
+                            <button type="submit" name="period" value="year" class="filter-button -ml-px <?php echo e($period == 'year' ? 'active' : ''); ?>">Tahun Ini</button>
+                            <a href="<?php echo e(route('admin.dashboard')); ?>" class="filter-button -ml-px rounded-r-md">Reset</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Ringkasan Pendapatan Keseluruhan (Periode: <?php echo e(Str::title($period)); ?>)</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     <div class="p-4 border dark:border-gray-700 rounded-lg">
-                        <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">Distribusi Sumber Pendapatan (Semua Properti)</h4>
+                        <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">Distribusi Sumber Pendapatan</h4>
                         <div style="height: 300px;">
                             <canvas id="overallSourcePieChart"></canvas>
                         </div>
@@ -86,39 +110,41 @@
                     </div>
                 </div>
 
-                
                 <div class="flex flex-wrap justify-between items-center mt-8 mb-4">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Daftar Properti</h3>
-                    
-                    <?php if(!$properties->isEmpty()): ?>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Detail Properti</h3>
+                    <?php if(!$properties->isEmpty() && isset($properties->first()->total_income_records)): ?>
                     <div class="flex space-x-2">
-                        <a href="<?php echo e(route('admin.dashboard.export.excel')); ?>"
-                           class="inline-flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
-                            Export Excel
-                        </a>
-                        <a href="<?php echo e(route('admin.dashboard.export.csv')); ?>"
-                           class="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
-                            Export CSV
-                        </a>
+                        <a href="<?php echo e(route('admin.dashboard.export.excel', request()->query())); ?>" class="inline-flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest">Export Excel</a>
+                        <a href="<?php echo e(route('admin.dashboard.export.csv', request()->query())); ?>" class="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest">Export CSV</a>
                     </div>
                     <?php endif; ?>
-                    
                 </div>
 
+                
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <?php $__empty_1 = true; $__currentLoopData = $properties; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $property): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                         <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow">
                             <h4 class="font-semibold text-lg text-gray-900 dark:text-gray-100"><?php echo e($property->name); ?></h4>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">Total Catatan: <?php echo e($property->total_income_records); ?></p>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">MICE: Rp <?php echo e(number_format($property->total_mice_income ?? 0, 0, ',', '.')); ?></p>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">F&B: Rp <?php echo e(number_format($property->total_fnb_income ?? 0, 0, ',', '.')); ?></p>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">K. Offline: Rp <?php echo e(number_format($property->total_offline_room_income ?? 0, 0, ',', '.')); ?></p>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">K. Online: Rp <?php echo e(number_format($property->total_online_room_income ?? 0, 0, ',', '.')); ?></p>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">Lainnya: Rp <?php echo e(number_format($property->total_others_income ?? 0, 0, ',', '.')); ?></p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Total Catatan: <?php echo e($property->total_income_records ?? 0); ?></p>
+                            
+                            
+                            <?php $__currentLoopData = $incomeCategories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $column => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <?php
+                                    // Membuat nama properti sum secara dinamis, e.g., 'total_offline_room_income'
+                                    $sumProperty = 'total_' . $column;
+                                ?>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">
+                                    <?php echo e($label); ?>: Rp <?php echo e(number_format($property->{$sumProperty} ?? 0, 0, ',', '.')); ?>
+
+                                </p>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            
                             <a href="<?php echo e(route('admin.properties.show', $property)); ?>" class="inline-block mt-2 text-sm text-blue-600 dark:text-blue-400 hover:underline">Lihat Detail</a>
                         </div>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                        <p class="text-gray-600 dark:text-gray-400">Tidak ada properti yang ditemukan.</p>
+                        <div class="col-span-full text-center py-8">
+                            <p class="text-gray-600 dark:text-gray-400">Tidak ada data properti yang ditemukan untuk filter yang dipilih.</p>
+                        </div>
                     <?php endif; ?>
                 </div>
             </div>
@@ -126,87 +152,79 @@
     </div>
 
 <?php $__env->startPush('scripts'); ?>
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('Admin Dashboard DOMContentLoaded'); // Debugging
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    Chart.defaults.color = isDarkMode ? '#e5e7eb' : '#6b7280';
+    Chart.defaults.borderColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
 
     const overallIncomeSourceData = <?php echo json_encode($overallIncomeSource, 15, 512) ?>;
     const overallIncomeByPropertyData = <?php echo json_encode($overallIncomeByProperty, 15, 512) ?>;
+    const incomeCategories = <?php echo json_encode($incomeCategories, 15, 512) ?>; 
 
-    console.log('Overall Income Source Data:', overallIncomeSourceData);
-    console.log('Overall Income By Property Data:', overallIncomeByPropertyData);
-
-    // 1. Diagram Pie: Distribusi Sumber Pendapatan Keseluruhan
+    // 1. Diagram Pie
     const overallSourceCanvas = document.getElementById('overallSourcePieChart');
     if (overallSourceCanvas) {
-        if (overallIncomeSourceData && (overallIncomeSourceData.total_mice || overallIncomeSourceData.total_fnb || overallIncomeSourceData.total_offline_room || overallIncomeSourceData.total_online_room || overallIncomeSourceData.total_others)) {
-            console.log('Rendering Overall Source Pie Chart');
-            const overallSourceCtx = overallSourceCanvas.getContext('2d');
-            new Chart(overallSourceCtx, {
+        const pieLabels = Object.values(incomeCategories);
+        const pieData = overallIncomeSourceData ? Object.keys(incomeCategories).map(key => overallIncomeSourceData['total_' + key] || 0) : [];
+        const hasPieData = pieData.some(v => v > 0);
+
+        if (hasPieData) {
+            new Chart(overallSourceCanvas, {
                 type: 'pie',
                 data: {
-                    labels: ['MICE', 'F&B', 'Kamar Offline', 'Kamar Online', 'Lainnya'],
+                    labels: pieLabels,
                     datasets: [{
                         label: 'Distribusi Pendapatan',
-                        data: [
-                            overallIncomeSourceData.total_mice || 0,
-                            overallIncomeSourceData.total_fnb || 0,
-                            overallIncomeSourceData.total_offline_room || 0,
-                            overallIncomeSourceData.total_online_room || 0,
-                            overallIncomeSourceData.total_others || 0
-                        ],
-                        backgroundColor: ['rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)', 'rgba(255, 206, 86, 0.7)', 'rgba(75, 192, 192, 0.7)', 'rgba(153, 102, 255, 0.7)'],
-                        borderColor: ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)', 'rgba(255, 206, 86, 1)', 'rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)'],
-                        borderWidth: 1
+                        data: pieData,
+                        backgroundColor: ['#e6194B', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#42d4f4', '#f032e6', '#bfef45', '#808000'],
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' }, title: { display: true, text: 'Distribusi Sumber Pendapatan (Semua Properti)' } } }
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { position: 'top', labels: { color: isDarkMode ? '#e5e7eb' : '#6b7280' } } } 
+                }
             });
         } else {
-            console.log('No data for Overall Source Pie Chart or canvas not found.');
             const ctx = overallSourceCanvas.getContext('2d');
             ctx.font = '16px Figtree, sans-serif';
-            ctx.fillStyle = document.body.classList.contains('dark') ? '#cbd5e1' : '#4b5563'; // Sesuaikan warna dengan tema
+            ctx.fillStyle = isDarkMode ? '#cbd5e1' : '#4b5563';
             ctx.textAlign = 'center';
-            ctx.fillText('Tidak ada data sumber pendapatan keseluruhan.', overallSourceCanvas.width / 2, overallSourceCanvas.height / 2);
+            ctx.fillText('Tidak ada data pendapatan untuk filter ini.', overallSourceCanvas.width / 2, overallSourceCanvas.height / 2);
         }
-    } else {
-        console.error('Canvas element with ID "overallSourcePieChart" not found.');
     }
 
-    // 2. Diagram Bar: Total Pendapatan per Properti
+    // 2. Diagram Bar
     const overallIncomeByPropertyCanvas = document.getElementById('overallIncomeByPropertyBarChart');
     if (overallIncomeByPropertyCanvas) {
         if (overallIncomeByPropertyData && overallIncomeByPropertyData.length > 0) {
-            console.log('Rendering Overall Income By Property Bar Chart');
-            const propertyLabels = overallIncomeByPropertyData.map(p => p.name);
-            const propertyRevenues = overallIncomeByPropertyData.map(p => p.total_revenue || 0);
-            const overallIncomeByPropertyCtx = overallIncomeByPropertyCanvas.getContext('2d');
-            new Chart(overallIncomeByPropertyCtx, {
+            new Chart(overallIncomeByPropertyCanvas, {
                 type: 'bar',
                 data: {
-                    labels: propertyLabels,
+                    labels: overallIncomeByPropertyData.map(p => p.name),
                     datasets: [{
                         label: 'Total Pendapatan (Rp)',
-                        data: propertyRevenues,
-                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
+                        data: overallIncomeByPropertyData.map(p => p.total_revenue || 0),
+                        backgroundColor: '#36A2EB',
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { callback: function(value) { return 'Rp ' + value.toLocaleString('id-ID'); } } } }, plugins: { legend: { display: false }, title: { display: true, text: 'Total Pendapatan per Properti' } } }
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    scales: { 
+                        y: { beginAtZero: true, ticks: { callback: function(value) { return 'Rp ' + value.toLocaleString('id-ID'); }, color: isDarkMode ? '#e5e7eb' : '#6b7280' } },
+                        x: { ticks: { color: isDarkMode ? '#e5e7eb' : '#6b7280' } }
+                    }, 
+                    plugins: { legend: { display: false } } 
+                }
             });
         } else {
-            console.log('No data for Overall Income By Property Bar Chart or canvas not found.');
             const ctx = overallIncomeByPropertyCanvas.getContext('2d');
             ctx.font = '16px Figtree, sans-serif';
-            ctx.fillStyle = document.body.classList.contains('dark') ? '#cbd5e1' : '#4b5563';
+            ctx.fillStyle = isDarkMode ? '#cbd5e1' : '#4b5563';
             ctx.textAlign = 'center';
-            ctx.fillText('Tidak ada data pendapatan per properti.', overallIncomeByPropertyCanvas.width / 2, overallIncomeByPropertyCanvas.height / 2);
+            ctx.fillText('Tidak ada data pendapatan untuk filter ini.', overallIncomeByPropertyCanvas.width / 2, overallIncomeByPropertyCanvas.height / 2);
         }
-    } else {
-        console.error('Canvas element with ID "overallIncomeByPropertyBarChart" not found.');
     }
 });
 </script>

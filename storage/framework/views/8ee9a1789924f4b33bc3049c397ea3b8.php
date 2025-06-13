@@ -47,19 +47,27 @@
                 <div class="p-6 text-gray-900 dark:text-gray-100">
                     <h3 class="text-lg font-semibold mb-6">Pilih Properti dan Rentang Tanggal</h3>
 
-                    
-                    
-                    <form method="GET" action="<?php echo e(route('admin.properties.compare.results')); ?>"> 
+                    <form method="GET" action="<?php echo e(route('admin.properties.compare.results')); ?>">
                         <?php echo csrf_field(); ?> 
 
                         
                         <div class="mb-6">
                             <label class="block font-medium text-sm text-gray-700 dark:text-gray-300 mb-2">Pilih Properti (Minimal 2):</label>
+                            
+                            
+                            <div class="mt-2 mb-4">
+                                <label for="select-all-properties" class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" id="select-all-properties" class="rounded dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800">
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Pilih Semua Properti</span>
+                                </label>
+                            </div>
+
                             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-h-60 overflow-y-auto p-2 border dark:border-gray-700 rounded-md">
                                 <?php $__empty_1 = true; $__currentLoopData = $properties; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $property): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                                     <label for="property_<?php echo e($property->id); ?>" class="flex items-center space-x-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md cursor-pointer">
+                                        
                                         <input type="checkbox" id="property_<?php echo e($property->id); ?>" name="properties_ids[]" value="<?php echo e($property->id); ?>"
-                                               class="rounded dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800"
+                                               class="property-checkbox rounded dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800"
                                                <?php echo e((is_array(old('properties_ids')) && in_array($property->id, old('properties_ids'))) ? 'checked' : ''); ?>>
                                         <span class="text-sm text-gray-700 dark:text-gray-300"><?php echo e($property->name); ?></span>
                                     </label>
@@ -186,17 +194,16 @@ endif;
 unset($__errorArgs, $__bag); ?>
                             </div>
                         </div>
-                         <?php $__errorArgs = ['date_range'];
+                        <?php $__errorArgs = ['date_range'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
-$message = $__bag->first($__errorArgs[0]); ?> 
+$message = $__bag->first($__errorArgs[0]); ?>
                             <p class="text-sm text-red-600 dark:text-red-400 mb-4"><?php echo e($message); ?></p>
                         <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>
-
 
                         
                         <div class="flex items-center justify-end mt-6">
@@ -228,6 +235,33 @@ unset($__errorArgs, $__bag); ?>
             </div>
         </div>
     </div>
+
+    
+    <?php $__env->startPush('scripts'); ?>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const selectAllCheckbox = document.getElementById('select-all-properties');
+            const propertyCheckboxes = document.querySelectorAll('.property-checkbox');
+
+            selectAllCheckbox.addEventListener('change', function () {
+                propertyCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+            });
+
+            propertyCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function () {
+                    if (!this.checked) {
+                        selectAllCheckbox.checked = false;
+                    } else {
+                        const allChecked = Array.from(propertyCheckboxes).every(cb => cb.checked);
+                        selectAllCheckbox.checked = allChecked;
+                    }
+                });
+            });
+        });
+    </script>
+    <?php $__env->stopPush(); ?>
  <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>
@@ -237,4 +271,5 @@ unset($__errorArgs, $__bag); ?>
 <?php if (isset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>
 <?php $component = $__componentOriginal9ac128a9029c0e4701924bd2d73d7f54; ?>
 <?php unset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54); ?>
-<?php endif; ?><?php /**PATH C:\xampp\htdocs\property_finance\resources\views/admin/properties/compare_form.blade.php ENDPATH**/ ?>
+<?php endif; ?>
+<?php /**PATH C:\xampp\htdocs\property_finance\resources\views/admin/properties/compare_form.blade.php ENDPATH**/ ?>

@@ -192,10 +192,10 @@
 <?php unset($__componentOriginald411d1792bd6cc877d687758b753742c); ?>
 <?php endif; ?>
                              <a href="<?php echo e(route('admin.kpi.analysis')); ?>"
-                               class="ml-2 inline-flex items-center px-4 py-2 bg-gray-300 dark:bg-gray-500 border border-transparent rounded-md font-semibold text-xs text-gray-700 dark:text-gray-100 uppercase tracking-widest hover:bg-gray-400 dark:hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
-                                <?php echo e(__('Reset')); ?>
+                                class="ml-2 inline-flex items-center px-4 py-2 bg-gray-300 dark:bg-gray-500 border border-transparent rounded-md font-semibold text-xs text-gray-700 dark:text-gray-100 uppercase tracking-widest hover:bg-gray-400 dark:hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
+                                 <?php echo e(__('Reset')); ?>
 
-                            </a>
+                             </a>
                         </div>
                     </div>
                 </form>
@@ -205,10 +205,10 @@
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
                 <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Ringkasan Kinerja Keseluruhan</h3>
                  <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                    Periode: <?php echo e($filterStartDate->isoFormat('D MMMM YYYY')); ?> - <?php echo e($filterEndDate->isoFormat('D MMMM YYYY')); ?>
+                     Periode: <?php echo e($filterStartDate->isoFormat('D MMMM YYYY')); ?> - <?php echo e($filterEndDate->isoFormat('D MMMM YYYY')); ?>
 
-                    (Total <?php echo e($totalDaysInPeriod); ?> hari)
-                </p>
+                     (Total <?php echo e($totalDaysInPeriod); ?> hari)
+                 </p>
                  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
                     <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow">
                         <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Pendapatan</h4>
@@ -230,22 +230,22 @@
                         <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Rata-Rata Pendapatan/Properti</h4>
                         <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">Rp <?php echo e(number_format($averageRevenuePerProperty ?? 0, 0, ',', '.')); ?></p>
                     </div>
-                </div>
+                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="p-4 border dark:border-gray-700 rounded-lg">
-                        <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">Distribusi Sumber Pendapatan (Periode Terfilter)</h4>
-                        <div style="height: 300px;">
-                            <canvas id="kpiOverallSourcePieChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="p-4 border dark:border-gray-700 rounded-lg">
-                        <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">Total Pendapatan per Properti (Periode Terfilter)</h4>
-                        <div style="height: 300px;">
-                            <canvas id="kpiOverallIncomeByPropertyBarChart"></canvas>
-                        </div>
-                    </div>
-                </div>
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <div class="p-4 border dark:border-gray-700 rounded-lg">
+                         <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">Distribusi Sumber Pendapatan (Periode Terfilter)</h4>
+                         <div style="height: 300px;">
+                             <canvas id="kpiOverallSourcePieChart"></canvas>
+                         </div>
+                     </div>
+                     <div class="p-4 border dark:border-gray-700 rounded-lg">
+                         <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">Total Pendapatan per Properti (Periode Terfilter)</h4>
+                         <div style="height: 300px;">
+                             <canvas id="kpiOverallIncomeByPropertyBarChart"></canvas>
+                         </div>
+                     </div>
+                 </div>
             </div>
 
             
@@ -260,75 +260,75 @@
                         <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Tren Total Pendapatan per Kategori
                              <?php if($propertyMomFilterId && $propertyMomFilterId != 'all' && isset($allPropertiesForFilter)): ?>
-                                <?php
-                                    $selectedPropNameTrend = $allPropertiesForFilter->firstWhere('id', $propertyMomFilterId)->name ?? '';
-                                ?>
-                                - <?php echo e($selectedPropNameTrend); ?>
+                                 <?php
+                                     $selectedPropNameTrend = $allPropertiesForFilter->firstWhere('id', $propertyMomFilterId)->name ?? '';
+                                 ?>
+                                 - <?php echo e($selectedPropNameTrend); ?>
 
-                            <?php else: ?>
-                                - Gabungan Semua Properti
-                            <?php endif; ?>
+                             <?php else: ?>
+                                 - Gabungan Semua Properti
+                             <?php endif; ?>
                         </h4>
                         <div style="height: 350px;">
-                            <?php if(!empty($trendKontribusiData['labels'])): ?>
-                                <canvas id="monthlyCategoryTrendChart"></canvas>
-                            <?php else: ?>
-                                <p class="text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center h-full">Data tren tidak cukup untuk periode/properti yang dipilih.</p>
-                            <?php endif; ?>
+                             <?php if(!empty($trendKontribusiData['labels'])): ?>
+                                 <canvas id="monthlyCategoryTrendChart"></canvas>
+                             <?php else: ?>
+                                 <p class="text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center h-full">Data tren tidak cukup untuk periode/properti yang dipilih.</p>
+                             <?php endif; ?>
                         </div>
                     </div>
 
                     <div class="p-4 border dark:border-gray-700 rounded-lg space-y-2">
                         <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-3">
                             Pertumbuhan Kategori Pendapatan (MoM)
-                            <?php if($propertyMomFilterId && $propertyMomFilterId != 'all' && isset($allPropertiesForFilter)): ?>
-                                <?php
-                                    $selectedPropNameMoM = $allPropertiesForFilter->firstWhere('id', $propertyMomFilterId)->name ?? '';
-                                ?>
-                                - <?php echo e($selectedPropNameMoM); ?>
+                             <?php if($propertyMomFilterId && $propertyMomFilterId != 'all' && isset($allPropertiesForFilter)): ?>
+                                 <?php
+                                     $selectedPropNameMoM = $allPropertiesForFilter->firstWhere('id', $propertyMomFilterId)->name ?? '';
+                                 ?>
+                                 - <?php echo e($selectedPropNameMoM); ?>
 
-                            <?php else: ?>
-                                - Gabungan Semua Properti
-                            <?php endif; ?>
+                             <?php else: ?>
+                                 - Gabungan Semua Properti
+                             <?php endif; ?>
                         </h4>
-                        <?php if(!empty($multiMonthCategoryGrowth)): ?>
-                            <?php $__currentLoopData = $multiMonthCategoryGrowth; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $monthName => $growthData): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <div class="mb-3 bg-gray-50 dark:bg-gray-700 p-3 rounded-md shadow-sm">
-                                    <p class="text-sm font-semibold text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-600 pb-1 mb-2"><?php echo e($monthName); ?>:</p>
-                                    <?php if(!empty($growthData)): ?>
-                                        <ul class="space-y-1 text-sm">
-                                            <?php $__currentLoopData = $growthData; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $data): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                                <li class="flex justify-between <?php echo e(str_contains($data['growth'], '+') || $data['growth'] === 'Baru' ? 'text-green-600 dark:text-green-400' : (str_contains($data['growth'], '-') ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400')); ?>">
-                                                    <span class="font-medium text-gray-800 dark:text-gray-300"><?php echo e($data['category']); ?>:</span>
-                                                    <span class="<?php echo e(str_contains($data['growth'], '+') || $data['growth'] === 'Baru' ? 'font-semibold' : (str_contains($data['growth'], '-') ? 'font-semibold' : '')); ?>">
-                                                        <?php echo e($data['growth']); ?>
+                         <?php if(!empty($multiMonthCategoryGrowth)): ?>
+                             <?php $__currentLoopData = $multiMonthCategoryGrowth; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $monthName => $growthData): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                 <div class="mb-3 bg-gray-50 dark:bg-gray-700 p-3 rounded-md shadow-sm">
+                                     <p class="text-sm font-semibold text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-600 pb-1 mb-2"><?php echo e($monthName); ?>:</p>
+                                     <?php if(!empty($growthData)): ?>
+                                         <ul class="space-y-1 text-sm">
+                                             <?php $__currentLoopData = $growthData; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $data): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                 <li class="flex justify-between <?php echo e(str_contains($data['growth'], '+') || $data['growth'] === 'Baru' ? 'text-green-600 dark:text-green-400' : (str_contains($data['growth'], '-') ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400')); ?>">
+                                                     <span class="font-medium text-gray-800 dark:text-gray-300"><?php echo e($data['category']); ?>:</span>
+                                                     <span class="<?php echo e(str_contains($data['growth'], '+') || $data['growth'] === 'Baru' ? 'font-semibold' : (str_contains($data['growth'], '-') ? 'font-semibold' : '')); ?>">
+                                                         <?php echo e($data['growth']); ?>
 
-                                                    </span>
-                                                </li>
-                                                <li class="flex justify-between text-xs text-gray-400 dark:text-gray-500 pl-4 mb-1">
-                                                    <span>(Saat Ini: <?php echo e(number_format($data['current_value'], 0, ',', '.')); ?>;</span>
-                                                    <span>Sebelumnya: <?php echo e(number_format($data['previous_value'], 0, ',', '.')); ?>)</span>
-                                                </li>
-                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                                        </ul>
-                                    <?php else: ?>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400 italic">Tidak ada data pertumbuhan untuk bulan ini.</p>
-                                    <?php endif; ?>
-                                </div>
-                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                            <p class="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600 text-xs text-gray-500 dark:text-gray-400">
-                                <strong>Catatan MoM:</strong><br>
-                                * "Baru" menandakan ada pendapatan di bulan ini & nol pada bulan pembanding (bulan sebelumnya).<br>
-                                * "Data pembanding tidak cukup" menandakan tidak ada data sama sekali pada bulan pembanding.<br>
-                                * Jika periode filter tidak mencakup seluruh bulan untuk bulan terakhir yang ditampilkan, perbandingan MoM untuk bulan tersebut mungkin menunjukkan perubahan signifikan karena membandingkan periode parsial dengan pendapatan total bulan sebelumnya secara penuh.
-                            </p>
-                        <?php else: ?>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Data pertumbuhan MoM tidak tersedia untuk periode atau properti yang dipilih.</p>
-                        <?php endif; ?>
+                                                     </span>
+                                                 </li>
+                                                 <li class="flex justify-between text-xs text-gray-400 dark:text-gray-500 pl-4 mb-1">
+                                                     <span>(Saat Ini: <?php echo e(number_format($data['current_value'], 0, ',', '.')); ?>;</span>
+                                                     <span>Sebelumnya: <?php echo e(number_format($data['previous_value'], 0, ',', '.')); ?>)</span>
+                                                 </li>
+                                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                         </ul>
+                                     <?php else: ?>
+                                         <p class="text-xs text-gray-500 dark:text-gray-400 italic">Tidak ada data pertumbuhan untuk bulan ini.</p>
+                                     <?php endif; ?>
+                                 </div>
+                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                             <p class="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600 text-xs text-gray-500 dark:text-gray-400">
+                                 <strong>Catatan MoM:</strong><br>
+                                 * "Baru" menandakan ada pendapatan di bulan ini & nol pada bulan pembanding (bulan sebelumnya).<br>
+                                 * "Data pembanding tidak cukup" menandakan tidak ada data sama sekali pada bulan pembanding.<br>
+                                 * Jika periode filter tidak mencakup seluruh bulan untuk bulan terakhir yang ditampilkan, perbandingan MoM untuk bulan tersebut mungkin menunjukkan perubahan signifikan karena membandingkan periode parsial dengan pendapatan total bulan sebelumnya secara penuh.
+                             </p>
+                         <?php else: ?>
+                             <p class="text-sm text-gray-500 dark:text-gray-400">Data pertumbuhan MoM tidak tersedia untuk periode atau properti yang dipilih.</p>
+                         <?php endif; ?>
                     </div>
                 </div>
             </div>
-
+            
             
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
                 <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Analisis Pencapaian Target Pendapatan</h3>
@@ -362,35 +362,35 @@
                             <p class="text-gray-900 dark:text-gray-100">N/A</p>
                         <?php endif; ?>
                     </div>
-                </div>
-                <?php if(isset($targetAnalysis['details']) && count($targetAnalysis['details']) > 0): ?>
-                <div class="mt-6 overflow-x-auto">
-                    <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">Detail Pencapaian per Properti</h4>
-                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead class="bg-gray-50 dark:bg-gray-700">
-                            <tr>
-                                <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Properti</th>
-                                <th scope="col" class="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Target (Rp)</th>
-                                <th scope="col" class="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Aktual (Rp)</th>
-                                <th scope="col" class="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Pencapaian (%)</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            <?php $__currentLoopData = $targetAnalysis['details']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $detail): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                            <tr>
-                                <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100"><?php echo e($detail['name']); ?></td>
-                                <td class="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-300"><?php echo e(number_format($detail['total_target'],0,',','.')); ?></td>
-                                <td class="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-300"><?php echo e(number_format($detail['total_actual'],0,',','.')); ?></td>
-                                <td class="px-4 py-2 whitespace-nowrap text-sm text-right font-semibold <?php echo e($detail['achievement_percentage'] === null ? 'text-gray-500 dark:text-gray-400' : ($detail['achievement_percentage'] >= 100 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400')); ?>">
-                                    <?php echo e($detail['achievement_percentage'] !== null ? number_format($detail['achievement_percentage'], 2) . '%' : 'N/A (Target 0)'); ?>
+                 </div>
+                 <?php if(isset($targetAnalysis['details']) && count($targetAnalysis['details']) > 0): ?>
+                 <div class="mt-6 overflow-x-auto">
+                     <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">Detail Pencapaian per Properti</h4>
+                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                         <thead class="bg-gray-50 dark:bg-gray-700">
+                             <tr>
+                                 <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Properti</th>
+                                 <th scope="col" class="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Target (Rp)</th>
+                                 <th scope="col" class="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Aktual (Rp)</th>
+                                 <th scope="col" class="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Pencapaian (%)</th>
+                             </tr>
+                         </thead>
+                         <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                             <?php $__currentLoopData = $targetAnalysis['details']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $detail): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                             <tr>
+                                 <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100"><?php echo e($detail['name']); ?></td>
+                                 <td class="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-300"><?php echo e(number_format($detail['total_target'],0,',','.')); ?></td>
+                                 <td class="px-4 py-2 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-300"><?php echo e(number_format($detail['total_actual'],0,',','.')); ?></td>
+                                 <td class="px-4 py-2 whitespace-nowrap text-sm text-right font-semibold <?php echo e($detail['achievement_percentage'] === null ? 'text-gray-500 dark:text-gray-400' : ($detail['achievement_percentage'] >= 100 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400')); ?>">
+                                     <?php echo e($detail['achievement_percentage'] !== null ? number_format($detail['achievement_percentage'], 2) . '%' : 'N/A (Target 0)'); ?>
 
-                                </td>
-                            </tr>
-                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                        </tbody>
-                    </table>
-                </div>
-                <?php endif; ?>
+                                 </td>
+                             </tr>
+                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                         </tbody>
+                     </table>
+                 </div>
+                 <?php endif; ?>
             </div>
 
             
@@ -401,34 +401,34 @@
 
                     (Total <?php echo e($totalDaysInPeriod); ?> hari)
                 </p>
-                <?php if(empty($dataCompliance['days_without_entry'])): ?>
-                    <p class="text-gray-600 dark:text-gray-400">
-                        Semua properti patuh melakukan entri data untuk periode yang dipilih.
-                    </p>
-                <?php else: ?>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                            <thead class="bg-gray-50 dark:bg-gray-700">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nama Properti</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Jml Hari Tanpa Entri</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">% Kepatuhan</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                <?php $__currentLoopData = $dataCompliance['days_without_entry']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $compliance): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100"><?php echo e($compliance['property_name']); ?></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300"><?php echo e($compliance['days']); ?> dari <?php echo e($compliance['total_days_in_period']); ?> hari</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                        <?php echo e(number_format($compliance['compliance_percentage'], 2)); ?>%
-                                    </td>
-                                </tr>
-                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php endif; ?>
+                 <?php if(empty($dataCompliance['days_without_entry'])): ?>
+                     <p class="text-gray-600 dark:text-gray-400">
+                         Semua properti patuh melakukan entri data untuk periode yang dipilih.
+                     </p>
+                 <?php else: ?>
+                     <div class="overflow-x-auto">
+                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                             <thead class="bg-gray-50 dark:bg-gray-700">
+                                 <tr>
+                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nama Properti</th>
+                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Jml Hari Tanpa Entri</th>
+                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">% Kepatuhan</th>
+                                 </tr>
+                             </thead>
+                             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                 <?php $__currentLoopData = $dataCompliance['days_without_entry']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $compliance): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                 <tr>
+                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100"><?php echo e($compliance['property_name']); ?></td>
+                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300"><?php echo e($compliance['days']); ?> dari <?php echo e($compliance['total_days_in_period']); ?> hari</td>
+                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                         <?php echo e(number_format($compliance['compliance_percentage'], 2)); ?>%
+                                     </td>
+                                 </tr>
+                                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                             </tbody>
+                         </table>
+                     </div>
+                 <?php endif; ?>
             </div>
 
         </div>
@@ -438,116 +438,101 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    Chart.defaults.color = isDarkMode ? '#e5e7eb' : '#6b7280';
+    Chart.defaults.borderColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+
     const overallIncomeSourceData = <?php echo json_encode($overallIncomeSource ?? null, 15, 512) ?>;
     const overallIncomeByPropertyData = <?php echo json_encode($overallIncomeByProperty ?? [], 15, 512) ?>;
     const trendKontribusiKategoriData = <?php echo json_encode($trendKontribusiData ?? ['labels' => [], 'datasets' => []], 512) ?>;
+    const categories = <?php echo json_encode($categories ?? [], 15, 512) ?>;
+    
+    // 1. Diagram Pie: Distribusi Sumber Pendapatan Keseluruhan (KPI Page)
+    const kpiPieChartCanvas = document.getElementById('kpiOverallSourcePieChart');
+    if (kpiPieChartCanvas) {
+        const pieLabels = Object.values(categories);
+        const pieData = overallIncomeSourceData ? Object.keys(categories).map(key => overallIncomeSourceData['total_' + key] || 0) : [];
+        const hasData = pieData.some(v => v > 0);
 
-    // 1. Diagram Pie: Distribusi Sumber Pendapatan Keseluruhan
-    const kpiOverallSourceCanvas = document.getElementById('kpiOverallSourcePieChart');
-    if (kpiOverallSourceCanvas && overallIncomeSourceData && (parseFloat(overallIncomeSourceData.total_mice) > 0 || parseFloat(overallIncomeSourceData.total_fnb) > 0 || parseFloat(overallIncomeSourceData.total_offline_room) > 0 || parseFloat(overallIncomeSourceData.total_online_room) > 0 || parseFloat(overallIncomeSourceData.total_others) > 0)) {
-        new Chart(kpiOverallSourceCanvas.getContext('2d'), {
-            type: 'pie',
-            data: {
-                labels: ['MICE', 'F&B', 'Kamar Offline', 'Kamar Online', 'Lainnya'],
-                datasets: [{
-                    label: 'Distribusi Pendapatan',
-                    data: [
-                        overallIncomeSourceData.total_mice || 0,
-                        overallIncomeSourceData.total_fnb || 0,
-                        overallIncomeSourceData.total_offline_room || 0,
-                        overallIncomeSourceData.total_online_room || 0,
-                        overallIncomeSourceData.total_others || 0
-                    ],
-                    backgroundColor: ['rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)', 'rgba(255, 206, 86, 0.7)', 'rgba(75, 192, 192, 0.7)', 'rgba(153, 102, 255, 0.7)'],
-                    borderColor: ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)', 'rgba(255, 206, 86, 1)', 'rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)'],
-                    borderWidth: 1
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' }, title: { display: false } } }
-        });
-    } else if(kpiOverallSourceCanvas) {
-        const ctx = kpiOverallSourceCanvas.getContext('2d');
-        ctx.font = '14px Figtree, sans-serif';
-        ctx.fillStyle = document.body.classList.contains('dark') ? '#cbd5e1' : '#6b7280';
-        ctx.textAlign = 'center';
-        ctx.fillText('Tidak ada data distribusi pendapatan.', kpiOverallSourceCanvas.width / 2, kpiOverallSourceCanvas.height / 2);
-    }
-
-    // 2. Diagram Bar: Total Pendapatan per Properti
-    const kpiOverallIncomeByPropertyCanvas = document.getElementById('kpiOverallIncomeByPropertyBarChart');
-    if (kpiOverallIncomeByPropertyCanvas && overallIncomeByPropertyData && overallIncomeByPropertyData.length > 0 && overallIncomeByPropertyData.some(p => p.total_revenue > 0)) {
-        new Chart(kpiOverallIncomeByPropertyCanvas.getContext('2d'), {
-            type: 'bar',
-            data: {
-                labels: overallIncomeByPropertyData.map(p => p.name),
-                datasets: [{
-                    label: 'Total Pendapatan (Rp)',
-                    data: overallIncomeByPropertyData.map(p => p.total_revenue || 0),
-                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { callback: function(value) { return 'Rp ' + value.toLocaleString('id-ID'); } } } }, plugins: { legend: { display: false }, title: { display: false } } }
-        });
-    } else if (kpiOverallIncomeByPropertyCanvas) {
-        const ctx = kpiOverallIncomeByPropertyCanvas.getContext('2d');
-        ctx.font = '14px Figtree, sans-serif';
-        ctx.fillStyle = document.body.classList.contains('dark') ? '#cbd5e1' : '#6b7280';
-        ctx.textAlign = 'center';
-        ctx.fillText('Tidak ada data pendapatan per properti.', kpiOverallIncomeByPropertyCanvas.width / 2, kpiOverallIncomeByPropertyCanvas.height / 2);
-    }
-
-    // 3. KPI: Tren Total Pendapatan per Kategori (Bulanan dalam Periode)
-    const monthlyTrendCanvas = document.getElementById('monthlyCategoryTrendChart');
-    if (monthlyTrendCanvas && trendKontribusiKategoriData && trendKontribusiKategoriData.labels && trendKontribusiKategoriData.labels.length > 0 && trendKontribusiKategoriData.datasets.some(ds => ds.data.length > 0 && ds.data.some(d => d > 0))) {
-        new Chart(monthlyTrendCanvas.getContext('2d'), {
-            type: 'line',
-            data: {
-                labels: trendKontribusiKategoriData.labels,
-                datasets: trendKontribusiKategoriData.datasets.map(dataset => ({
-                    ...dataset,
-                    tension: 0.1
-                }))
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        stacked: false, // Line chart biasanya tidak stacked kecuali diinginkan
-                        ticks: { callback: function(value) { return 'Rp ' + value.toLocaleString('id-ID'); } },
-                        title: { display: true, text: 'Total Pendapatan (Rp)' }
-                    },
-                    x: { title: { display: true, text: 'Periode (Bulan)' } }
+        if (hasData) {
+            new Chart(kpiPieChartCanvas, {
+                type: 'pie',
+                data: {
+                    labels: pieLabels,
+                    datasets: [{
+                        data: pieData,
+                        backgroundColor: ['#e6194B', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#42d4f4', '#f032e6', '#bfef45', '#808000'],
+                        borderWidth: 1
+                    }]
                 },
-                plugins: {
-                    legend: { position: 'top' },
-                    title: { display: false }, // Judul sudah ada di H4
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                if (context.parsed.y !== null) {
-                                    label += 'Rp ' + context.parsed.y.toLocaleString('id-ID');
-                                }
-                                return label;
-                            }
-                        }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' }, title: { display: false } } }
+            });
+        } else {
+            const ctx = kpiPieChartCanvas.getContext('2d');
+            ctx.font = '14px Figtree, sans-serif';
+            ctx.fillStyle = isDarkMode ? '#cbd5e1' : '#6b7280';
+            ctx.textAlign = 'center';
+            ctx.fillText('Tidak ada data distribusi pendapatan.', kpiPieChartCanvas.width / 2, kpiPieChartCanvas.height / 2);
+        }
+    }
+
+    // 2. Diagram Bar: Total Pendapatan per Properti (KPI Page)
+    const kpiBarChartCanvas = document.getElementById('kpiOverallIncomeByPropertyBarChart');
+    if (kpiBarChartCanvas) {
+        const hasData = overallIncomeByPropertyData && overallIncomeByPropertyData.length > 0 && overallIncomeByPropertyData.some(p => p.total_revenue > 0);
+        if (hasData) {
+            new Chart(kpiBarChartCanvas, {
+                type: 'bar',
+                data: {
+                    labels: overallIncomeByPropertyData.map(p => p.name),
+                    datasets: [{
+                        label: 'Total Pendapatan (Rp)',
+                        data: overallIncomeByPropertyData.map(p => p.total_revenue || 0),
+                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { callback: function(value) { return 'Rp ' + value.toLocaleString('id-ID'); } } } }, plugins: { legend: { display: false }, title: { display: false } } }
+            });
+        } else if (kpiBarChartCanvas) {
+            const ctx = kpiBarChartCanvas.getContext('2d');
+            ctx.font = '14px Figtree, sans-serif';
+            ctx.fillStyle = isDarkMode ? '#cbd5e1' : '#6b7280';
+            ctx.textAlign = 'center';
+            ctx.fillText('Tidak ada data pendapatan per properti.', kpiBarChartCanvas.width / 2, kpiBarChartCanvas.height / 2);
+        }
+    }
+    
+    // 3. Diagram Line: Tren Bulanan per Kategori
+    const monthlyTrendCanvas = document.getElementById('monthlyCategoryTrendChart');
+    if (monthlyTrendCanvas) {
+        const hasData = trendKontribusiKategoriData.labels && trendKontribusiKategoriData.labels.length > 0 && trendKontribusiKategoriData.datasets.some(ds => ds.data.some(d => d > 0));
+        if (hasData) {
+            new Chart(monthlyTrendCanvas, {
+                type: 'line',
+                data: trendKontribusiKategoriData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, stacked: false, ticks: { callback: function(value) { return 'Rp ' + value.toLocaleString('id-ID'); } }, title: { display: true, text: 'Total Pendapatan (Rp)' } },
+                        x: { title: { display: true, text: 'Periode (Bulan)' } }
+                    },
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: { display: false },
+                        tooltip: { callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) { label += ': '; } if (context.parsed.y !== null) { label += 'Rp ' + context.parsed.y.toLocaleString('id-ID'); } return label; } } }
                     }
                 }
-            }
-        });
-    } else if (monthlyTrendCanvas) {
-        const ctx = monthlyTrendCanvas.getContext('2d');
-        ctx.font = '14px Figtree, sans-serif';
-        ctx.fillStyle = document.body.classList.contains('dark') ? '#cbd5e1' : '#6b7280';
-        ctx.textAlign = 'center';
-        ctx.fillText('Tidak ada data tren untuk periode/properti ini.', monthlyTrendCanvas.width / 2, monthlyTrendCanvas.height / 2);
+            });
+        } else if (monthlyTrendCanvas) {
+            const ctx = monthlyTrendCanvas.getContext('2d');
+            ctx.font = '14px Figtree, sans-serif';
+            ctx.fillStyle = isDarkMode ? '#cbd5e1' : '#6b7280';
+            ctx.textAlign = 'center';
+            ctx.fillText('Tidak ada data tren untuk periode/properti ini.', monthlyTrendCanvas.width / 2, monthlyTrendCanvas.height / 2);
+        }
     }
 });
 </script>

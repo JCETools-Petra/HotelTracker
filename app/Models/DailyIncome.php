@@ -12,14 +12,23 @@ class DailyIncome extends Model
 
     protected $fillable = [
         'property_id',
-        'user_id',
         'date',
-        'mice_income',
-        'fnb_income',
-        'offline_room_income',
-        'online_room_income',
-        'others_income',
+        'offline_rooms',
+        'offline_income',
+        'online_rooms',
+        'online_income',
+        'ta_rooms',
+        'ta_income',
+        'gov_rooms',
+        'gov_income',
+        'corp_rooms',
+        'corp_income',
+        'compliment_rooms',
+        'compliment_income',
+        'house_use_rooms',
+        'house_use_income',
     ];
+
 
     protected $casts = [
         'date' => 'date', // Pastikan kolom date di-cast sebagai objek Carbon/Date

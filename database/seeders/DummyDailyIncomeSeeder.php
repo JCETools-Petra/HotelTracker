@@ -3,9 +3,9 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\DailyIncome; // Pastikan model DailyIncome Anda ada di App\Models
-use App\Models\Property;    // Untuk mendapatkan ID properti yang ada atau membuat baru jika perlu
-use App\Models\User;       // Untuk mendapatkan ID pengguna yang ada
+use App\Models\DailyIncome;
+use App\Models\Property;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -18,103 +18,98 @@ class DummyDailyIncomeSeeder extends Seeder
      */
     public function run()
     {
-        // Hapus data lama untuk periode dan properti ini agar tidak duplikat jika seeder dijalankan ulang
-        // Ini opsional, sesuaikan jika Anda tidak ingin menghapus data yang sudah ada.
-        $this->command->info('Menghapus data lama untuk periode April-Juli 2025, properti ID 1-6...');
-        DailyIncome::whereIn('property_id', range(1, 6))
+        $this->command->info('Menghapus data lama untuk periode April-Agustus 2025...');
+        DailyIncome::whereIn('property_id', range(1, 8)) // Menyesuaikan dengan data Anda
             ->where(function ($query) {
                 $query->whereYear('date', 2025)
-                      ->whereMonth('date', '>=', 4) // Mulai dari April
-                      ->whereMonth('date', '<=', 7); // Sampai Juli
+                      ->whereMonth('date', '>=', 4)
+                      ->whereMonth('date', '<=', 8);
             })
             ->delete();
         $this->command->info('Data lama berhasil dihapus.');
 
-        $propertyIds = range(1, 6); // Anda memiliki 6 properti
-
-        // Asumsi user_id untuk data entry. Sesuaikan dengan user_id yang ada di database Anda.
-        // Misalnya, property_id 1 diinput oleh user_id 2, property_id 2 oleh user_id 3, dst.
-        // Pastikan user dengan ID ini ada di tabel 'users'.
-        $userIds = [
-            1 => 2, // Property 1 -> User 2
-            2 => 3, // Property 2 -> User 3
-            3 => 4, // Property 3 -> User 4
-            4 => 5, // Property 4 -> User 5 (Asumsi user ID 5 ada)
-            5 => 6, // Property 5 -> User 6 (Asumsi user ID 6 ada)
-            6 => 7, // Property 6 -> User 7 (Asumsi user ID 7 ada)
-        ];
-
-        // Opsional: Validasi apakah properti dan user ada
-        $existingPropertyIds = Property::whereIn('id', $propertyIds)->pluck('id')->toArray();
-        $missingPropertyIds = array_diff($propertyIds, $existingPropertyIds);
-        if (!empty($missingPropertyIds)) {
-            $this->command->warn('Properti dengan ID berikut tidak ditemukan: ' . implode(', ', $missingPropertyIds) . '. Data tidak akan dibuat untuk properti ini.');
-            // Filter $propertyIds agar hanya berisi yang ada
-            $propertyIds = $existingPropertyIds;
-        }
-
-        foreach ($userIds as $propId => $usrId) {
-            if (!User::find($usrId)) {
-                $this->command->warn("User dengan ID: {$usrId} (untuk Properti ID: {$propId}) tidak ditemukan. Pastikan user ini ada atau perbarui array \$userIds.");
-                // Hapus properti dari daftar jika user terkait tidak ada
-                if (($key = array_search($propId, $propertyIds)) !== false) {
-                    unset($propertyIds[$key]);
-                }
-            }
-        }
-
-
-        $monthsToSeed = [
-            4 => 'April', // April
-            5 => 'Mei',   // Mei
-            6 => 'Juni',  // Juni
-            7 => 'Juli'   // Juli
-        ];
-        $year = 2025;
-        $dailyIncomes = [];
+        $propertyIds = Property::pluck('id')->toArray();
+        $userIds = User::where('role', '!=', 'admin')->pluck('id', 'property_id')->toArray();
 
         if (empty($propertyIds)) {
-            $this->command->error('Tidak ada properti valid yang tersisa untuk di-seed setelah pengecekan. Seeder dihentikan.');
+            $this->command->error('Tidak ada properti yang ditemukan. Seeder dihentikan.');
             return;
         }
 
+        $monthsToSeed = [4, 5, 6, 7, 8]; // April, Mei, Juni, Juli, Agustus
+        $year = 2025;
+        $dailyIncomes = [];
+
         foreach ($propertyIds as $propertyId) {
-            // Pastikan user_id untuk properti ini ada setelah filter
-            if (!isset($userIds[$propertyId])) {
-                // Seharusnya tidak terjadi jika $propertyIds sudah difilter berdasarkan user yang ada
-                $this->command->warn("Tidak ada user_id yang valid untuk property_id: {$propertyId}. Lewati properti ini.");
+            $userId = $userIds[$propertyId] ?? User::where('role', 'admin')->first()->id;
+
+            if (!$userId) {
+                $this->command->warn("Tidak ada user yang bisa di-assign untuk Properti ID: {$propertyId}. Properti ini dilewati.");
                 continue;
             }
-            $userId = $userIds[$propertyId];
 
-            foreach ($monthsToSeed as $monthNumber => $monthName) {
+            foreach ($monthsToSeed as $monthNumber) {
+                $monthName = Carbon::create()->month($monthNumber)->format('F');
                 $daysInMonth = Carbon::createFromDate($year, $monthNumber, 1)->daysInMonth;
                 for ($day = 1; $day <= $daysInMonth; $day++) {
                     $currentDate = Carbon::createFromDate($year, $monthNumber, $day);
 
+                    // ================== PERBAIKAN UTAMA DI SINI ==================
+                    // Menghapus 'offline_rooms' dan 'online_rooms' dari array
+                    // dan memastikan semua nama kolom lain sudah benar.
                     $dailyIncomes[] = [
                         'property_id' => $propertyId,
                         'user_id' => $userId,
                         'date' => $currentDate->toDateString(),
-                        'mice_income' => rand(500000, 3000000),
-                        'fnb_income' => rand(700000, 4000000),
-                        'offline_room_income' => rand(1000000, 5000000),
-                        'online_room_income' => rand(800000, 4500000),
+                        
+                        'mice_income' => rand(500000, 2500000),
+                        'fnb_income' => rand(700000, 3500000),
                         'others_income' => rand(0, 1000000),
-                        'created_at' => $currentDate, // Menggunakan $currentDate agar konsisten
-                        'updated_at' => $currentDate, // Menggunakan $currentDate agar konsisten
+                        'offline_room_income' => rand(1000000, 5000000),
+                        'online_room_income' => rand(2000000, 6000000),
+
+                        // Kategori Baru (kamar dan pendapatan)
+                        'ta_rooms' => rand(2, 8),
+                        'ta_income' => rand(500000, 2000000),
+                        
+                        'gov_rooms' => rand(1, 5),
+                        'gov_income' => rand(300000, 1500000),
+
+                        'corp_rooms' => rand(3, 10),
+                        'corp_income' => rand(800000, 2500000),
+
+                        'compliment_rooms' => rand(0, 2),
+                        'compliment_income' => 0, 
+
+                        'house_use_rooms' => rand(0, 3),
+                        'house_use_income' => 0,
+
+                        'created_at' => $currentDate,
+                        'updated_at' => $currentDate,
                     ];
+                    // ================== AKHIR PERBAIKAN ==================
                 }
                 $this->command->info("Data untuk Properti ID: {$propertyId}, Bulan: {$monthName} {$year} disiapkan.");
             }
         }
 
-        // Insert data dalam batch untuk efisiensi
         if (!empty($dailyIncomes)) {
-            foreach (array_chunk($dailyIncomes, 200) as $chunk) { // Chunk per 200 entri
-                DailyIncome::insert($chunk);
+            // Kita perlu memastikan semua array memiliki keys yang sama.
+            // Langkah ini untuk mengatasi jika ada data yang hilang di tengah iterasi.
+            $sampleKeys = array_keys($dailyIncomes[0]);
+            $uniformChunks = [];
+            foreach (array_chunk($dailyIncomes, 200) as $chunk) {
+                $uniformChunk = [];
+                foreach ($chunk as $item) {
+                    $uniformItem = [];
+                    foreach ($sampleKeys as $key) {
+                        $uniformItem[$key] = $item[$key] ?? null; // Default to null if a key is missing
+                    }
+                    $uniformChunk[] = $uniformItem;
+                }
+                 DailyIncome::insert($uniformChunk);
             }
-            $this->command->info(count($dailyIncomes) . ' dummy daily income records created successfully.');
+            $this->command->info(count($dailyIncomes) . ' data pendapatan harian berhasil dibuat.');
         } else {
             $this->command->info('Tidak ada data dummy baru yang dibuat.');
         }
