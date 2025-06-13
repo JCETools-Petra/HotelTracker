@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Property;
 use App\Models\DailyIncome;
+use App\Models\RevenueTarget; // <-- INI ADALAH BARIS YANG DITAMBAHKAN UNTUK MEMPERBAIKI ERROR
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -47,12 +48,6 @@ class PropertyController extends Controller
         return redirect()->route('admin.properties.index')->with('success', 'Properti baru berhasil ditambahkan.');
     }
 
-    /**
-     * Menampilkan detail sebuah properti beserta data pendapatannya.
-     */
-    /**
-     * Menampilkan detail properti beserta riwayat pendapatan, tren, dan distribusi sumber.
-     */
     /**
      * Menampilkan detail sebuah properti beserta data pendapatannya.
      */
@@ -111,8 +106,8 @@ class PropertyController extends Controller
         // Ambil target bulanan untuk bulan saat ini (berdasarkan tanggal awal filter)
         $targetMonth = $displayStartDate->copy()->startOfMonth();
         $revenueTarget = RevenueTarget::where('property_id', $property->id)
-                                      ->where('month_year', $targetMonth->format('Y-m-d'))
-                                      ->first();
+                                        ->where('month_year', $targetMonth->format('Y-m-d'))
+                                        ->first();
 
         $monthlyTarget = $revenueTarget->target_amount ?? 0;
         $dailyTarget = $monthlyTarget > 0 ? $monthlyTarget / $displayStartDate->daysInMonth : 0;
@@ -122,7 +117,6 @@ class PropertyController extends Controller
 
         $dailyTargetAchievement = $dailyTarget > 0 ? ($lastDayIncome / $dailyTarget) * 100 : 0;
         // ================== AKHIR LOGIKA BARU ==================
-
 
         return view('admin.properties.show', compact(
             'property', 'incomes', 'dailyTrend', 'sourceDistribution', 'totalPropertyRevenueFiltered',
@@ -249,7 +243,7 @@ class PropertyController extends Controller
             $dataValues = [];
             if ($propertyData) {
                 foreach($categoryColumns as $column){
-                     $dataValues[] = $propertyData[$column];
+                    $dataValues[] = $propertyData[$column];
                 }
             }
             $datasetsForGroupedBar[] = ['label' => $property->name, 'data' => $dataValues, 'backgroundColor' => $colors[$index % count($colors)]];

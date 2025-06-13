@@ -56,8 +56,8 @@
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
                 <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Ringkasan Kinerja Keseluruhan</h3>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
-        Berdasarkan periode: {{ $filterStartDate->isoFormat('D MMMM YYYY') }} - {{ $filterEndDate->isoFormat('D MMMM YYYY') }} (Total {{ $totalDaysInPeriod }} hari)
-    </p>
+                    Berdasarkan periode: {{ $filterStartDate->isoFormat('D MMMM YYYY') }} - {{ $filterEndDate->isoFormat('D MMMM YYYY') }} (Total {{ $totalDaysInPeriod }} hari)
+                </p>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
                     <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow">
                         <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Pendapatan</h4>
@@ -99,9 +99,9 @@
             {{-- Analisis Detail per Kategori Pendapatan --}}
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
                 <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Analisis Detail per Kategori Pendapatan</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
-        Berdasarkan periode: {{ $filterStartDate->isoFormat('D MMMM YYYY') }} - {{ $filterEndDate->isoFormat('D MMMM YYYY') }} (Total {{ $totalDaysInPeriod }} hari)
-    </p>
+                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    Berdasarkan periode: {{ $filterStartDate->isoFormat('D MMMM YYYY') }} - {{ $filterEndDate->isoFormat('D MMMM YYYY') }} (Total {{ $totalDaysInPeriod }} hari)
+                </p>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div class="p-4 border dark:border-gray-700 rounded-lg">
                         <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -166,9 +166,9 @@
             {{-- Analisis Pencapaian Target Pendapatan --}}
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
                 <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Analisis Pencapaian Target Pendapatan</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
-        Berdasarkan periode: {{ $filterStartDate->isoFormat('D MMMM YYYY') }} - {{ $filterEndDate->isoFormat('D MMMM YYYY') }} (Total {{ $totalDaysInPeriod }} hari)
-    </p>
+                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    Berdasarkan periode: {{ $filterStartDate->isoFormat('D MMMM YYYY') }} - {{ $filterEndDate->isoFormat('D MMMM YYYY') }} (Total {{ $totalDaysInPeriod }} hari)
+                </p>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow">
                         <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Rata-Rata Pencapaian Target</h4>
@@ -224,42 +224,54 @@
                 @endif
             </div>
 
-            {{-- Analisis Kepatuhan Input Data --}}
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Analisis Kepatuhan Input Data</h3>
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                    Analisis Pencapaian Harian
+                    @if($propertyMomFilterId && $propertyMomFilterId != 'all' && isset($allPropertiesForFilter))
+                        <span class="text-base font-medium text-gray-500 dark:text-gray-400">- {{ $allPropertiesForFilter->firstWhere('id', $propertyMomFilterId)->name ?? '' }}</span>
+                    @else
+                        <span class="text-base font-medium text-gray-500 dark:text-gray-400">- Gabungan Semua Properti</span>
+                    @endif
+                </h3>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
-        Berdasarkan periode: {{ $filterStartDate->isoFormat('D MMMM YYYY') }} - {{ $filterEndDate->isoFormat('D MMMM YYYY') }} (Total {{ $totalDaysInPeriod }} hari)
-    </p>
-                @if(empty($dataCompliance['days_without_entry']))
-                    <p class="text-gray-600 dark:text-gray-400">
-                        Semua properti patuh melakukan entri data untuk periode yang dipilih.
-                    </p>
-                @else
-                    <div class="overflow-x-auto">
+                    Berdasarkan periode: {{ $filterStartDate->isoFormat('D MMMM YYYY') }} - {{ $filterEndDate->isoFormat('D MMMM YYYY') }}.
+                    Target harian dihitung pro-rata dari target bulanan.
+                </p>
+
+                @if(isset($dailyPerformanceData) && count($dailyPerformanceData) > 0)
+                    <div class="mt-4 overflow-y-auto" style="max-height: 500px;">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                            <thead class="bg-gray-50 dark:bg-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
                                 <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nama Properti</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Jml Hari Tanpa Entri</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">% Kepatuhan</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tanggal</th>
+                                    <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Aktual (Rp)</th>
+                                    <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Target (Rp)</th>
+                                    <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Pencapaian</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                @foreach($dataCompliance['days_without_entry'] as $compliance)
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{{ $compliance['property_name'] }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ $compliance['days'] }} dari {{ $compliance['total_days_in_period'] }} hari</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                        {{ number_format($compliance['compliance_percentage'], 2) }}%
-                                    </td>
-                                </tr>
+                                @foreach($dailyPerformanceData as $daily)
+                                    <tr>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ $daily['date']->isoFormat('dddd, D MMM YY') }}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-300 font-mono">{{ number_format($daily['actual_income'], 0, ',', '.') }}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-300 font-mono">{{ number_format($daily['daily_target'], 0, ',', '.') }}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-semibold {{ $daily['achievement_percentage'] >= 100 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
+                                            @if($daily['daily_target'] > 0)
+                                                {{ number_format($daily['achievement_percentage'], 2, ',', '.') }}%
+                                            @else
+                                                <span class="text-gray-500 dark:text-gray-400">N/A</span>
+                                            @endif
+                                        </td>
+                                    </tr>
                                 @endforeach
                             </tbody>
                         </table>
                     </div>
+                @else
+                    <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">Tidak ada data performa harian untuk periode atau properti yang dipilih.</p>
                 @endif
             </div>
-
+            
         </div>
     </div>
 

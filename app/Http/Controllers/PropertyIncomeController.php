@@ -34,8 +34,8 @@ class PropertyIncomeController extends Controller
 
         // Data untuk dashboard pengguna properti, misal entri hari ini
         $todayIncome = DailyIncome::where('property_id', $property->id)
-                                  ->whereDate('date', Carbon::today())
-                                  ->first();
+                                    ->whereDate('date', Carbon::today())
+                                    ->first();
 
         return view('property.dashboard', compact('property', 'todayIncome'));
     }
@@ -84,8 +84,8 @@ class PropertyIncomeController extends Controller
         // Ambil data pendapatan dengan paginasi dan urutkan berdasarkan tanggal terbaru
         // withQueryString() untuk mempertahankan parameter filter (start_date, end_date) di link paginasi
         $incomes = $query->orderBy('date', 'desc')
-                         ->paginate(10) // Misalnya 10 entri per halaman
-                         ->withQueryString();
+                        ->paginate(10) // Misalnya 10 entri per halaman
+                        ->withQueryString();
 
         return view('property.income.index', compact('incomes', 'property', 'startDate', 'endDate'));
     }
@@ -161,12 +161,15 @@ class PropertyIncomeController extends Controller
     public function edit(DailyIncome $dailyIncome)
     {
         $user = Auth::user();
-        $property = $user->property;
 
-        if (!$property || $dailyIncome->property_id !== $property->id) {
+        // PERBAIKAN LOGIKA OTORISASI
+        if ($user->role !== 'admin' && $user->property_id !== $dailyIncome->property_id) {
             abort(403, 'Akses tidak diizinkan untuk mengedit data ini.');
         }
 
+        // Untuk admin, properti diambil dari data income, untuk user, dari user itu sendiri
+        $property = ($user->role === 'admin') ? $dailyIncome->property : $user->property;
+        
         return view('property.income.edit', compact('dailyIncome', 'property'));
     }
 
@@ -176,15 +179,18 @@ class PropertyIncomeController extends Controller
     public function update(Request $request, DailyIncome $dailyIncome)
     {
         $user = Auth::user();
-        $property = $user->property;
 
-        if (!$property || $dailyIncome->property_id !== $property->id) {
+        // PERBAIKAN LOGIKA OTORISASI
+        if ($user->role !== 'admin' && $user->property_id !== $dailyIncome->property_id) {
             abort(403, 'Akses tidak diizinkan untuk memperbarui data ini.');
         }
 
+        // Ambil ID properti dari data income yang akan diupdate, bukan dari user (untuk admin)
+        $propertyIdForValidation = $dailyIncome->property_id;
+
         // Tambahkan validasi untuk semua field baru
         $validatedData = $request->validate([
-            'date' => 'required|date|unique:daily_incomes,date,' . $dailyIncome->id . ',id,property_id,' . $property->id,
+            'date' => 'required|date|unique:daily_incomes,date,' . $dailyIncome->id . ',id,property_id,' . $propertyIdForValidation,
             'offline_rooms' => 'required|integer|min:0',
             'offline_room_income' => 'required|numeric|min:0',
             'online_rooms' => 'required|integer|min:0',
@@ -207,6 +213,11 @@ class PropertyIncomeController extends Controller
         ]);
 
         $dailyIncome->update($validatedData);
+        
+        // Arahkan admin kembali ke halaman detail properti yang relevan setelah update
+        if ($user->role === 'admin') {
+            return redirect()->route('admin.properties.show', $dailyIncome->property_id)->with('success', 'Data pendapatan berhasil diperbarui.');
+        }
 
         return redirect()->route('property.income.index')->with('success', 'Data pendapatan berhasil diperbarui.');
     }
@@ -220,18 +231,23 @@ class PropertyIncomeController extends Controller
         if (!$user) {
             return redirect()->route('login');
         }
-        $property = $user->property;
 
-        // Otorisasi
-        if (!$property || $dailyIncome->property_id !== $property->id) {
+        // PERBAIKAN LOGIKA OTORISASI
+        if ($user->role !== 'admin' && $user->property_id !== $dailyIncome->property_id) {
             abort(403, 'Akses tidak diizinkan untuk menghapus data ini.');
         }
 
         $originalDate = $dailyIncome->date; // Simpan tanggal sebelum dihapus untuk pesan
         $dailyIncome->delete();
 
+        // Jika admin, kembalikan ke halaman sebelumnya (kemungkinan halaman detail properti)
+        if ($user->role === 'admin') {
+            return back()->with('success', 'Data pendapatan untuk tanggal ' . Carbon::parse($originalDate)->isoFormat('D MMMM YYYY') . ' berhasil dihapus.');
+        }
+
         return redirect()->route('property.income.index')->with('success', 'Data pendapatan untuk tanggal ' . Carbon::parse($originalDate)->isoFormat('D MMMM YYYY') . ' berhasil dihapus.');
     }
+
     public function exportIncomesExcel(Request $request)
     {
         $user = Auth::user();
