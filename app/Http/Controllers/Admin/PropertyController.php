@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Property;
 use App\Models\DailyIncome;
-use App\Models\RevenueTarget; // <-- INI ADALAH BARIS YANG DITAMBAHKAN UNTUK MEMPERBAIKI ERROR
+use App\Models\RevenueTarget;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -16,7 +16,7 @@ use Illuminate\Validation\Rule;
 class PropertyController extends Controller
 {
     /**
-     * Menampilkan daftar semua properti.
+     * Menampilkan daftar semua properti. (Bisa diakses admin & owner)
      */
     public function index(Request $request)
     {
@@ -29,18 +29,25 @@ class PropertyController extends Controller
     }
 
     /**
-     * Menampilkan form untuk membuat properti baru.
+     * Menampilkan form untuk membuat properti baru. (HANYA ADMIN)
      */
     public function create()
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         return view('admin.properties.create');
     }
 
     /**
-     * Menyimpan properti baru ke database.
+     * Menyimpan properti baru ke database. (HANYA ADMIN)
      */
     public function store(Request $request)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
+
         $validatedData = $request->validate([
             'name' => 'required|string|max:255|unique:properties,name',
         ]);
@@ -49,14 +56,13 @@ class PropertyController extends Controller
     }
 
     /**
-     * Menampilkan detail sebuah properti beserta data pendapatannya.
+     * Menampilkan detail sebuah properti beserta data pendapatannya. (Bisa diakses admin & owner)
      */
     public function show(Property $property, Request $request)
     {
         $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date'))->startOfDay() : null;
         $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date'))->endOfDay() : null;
 
-        $periodIsOneMonth = false;
         $incomesQuery = DailyIncome::where('property_id', $property->id);
         
         $displayStartDate = $startDate;
@@ -65,8 +71,8 @@ class PropertyController extends Controller
         if ($startDate && $endDate) {
             $incomesQuery->whereBetween('date', [$startDate, $endDate]);
         } else {
-            $defaultStartDate = Carbon::now()->startOfMonth(); // Default ke awal bulan ini
-            $defaultEndDate = Carbon::now()->endOfMonth(); // Default ke akhir bulan ini
+            $defaultStartDate = Carbon::now()->startOfMonth();
+            $defaultEndDate = Carbon::now()->endOfMonth();
             $incomesQuery->whereBetween('date', [$defaultStartDate, $defaultEndDate]);
             $displayStartDate = $defaultStartDate;
             $displayEndDate = $defaultEndDate;
@@ -102,8 +108,7 @@ class PropertyController extends Controller
         $dailyTrend = (clone $filteredQuery)->select('date', DB::raw("SUM({$totalRevenueRaw}) as total_daily_income"))
             ->groupBy('date')->orderBy('date', 'asc')->get();
 
-        // ================== LOGIKA BARU UNTUK TARGET HARIAN ==================
-        // Ambil target bulanan untuk bulan saat ini (berdasarkan tanggal awal filter)
+        // Logika untuk target harian
         $targetMonth = $displayStartDate->copy()->startOfMonth();
         $revenueTarget = RevenueTarget::where('property_id', $property->id)
                                         ->where('month_year', $targetMonth->format('Y-m-d'))
@@ -111,33 +116,35 @@ class PropertyController extends Controller
 
         $monthlyTarget = $revenueTarget->target_amount ?? 0;
         $dailyTarget = $monthlyTarget > 0 ? $monthlyTarget / $displayStartDate->daysInMonth : 0;
-
-        // Ambil total pendapatan aktual untuk hari ini (atau hari terakhir dari filter)
         $lastDayIncome = (clone $filteredQuery)->whereDate('date', $displayEndDate->toDateString())->sum(DB::raw($totalRevenueRaw));
-
         $dailyTargetAchievement = $dailyTarget > 0 ? ($lastDayIncome / $dailyTarget) * 100 : 0;
-        // ================== AKHIR LOGIKA BARU ==================
 
         return view('admin.properties.show', compact(
             'property', 'incomes', 'dailyTrend', 'sourceDistribution', 'totalPropertyRevenueFiltered',
             'startDate', 'endDate', 'displayStartDate', 'displayEndDate', 'incomeCategories',
-            'dailyTarget', 'lastDayIncome', 'dailyTargetAchievement' // Kirim variabel baru ke view
+            'dailyTarget', 'lastDayIncome', 'dailyTargetAchievement'
         ));
     }
 
     /**
-     * Menampilkan form untuk mengedit properti.
+     * Menampilkan form untuk mengedit properti. (HANYA ADMIN)
      */
     public function edit(Property $property)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         return view('admin.properties.edit', compact('property'));
     }
 
     /**
-     * Memperbarui data properti di database.
+     * Memperbarui data properti di database. (HANYA ADMIN)
      */
     public function update(Request $request, Property $property)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         $validatedData = $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('properties')->ignore($property->id)],
         ]);
@@ -146,10 +153,13 @@ class PropertyController extends Controller
     }
 
     /**
-     * Menghapus properti dari database.
+     * Menghapus properti dari database. (HANYA ADMIN)
      */
     public function destroy(Property $property)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         if ($property->dailyIncomes()->exists()) {
             return redirect()->route('admin.properties.index')
                 ->with('error', 'Properti tidak dapat dihapus karena memiliki data pendapatan terkait.');
@@ -160,9 +170,9 @@ class PropertyController extends Controller
     }
 
     /**
-     * Menampilkan form untuk memilih properti yang akan dibandingkan.
+     * Menampilkan form untuk memilih properti yang akan dibandingkan. (Bisa diakses admin & owner)
      */
-    public function showComparisonForm() // Nama metode yang benar sesuai rute Anda
+    public function showComparisonForm()
     {
         $properties = Property::orderBy('name')->get();
         if ($properties->count() < 2) {
@@ -170,38 +180,17 @@ class PropertyController extends Controller
         }
         return view('admin.properties.compare_form', compact('properties'));
     }
-
+    
     /**
-     * Memvalidasi form perbandingan dan me-redirect ke halaman hasil.
-     */
-    public function handleCompareForm(Request $request)
-    {
-        $request->validate([
-            'property_ids'   => 'required|array|min:2',
-            'start_date' => 'required|date',
-            'end_date'   => 'required|date|after_or_equal:start_date',
-        ], [
-            'property_ids.required' => 'Pilih setidaknya 2 properti untuk dibandingkan.',
-            'property_ids.min'      => 'Pilih setidaknya 2 properti untuk dibandingkan.',
-        ]);
-
-        return redirect()->route('admin.properties.compare.results', [
-            'properties_ids' => $request->input('property_ids'),
-            'start_date' => $request->input('start_date'),
-            'end_date' => $request->input('end_date'),
-        ]);
-    }
-
-    /**
-     * Menampilkan hasil perbandingan properti berdasarkan data dari URL.
+     * Menampilkan hasil perbandingan properti berdasarkan data dari URL. (Bisa diakses admin & owner)
      */
     public function showComparisonResults(Request $request)
     {
         $validated = $request->validate([
             'properties_ids'   => 'required|array|min:2',
             'properties_ids.*' => 'integer|exists:properties,id',
-            'start_date'     => 'required|date',
-            'end_date'       => 'required|date|after_or_equal:start_date',
+            'start_date'       => 'required|date',
+            'end_date'         => 'required|date|after_or_equal:start_date',
         ]);
 
         $propertyIds = $validated['properties_ids'];
@@ -210,10 +199,10 @@ class PropertyController extends Controller
 
         $incomeCategories = [
             'offline_room_income' => 'Walk In Guest', 'online_room_income'  => 'OTA',
-            'ta_income'           => 'TA/Travel Agent', 'gov_income'          => 'Gov/Government',
-            'corp_income'         => 'Corp/Corporation', 'compliment_income'   => 'Compliment',
-            'house_use_income'    => 'House Use', 'mice_income'         => 'MICE',
-            'fnb_income'          => 'F&B', 'others_income'       => 'Lainnya',
+            'ta_income'          => 'TA/Travel Agent', 'gov_income'          => 'Gov/Government',
+            'corp_income'        => 'Corp/Corporation', 'compliment_income'   => 'Compliment',
+            'house_use_income'   => 'House Use', 'mice_income'         => 'MICE',
+            'fnb_income'         => 'F&B', 'others_income'       => 'Lainnya',
         ];
         $categoryColumns = array_keys($incomeCategories);
         $categoryLabels = array_values($incomeCategories);
@@ -276,7 +265,7 @@ class PropertyController extends Controller
     }
     
     /**
-     * Menangani permintaan ekspor detail pendapatan properti ke Excel oleh Admin.
+     * Menangani permintaan ekspor detail pendapatan properti ke Excel oleh Admin. (Bisa diakses admin & owner)
      */
     public function exportPropertyDetailsExcel(Property $property, Request $request)
     {

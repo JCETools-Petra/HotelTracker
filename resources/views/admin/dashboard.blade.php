@@ -1,4 +1,9 @@
 <x-app-layout>
+    @php
+        // Definisikan warna di sini agar bisa diakses oleh HTML dan JavaScript
+        $chartColors = ['#e6194B', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#42d4f4', '#f032e6', '#bfef45', '#808000'];
+    @endphp
+
     <x-slot name="header">
         <div class="flex flex-wrap justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
@@ -47,12 +52,50 @@
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
                 <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Ringkasan Pendapatan Keseluruhan (Periode: {{ Str::title($period) }})</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    
                     <div class="p-4 border dark:border-gray-700 rounded-lg">
                         <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">Distribusi Sumber Pendapatan</h4>
-                        <div style="height: 300px;">
-                            <canvas id="overallSourcePieChart"></canvas>
+                        <div class="flex flex-col md:flex-row items-center gap-4" style="min-height: 300px;">
+                            <div class="w-full md:w-1/2">
+                                <canvas id="overallSourcePieChart"></canvas>
+                            </div>
+                            <div class="w-full md:w-1/2 space-y-1"> {{-- Mengurangi space antar item menjadi space-y-1 --}}
+    @php
+        $pieData = collect($incomeCategories)->map(function($label, $key) use ($overallIncomeSource) {
+            return [
+                'label' => $label,
+                'value' => $overallIncomeSource['total_' . $key] ?? 0,
+            ];
+        });
+    @endphp
+    
+    {{-- ================== PERUBAHAN DI SINI ================== --}}
+    @foreach($pieData as $item)
+        @if($item['value'] > 0)
+            <div class="flex items-center p-1 rounded">
+                {{-- Menggunakan $loop->index untuk mendapatkan indeks numerik --}}
+                <span class="w-3 h-3 rounded-full mr-2 flex-shrink-0" style="background-color: {{ $chartColors[$loop->index % count($chartColors)] }};"></span>
+                <div class="flex justify-between items-center w-full text-xs"> {{-- Ukuran teks dikecilkan --}}
+                    
+                    {{-- Label akan terpotong (...) jika terlalu panjang --}}
+                    <span class="text-gray-600 dark:text-gray-400 mr-2 truncate" title="{{ $item['label'] }}">
+                        {{ $item['label'] }}
+                    </span>
+                    
+                    {{-- Angka tidak akan turun ke bawah --}}
+                    <span class="font-semibold text-gray-800 dark:text-gray-200 text-right whitespace-nowrap">
+                        Rp {{ number_format($item['value'], 0, ',', '.') }}
+                    </span>
+
+                </div>
+            </div>
+        @endif
+    @endforeach
+    {{-- ================== AKHIR PERUBAHAN ================== --}}
+</div>
                         </div>
                     </div>
+
                     <div class="p-4 border dark:border-gray-700 rounded-lg">
                         <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">Total Pendapatan per Properti</h4>
                         <div style="height: 300px;">
@@ -71,17 +114,14 @@
                     @endif
                 </div>
 
-                {{-- ================== PERBAIKAN UTAMA DI SINI ================== --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     @forelse($properties as $property)
                         <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow">
                             <h4 class="font-semibold text-lg text-gray-900 dark:text-gray-100">{{ $property->name }}</h4>
                             <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Total Catatan: {{ $property->total_income_records ?? 0 }}</p>
                             
-                            {{-- Loop dinamis untuk menampilkan semua 10 kategori pendapatan --}}
                             @foreach($incomeCategories as $column => $label)
                                 @php
-                                    // Membuat nama properti sum secara dinamis, e.g., 'total_offline_room_income'
                                     $sumProperty = 'total_' . $column;
                                 @endphp
                                 <p class="text-sm text-gray-600 dark:text-gray-400">
@@ -111,7 +151,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const overallIncomeSourceData = @json($overallIncomeSource);
     const overallIncomeByPropertyData = @json($overallIncomeByProperty);
-    const incomeCategories = @json($incomeCategories); 
+    const incomeCategories = @json($incomeCategories);
+    const chartColors = @json($chartColors);
 
     // 1. Diagram Pie
     const overallSourceCanvas = document.getElementById('overallSourcePieChart');
@@ -128,20 +169,36 @@ document.addEventListener('DOMContentLoaded', function () {
                     datasets: [{
                         label: 'Distribusi Pendapatan',
                         data: pieData,
-                        backgroundColor: ['#e6194B', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#42d4f4', '#f032e6', '#bfef45', '#808000'],
+                        backgroundColor: chartColors,
                     }]
                 },
                 options: { 
-                    responsive: true, maintainAspectRatio: false, 
-                    plugins: { legend: { position: 'top', labels: { color: isDarkMode ? '#e5e7eb' : '#6b7280' } } } 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { 
+                            display: false 
+                        },
+                        tooltip: {
+                           callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(context.parsed);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    } 
                 }
             });
         } else {
-            const ctx = overallSourceCanvas.getContext('2d');
-            ctx.font = '16px Figtree, sans-serif';
-            ctx.fillStyle = isDarkMode ? '#cbd5e1' : '#4b5563';
-            ctx.textAlign = 'center';
-            ctx.fillText('Tidak ada data pendapatan untuk filter ini.', overallSourceCanvas.width / 2, overallSourceCanvas.height / 2);
+            const container = overallSourceCanvas.parentElement.parentElement;
+            container.innerHTML = `<div class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400 p-4 border dark:border-gray-700 rounded-lg" style="min-height: 300px;">Distribusi Sumber Pendapatan<br>Tidak ada data untuk filter ini.</div>`;
         }
     }
 
@@ -160,20 +217,30 @@ document.addEventListener('DOMContentLoaded', function () {
                     }]
                 },
                 options: { 
-                    responsive: true, maintainAspectRatio: false, 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
                     scales: { 
-                        y: { beginAtZero: true, ticks: { callback: function(value) { return 'Rp ' + value.toLocaleString('id-ID'); }, color: isDarkMode ? '#e5e7eb' : '#6b7280' } },
-                        x: { ticks: { color: isDarkMode ? '#e5e7eb' : '#6b7280' } }
+                        y: { 
+                            beginAtZero: true, 
+                            ticks: { 
+                                callback: function(value) { return 'Rp ' + value.toLocaleString('id-ID'); }, 
+                                color: isDarkMode ? '#e5e7eb' : '#6b7280' 
+                            } 
+                        },
+                        x: { 
+                            ticks: { 
+                                color: isDarkMode ? '#e5e7eb' : '#6b7280' 
+                            } 
+                        }
                     }, 
-                    plugins: { legend: { display: false } } 
+                    plugins: { 
+                        legend: { display: false } 
+                    } 
                 }
             });
         } else {
-            const ctx = overallIncomeByPropertyCanvas.getContext('2d');
-            ctx.font = '16px Figtree, sans-serif';
-            ctx.fillStyle = isDarkMode ? '#cbd5e1' : '#4b5563';
-            ctx.textAlign = 'center';
-            ctx.fillText('Tidak ada data pendapatan untuk filter ini.', overallIncomeByPropertyCanvas.width / 2, overallIncomeByPropertyCanvas.height / 2);
+            const container = overallIncomeByPropertyCanvas.parentElement;
+            container.innerHTML = `<div class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">Tidak ada data pendapatan untuk filter ini.</div>`;
         }
     }
 });

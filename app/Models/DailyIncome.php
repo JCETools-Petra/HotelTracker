@@ -10,13 +10,19 @@ class DailyIncome extends Model
 {
     use HasFactory;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'property_id',
+        'user_id', // Ditambahkan
         'date',
         'offline_rooms',
-        'offline_income',
+        'offline_room_income', // Diperbaiki dari offline_income
         'online_rooms',
-        'online_income',
+        'online_room_income',  // Diperbaiki dari online_income
         'ta_rooms',
         'ta_income',
         'gov_rooms',
@@ -27,6 +33,9 @@ class DailyIncome extends Model
         'compliment_income',
         'house_use_rooms',
         'house_use_income',
+        'mice_income',    // Ditambahkan
+        'fnb_income',     // Ditambahkan
+        'others_income',  // Ditambahkan
     ];
 
 
