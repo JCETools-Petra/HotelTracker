@@ -19,12 +19,12 @@
                             <x-input-error :messages="$errors->get('name')" class="mt-2" />
                         </div>
 
-                        {{-- Tambahkan field lain di sini jika model Property Anda memiliki lebih banyak atribut --}}
-                        {{-- <div class="mt-4">
-                            <x-input-label for="address" :value="__('Alamat Properti (Opsional)')" />
-                            <textarea id="address" name="address" rows="3" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">{{ old('address', $property->address) }}</textarea>
-                            <x-input-error :messages="$errors->get('address')" class="mt-2" />
-                        </div> --}}
+                        {{-- [BARU] Input untuk memilih warna grafik --}}
+                        <div class="mt-4">
+                            <x-input-label for="chart_color" :value="__('Warna Grafik')" />
+                            <input id="chart_color" type="color" name="chart_color" value="{{ old('chart_color', $property->chart_color) }}" class="mt-1 block w-24 h-10 p-1 border border-gray-300 dark:border-gray-700 rounded-md">
+                            <x-input-error :messages="$errors->get('chart_color')" class="mt-2" />
+                        </div>
 
                         <div class="flex items-center justify-end mt-6">
                              <a href="{{ route('admin.properties.index') }}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800 mr-4">

@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Models\Booking;
+use App\Models\PricePackage; 
 use App\Exports\AdminPropertiesSummaryExport;
 
 class DashboardController extends Controller
@@ -19,129 +21,168 @@ class DashboardController extends Controller
     /**
      * Menampilkan dashboard admin dengan data ringkasan, KPI, dan chart yang telah difilter.
      */
-    public function index(Request $request)
+    public function salesAnalytics()
     {
-        $propertyId = $request->input('property_id');
-        $period = $request->input('period', 'year');
+        // ======================================================
+        // Mengambil semua data yang berhubungan dengan event
+        // ======================================================
 
-        $startDate = null;
-        $endDate = null;
-        switch ($period) {
-            case 'today':
-                $startDate = Carbon::today()->startOfDay();
-                $endDate = Carbon::today()->endOfDay();
-                break;
-            case 'month':
-                $startDate = Carbon::now()->startOfMonth();
-                $endDate = Carbon::now()->endOfMonth();
-                break;
-            case 'year':
-                $startDate = Carbon::now()->startOfYear();
-                $endDate = Carbon::now()->endOfYear();
-                break;
-        }
+        // 1. Data untuk kartu statistik
+        $totalEventRevenue = Booking::where('status', 'Booking Pasti')->sum('total_price');
+        $totalBookings = Booking::count();
+        $totalConfirmedBookings = Booking::where('status', 'Booking Pasti')->count();
+        $totalActivePackages = PricePackage::where('is_active', true)->count();
 
-        $incomeCategories = [
-            'offline_room_income' => 'Walk In Guest',
-            'online_room_income'  => 'OTA',
-            'ta_income'           => 'TA/Travel Agent',
-            'gov_income'          => 'Gov/Government',
-            'corp_income'         => 'Corp/Corporation',
-            'compliment_income'   => 'Compliment',
-            'house_use_income'    => 'House Use',
-            'mice_income'         => 'MICE',
-            'fnb_income'          => 'F&B',
-            'others_income'       => 'Lainnya',
+        // 2. Data untuk Grafik Pie Status Booking
+        $bookingStatusData = Booking::select('status', DB::raw('count(*) as count'))
+            ->groupBy('status')
+            ->pluck('count', 'status');
+            
+        $pieChartData = [
+            'labels' => $bookingStatusData->keys(),
+            'data' => $bookingStatusData->values(),
         ];
-        $incomeColumns = array_keys($incomeCategories);
-        $incomeSumRaw = implode(' + ', array_map(fn($col) => "IFNULL(`$col`, 0)", $incomeColumns));
         
-        $propertyQuery = Property::orderBy('id', 'asc');
-        
-        $dailyIncomeQuery = DailyIncome::query();
-        $revenueTargetQuery = RevenueTarget::query();
-
-        if ($propertyId) {
-            // Pada baris inilah letak errornya. Kita perlu spesifikasikan tabel 'properties'
-            $propertyQuery->where('properties.id', $propertyId); // <-- PERBAIKAN DI SINI
-            $dailyIncomeQuery->where('property_id', $propertyId);
-            $revenueTargetQuery->where('property_id', $propertyId);
-        }
-
-        if ($startDate && $endDate) {
-            $dailyIncomeQuery->whereBetween('date', [$startDate, $endDate]);
-        }
-
-        $filteredIncomeQuery = clone $dailyIncomeQuery;
-        $filteredPropertyQuery = clone $propertyQuery;
-
-        $totalProperties = $filteredPropertyQuery->count();
-        $totalIncome = (clone $filteredIncomeQuery)->sum(DB::raw($incomeSumRaw));
-
-        $occupancyRate = 0;
-        $adr = 0;
-        $revpar = 0;
-
-        $currentIncomeForTarget = (clone $filteredIncomeQuery)->sum(DB::raw($incomeSumRaw));
-        $currentTarget = 0;
-        if ($period === 'year') {
-            $revenueTargetQuery->whereYear('month_year', $startDate->year);
-            $currentTarget = $revenueTargetQuery->sum('target_amount');
-        } elseif ($period === 'month') {
-            $revenueTargetQuery->whereYear('month_year', $startDate->year)->whereMonth('month_year', $startDate->month);
-            $currentTarget = $revenueTargetQuery->sum('target_amount');
-        }
-
-        $targetAchievement = $currentTarget > 0 ? ($currentIncomeForTarget / $currentTarget) * 100 : 0;
-
-        $selectSums = [];
-        foreach ($incomeColumns as $column) {
-            $selectSums[] = DB::raw("SUM(IFNULL(`{$column}`, 0)) as total_{$column}");
-        }
-        $overallIncomeSource = (clone $filteredIncomeQuery)->select($selectSums)->first();
-
-        // Query untuk Chart Batang
-        $overallIncomeByProperty = (clone $filteredPropertyQuery) // Gunakan query yang sudah diurutkan
-            ->leftJoin('daily_incomes', 'properties.id', '=', 'daily_incomes.property_id')
-            ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {
-                $q->whereBetween('daily_incomes.date', [$startDate, $endDate]);
-            })
-            ->select('properties.name', 'properties.id', DB::raw("SUM({$incomeSumRaw}) as total_revenue"))
-            ->groupBy('properties.id', 'properties.name')
+        // 3. Data untuk Grafik Batang Pendapatan Event 12 Bulan Terakhir
+        $revenueData = Booking::select(
+                DB::raw('YEAR(event_date) as year, MONTH(event_date) as month'),
+                DB::raw('sum(total_price) as total')
+            )
+            ->where('status', 'Booking Pasti')
+            ->where('event_date', '>=', Carbon::now()->subMonths(11)->startOfMonth())
+            ->groupBy('year', 'month')
+            ->orderBy('year', 'asc')->orderBy('month', 'asc')
             ->get();
-
-        // Query untuk Kartu Detail
-        $dateFilter = function ($query) use ($startDate, $endDate) {
-            if ($startDate && $endDate) {
-                $query->whereBetween('date', [$startDate, $endDate]);
-            }
-        };
-        $propertiesQuery = (clone $filteredPropertyQuery);
-        foreach($incomeColumns as $column) {
-            $propertiesQuery->withSum(['dailyIncomes as total_'.$column => $dateFilter], $column);
+        
+        $barChartLabels = [];
+        $barChartData = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $date = Carbon::now()->subMonths($i);
+            $monthName = $date->format('M Y');
+            $barChartLabels[] = $monthName;
+            $found = $revenueData->first(fn($item) => $item->year == $date->year && $item->month == $date->month);
+            $barChartData[] = $found ? $found->total : 0;
         }
-        $properties = $propertiesQuery->withCount(['dailyIncomes as total_income_records' => $dateFilter])->get();
+        
+        $revenueChartData = [
+            'labels' => $barChartLabels,
+            'data' => $barChartData,
+        ];
 
-        $allPropertiesForFilter = Property::orderBy('name')->get();
-
-        return view('admin.dashboard', [
-            'totalProperties' => $totalProperties,
-            'totalIncome' => $totalIncome,
-            'occupancyRate' => $occupancyRate,
-            'adr' => $adr,
-            'revpar' => $revpar,
-            'currentTarget' => $currentTarget,
-            'currentIncomeForTarget' => $currentIncomeForTarget,
-            'targetAchievement' => $targetAchievement,
-            'properties' => $properties,
-            'allPropertiesForFilter' => $allPropertiesForFilter,
-            'propertyId' => $propertyId,
-            'period' => $period,
-            'overallIncomeSource' => $overallIncomeSource,
-            'overallIncomeByProperty' => $overallIncomeByProperty,
-            'incomeCategories' => $incomeCategories
-        ]);
+        return view('admin.sales_analytics', compact(
+            'totalEventRevenue',
+            'totalBookings',
+            'totalConfirmedBookings',
+            'totalActivePackages',
+            'pieChartData',
+            'revenueChartData'
+        ));
     }
+    
+    public function index(Request $request)
+{
+    $propertyId = $request->input('property_id');
+    $period = $request->input('period', 'year');
+
+    $startDate = null;
+    $endDate = null;
+    switch ($period) {
+        case 'today':
+            $startDate = Carbon::today()->startOfDay();
+            $endDate = Carbon::today()->endOfDay();
+            break;
+        case 'month':
+            $startDate = Carbon::now()->startOfMonth();
+            $endDate = Carbon::now()->endOfMonth();
+            break;
+        case 'year':
+            $startDate = Carbon::now()->startOfYear();
+            $endDate = Carbon::now()->endOfYear();
+            break;
+    }
+
+    $incomeCategories = [
+        'offline_room_income' => 'Walk In Guest','online_room_income'  => 'OTA',
+        'ta_income'           => 'TA/Travel Agent','gov_income'          => 'Gov/Government',
+        'corp_income'         => 'Corp/Corporation','compliment_income'   => 'Compliment',
+        'house_use_income'    => 'House Use','mice_income'         => 'MICE',
+        'fnb_income'          => 'F&B','others_income'       => 'Lainnya',
+    ];
+    $incomeColumns = array_keys($incomeCategories);
+    $incomeSumRaw = implode(' + ', array_map(fn($col) => "IFNULL(`$col`, 0)", $incomeColumns));
+    
+    $propertyQuery = Property::orderBy('id', 'asc');
+    
+    $dailyIncomeQuery = DailyIncome::query();
+    $revenueTargetQuery = RevenueTarget::query();
+
+    if ($propertyId) {
+        $propertyQuery->where('properties.id', $propertyId);
+        $dailyIncomeQuery->where('property_id', $propertyId);
+        $revenueTargetQuery->where('property_id', $propertyId);
+    }
+
+    if ($startDate && $endDate) {
+        $dailyIncomeQuery->whereBetween('date', [$startDate, $endDate]);
+    }
+
+    $filteredIncomeQuery = clone $dailyIncomeQuery;
+    $filteredPropertyQuery = clone $propertyQuery;
+
+    $totalProperties = $filteredPropertyQuery->count();
+    $totalIncome = (clone $filteredIncomeQuery)->sum(DB::raw($incomeSumRaw));
+
+    $currentIncomeForTarget = (clone $filteredIncomeQuery)->sum(DB::raw($incomeSumRaw));
+    $currentTarget = 0;
+    if ($period === 'year') {
+        $revenueTargetQuery->whereYear('month_year', $startDate->year);
+        $currentTarget = $revenueTargetQuery->sum('target_amount');
+    } elseif ($period === 'month') {
+        $revenueTargetQuery->whereYear('month_year', $startDate->year)->whereMonth('month_year', $startDate->month);
+        $currentTarget = $revenueTargetQuery->sum('target_amount');
+    }
+
+    $targetAchievement = $currentTarget > 0 ? ($currentIncomeForTarget / $currentTarget) * 100 : 0;
+
+    $selectSums = [];
+    foreach ($incomeColumns as $column) {
+        $selectSums[] = DB::raw("SUM(IFNULL(`{$column}`, 0)) as total_{$column}");
+    }
+    $overallIncomeSource = (clone $filteredIncomeQuery)->select($selectSums)->first();
+
+    // [DIUBAH] Query untuk Chart Batang, tambahkan 'chart_color'
+    $overallIncomeByProperty = (clone $filteredPropertyQuery)
+        ->leftJoin('daily_incomes', 'properties.id', '=', 'daily_incomes.property_id')
+        ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {
+            $q->whereBetween('daily_incomes.date', [$startDate, $endDate]);
+        })
+        ->select('properties.name', 'properties.id', 'properties.chart_color', DB::raw("SUM({$incomeSumRaw}) as total_revenue"))
+        ->groupBy('properties.id', 'properties.name', 'properties.chart_color') // Tambahkan juga di group by
+        ->get();
+
+    $dateFilter = function ($query) use ($startDate, $endDate) {
+        if ($startDate && $endDate) {
+            $query->whereBetween('date', [$startDate, $endDate]);
+        }
+    };
+    $propertiesQuery = (clone $filteredPropertyQuery);
+    foreach($incomeColumns as $column) {
+        $propertiesQuery->withSum(['dailyIncomes as total_'.$column => $dateFilter], $column);
+    }
+    $properties = $propertiesQuery->withCount(['dailyIncomes as total_income_records' => $dateFilter])->get();
+
+    $allPropertiesForFilter = Property::orderBy('name')->get();
+
+    return view('admin.dashboard', [
+        'totalProperties' => $totalProperties,'totalIncome' => $totalIncome,
+        'occupancyRate' => 0, 'adr' => 0, 'revpar' => 0, // Dibuat 0 karena belum ada logic-nya
+        'currentTarget' => $currentTarget, 'currentIncomeForTarget' => $currentIncomeForTarget,
+        'targetAchievement' => $targetAchievement,'properties' => $properties,
+        'allPropertiesForFilter' => $allPropertiesForFilter, 'propertyId' => $propertyId, 'period' => $period,
+        'overallIncomeSource' => $overallIncomeSource, 'overallIncomeByProperty' => $overallIncomeByProperty,
+        'incomeCategories' => $incomeCategories
+    ]);
+}
 
     public function kpiAnalysis(Request $request)
     {

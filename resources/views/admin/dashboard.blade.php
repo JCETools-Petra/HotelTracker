@@ -5,19 +5,9 @@
     @endphp
 
     <x-slot name="header">
-        <div class="flex flex-wrap justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                {{ __('Admin Dashboard') }}
-            </h2>
-            <nav class="flex space-x-4">
-                <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
-                    {{ __('Dashboard') }}
-                </x-nav-link>
-                <x-nav-link :href="route('admin.properties.compare.form')" :active="request()->routeIs('admin.properties.compare.form') || request()->routeIs('admin.properties.compare.results')">
-                    {{ __('Bandingkan Properti') }}
-                </x-nav-link>
-            </nav>
-        </div>
+        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+            {{ __('Admin Dashboard') }}
+        </h2>
     </x-slot>
 
     <div class="py-12">
@@ -59,40 +49,24 @@
                             <div class="w-full md:w-1/2">
                                 <canvas id="overallSourcePieChart"></canvas>
                             </div>
-                            <div class="w-full md:w-1/2 space-y-1"> {{-- Mengurangi space antar item menjadi space-y-1 --}}
-    @php
-        $pieData = collect($incomeCategories)->map(function($label, $key) use ($overallIncomeSource) {
-            return [
-                'label' => $label,
-                'value' => $overallIncomeSource['total_' . $key] ?? 0,
-            ];
-        });
-    @endphp
-    
-    {{-- ================== PERUBAHAN DI SINI ================== --}}
-    @foreach($pieData as $item)
-        @if($item['value'] > 0)
-            <div class="flex items-center p-1 rounded">
-                {{-- Menggunakan $loop->index untuk mendapatkan indeks numerik --}}
-                <span class="w-3 h-3 rounded-full mr-2 flex-shrink-0" style="background-color: {{ $chartColors[$loop->index % count($chartColors)] }};"></span>
-                <div class="flex justify-between items-center w-full text-xs"> {{-- Ukuran teks dikecilkan --}}
-                    
-                    {{-- Label akan terpotong (...) jika terlalu panjang --}}
-                    <span class="text-gray-600 dark:text-gray-400 mr-2 truncate" title="{{ $item['label'] }}">
-                        {{ $item['label'] }}
-                    </span>
-                    
-                    {{-- Angka tidak akan turun ke bawah --}}
-                    <span class="font-semibold text-gray-800 dark:text-gray-200 text-right whitespace-nowrap">
-                        Rp {{ number_format($item['value'], 0, ',', '.') }}
-                    </span>
-
-                </div>
-            </div>
-        @endif
-    @endforeach
-    {{-- ================== AKHIR PERUBAHAN ================== --}}
-</div>
+                            <div class="w-full md:w-1/2 space-y-1">
+                                @php
+                                    $pieData = collect($incomeCategories)->map(function($label, $key) use ($overallIncomeSource) {
+                                        return ['label' => $label, 'value' => $overallIncomeSource['total_' . $key] ?? 0];
+                                    });
+                                @endphp
+                                @foreach($pieData as $item)
+                                    @if($item['value'] > 0)
+                                        <div class="flex items-center p-1 rounded">
+                                            <span class="w-3 h-3 rounded-full mr-2 flex-shrink-0" style="background-color: {{ $chartColors[$loop->index % count($chartColors)] }};"></span>
+                                            <div class="flex justify-between items-center w-full text-xs">
+                                                <span class="text-gray-600 dark:text-gray-400 mr-2 truncate" title="{{ $item['label'] }}">{{ $item['label'] }}</span>
+                                                <span class="font-semibold text-gray-800 dark:text-gray-200 text-right whitespace-nowrap">Rp {{ number_format($item['value'], 0, ',', '.') }}</span>
+                                            </div>
+                                        </div>
+                                    @endif
+                                @endforeach
+                            </div>
                         </div>
                     </div>
 
@@ -108,6 +82,7 @@
                     <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Detail Properti</h3>
                     @if(!$properties->isEmpty() && isset($properties->first()->total_income_records))
                     <div class="flex space-x-2">
+                        {{-- Route untuk export sekarang menggunakan request()->query() untuk membawa filter --}}
                         <a href="{{ route('admin.dashboard.export.excel', request()->query()) }}" class="inline-flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest">Export Excel</a>
                         <a href="{{ route('admin.dashboard.export.csv', request()->query()) }}" class="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest">Export CSV</a>
                     </div>
@@ -116,24 +91,10 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     @forelse($properties as $property)
-                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow">
-                            <h4 class="font-semibold text-lg text-gray-900 dark:text-gray-100">{{ $property->name }}</h4>
-                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Total Catatan: {{ $property->total_income_records ?? 0 }}</p>
-                            
-                            @foreach($incomeCategories as $column => $label)
-                                @php
-                                    $sumProperty = 'total_' . $column;
-                                @endphp
-                                <p class="text-sm text-gray-600 dark:text-gray-400">
-                                    {{ $label }}: Rp {{ number_format($property->{$sumProperty} ?? 0, 0, ',', '.') }}
-                                </p>
-                            @endforeach
-                            
-                            <a href="{{ route('admin.properties.show', $property) }}" class="inline-block mt-2 text-sm text-blue-600 dark:text-blue-400 hover:underline">Lihat Detail</a>
-                        </div>
+                        @include('admin.properties._property_card', ['incomeCategories' => $incomeCategories])
                     @empty
                         <div class="col-span-full text-center py-8">
-                            <p class="text-gray-600 dark:text-gray-400">Tidak ada data properti yang ditemukan untuk filter yang dipilih.</p>
+                            <p class="text-gray-600 dark:text-gray-400">Tidak ada data properti yang ditemukan.</p>
                         </div>
                     @endforelse
                 </div>
@@ -142,7 +103,6 @@
     </div>
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const isDarkMode = document.documentElement.classList.contains('dark');
@@ -164,41 +124,12 @@ document.addEventListener('DOMContentLoaded', function () {
         if (hasPieData) {
             new Chart(overallSourceCanvas, {
                 type: 'pie',
-                data: {
-                    labels: pieLabels,
-                    datasets: [{
-                        label: 'Distribusi Pendapatan',
-                        data: pieData,
-                        backgroundColor: chartColors,
-                    }]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { 
-                        legend: { 
-                            display: false 
-                        },
-                        tooltip: {
-                           callbacks: {
-                                label: function(context) {
-                                    let label = context.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
-                                    if (context.parsed !== null) {
-                                        label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(context.parsed);
-                                    }
-                                    return label;
-                                }
-                            }
-                        }
-                    } 
-                }
+                data: { labels: pieLabels, datasets: [{ data: pieData, backgroundColor: chartColors, }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
         } else {
             const container = overallSourceCanvas.parentElement.parentElement;
-            container.innerHTML = `<div class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400 p-4 border dark:border-gray-700 rounded-lg" style="min-height: 300px;">Distribusi Sumber Pendapatan<br>Tidak ada data untuk filter ini.</div>`;
+            container.innerHTML = `<div class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400 p-4 border dark:border-gray-700 rounded-lg" style="min-height: 300px;">Tidak ada data untuk filter ini.</div>`;
         }
     }
 
@@ -206,6 +137,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const overallIncomeByPropertyCanvas = document.getElementById('overallIncomeByPropertyBarChart');
     if (overallIncomeByPropertyCanvas) {
         if (overallIncomeByPropertyData && overallIncomeByPropertyData.length > 0) {
+            // [DIUBAH] Ambil data warna dari properti
+            const propertyColors = overallIncomeByPropertyData.map(p => p.chart_color || '#36A2EB');
+
             new Chart(overallIncomeByPropertyCanvas, {
                 type: 'bar',
                 data: {
@@ -213,29 +147,15 @@ document.addEventListener('DOMContentLoaded', function () {
                     datasets: [{
                         label: 'Total Pendapatan (Rp)',
                         data: overallIncomeByPropertyData.map(p => p.total_revenue || 0),
-                        backgroundColor: '#36A2EB',
+                        backgroundColor: propertyColors, // Gunakan warna dari properti
+                        borderColor: propertyColors, // Gunakan warna dari properti
+                        borderWidth: 1
                     }]
                 },
                 options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    scales: { 
-                        y: { 
-                            beginAtZero: true, 
-                            ticks: { 
-                                callback: function(value) { return 'Rp ' + value.toLocaleString('id-ID'); }, 
-                                color: isDarkMode ? '#e5e7eb' : '#6b7280' 
-                            } 
-                        },
-                        x: { 
-                            ticks: { 
-                                color: isDarkMode ? '#e5e7eb' : '#6b7280' 
-                            } 
-                        }
-                    }, 
-                    plugins: { 
-                        legend: { display: false } 
-                    } 
+                    responsive: true, maintainAspectRatio: false, 
+                    scales: { y: { beginAtZero: true } }, 
+                    plugins: { legend: { display: false } } 
                 }
             });
         } else {

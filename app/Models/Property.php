@@ -11,7 +11,10 @@ class Property extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name'];
+    protected $fillable = [
+        'name',
+        'chart_color'
+    ];
 
     // Relasi: Satu Property dikelola oleh satu User (dalam skenario Anda)
     // Jika bisa banyak user, gunakan hasMany(User::class)
