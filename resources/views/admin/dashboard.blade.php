@@ -13,6 +13,7 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             
+            {{-- Filter Section --}}
             <div class="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
                 <form action="{{ route('admin.dashboard') }}" method="GET" class="flex flex-col md:flex-row md:items-end md:space-x-4 space-y-4 md:space-y-0">
                     <div class="flex-1">
@@ -39,10 +40,13 @@
                 </form>
             </div>
 
+            {{-- Main Content Section --}}
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
+                {{-- Overall Revenue Summary --}}
                 <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Ringkasan Pendapatan Keseluruhan (Periode: {{ Str::title($period) }})</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     
+                    {{-- Pie Chart --}}
                     <div class="p-4 border dark:border-gray-700 rounded-lg">
                         <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">Distribusi Sumber Pendapatan</h4>
                         <div class="flex flex-col md:flex-row items-center gap-4" style="min-height: 300px;">
@@ -52,7 +56,15 @@
                             <div class="w-full md:w-1/2 space-y-1">
                                 @php
                                     $pieData = collect($incomeCategories)->map(function($label, $key) use ($overallIncomeSource) {
-                                        return ['label' => $label, 'value' => $overallIncomeSource['total_' . $key] ?? 0];
+                                        // The original key from controller is like 'offline_room_income', but in $overallIncomeSource it becomes 'total_offline_room_income'
+                                        $sourceKey = 'total_' . str_replace('_income', '', $key) . '_income'; // Construct the correct key
+                                        if ($key === 'fnb_income') $sourceKey = 'total_fnb_income'; // special case from your controller logic
+                                        if ($key === 'mice_income') $sourceKey = 'total_mice_income';
+                                        
+                                        // Fallback for older keys if needed
+                                        $value = $overallIncomeSource->{$sourceKey} ?? ($overallIncomeSource['total_' . $key] ?? 0);
+
+                                        return ['label' => $label, 'value' => $value];
                                     });
                                 @endphp
                                 @foreach($pieData as $item)
@@ -70,6 +82,7 @@
                         </div>
                     </div>
 
+                    {{-- Bar Chart --}}
                     <div class="p-4 border dark:border-gray-700 rounded-lg">
                         <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">Total Pendapatan per Properti</h4>
                         <div style="height: 300px;">
@@ -78,26 +91,73 @@
                     </div>
                 </div>
 
+                {{-- Property Details Title and Export Buttons --}}
                 <div class="flex flex-wrap justify-between items-center mt-8 mb-4">
                     <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Detail Properti</h3>
                     @if(!$properties->isEmpty() && isset($properties->first()->total_income_records))
                     <div class="flex space-x-2">
-                        {{-- Route untuk export sekarang menggunakan request()->query() untuk membawa filter --}}
                         <a href="{{ route('admin.dashboard.export.excel', request()->query()) }}" class="inline-flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest">Export Excel</a>
                         <a href="{{ route('admin.dashboard.export.csv', request()->query()) }}" class="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest">Export CSV</a>
                     </div>
                     @endif
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {{-- Property Cards Grid --}}
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     @forelse($properties as $property)
-                        @include('admin.properties._property_card', ['incomeCategories' => $incomeCategories])
+                        <div class="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-lg shadow-sm">
+                           @include('admin.properties._property_card', ['incomeCategories' => $incomeCategories])
+                        </div>
                     @empty
                         <div class="col-span-full text-center py-8">
                             <p class="text-gray-600 dark:text-gray-400">Tidak ada data properti yang ditemukan.</p>
                         </div>
                     @endforelse
                 </div>
+                
+                {{-- >>>>> KODE BARU DIMULAI DARI SINI <<<<< --}}
+                {{-- Laporan Event MICE Lunas --}}
+                <div class="mt-8">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Laporan Event MICE Lunas Terbaru</h3>
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="p-0">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700/50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Event</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Hotel</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Kategori</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tanggal</th>
+                                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nilai</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    @forelse ($completedMiceEvents as $event)
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{{ $event->client_name }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $event->property->name ?? 'N/A' }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
+                                                    {{ $event->miceCategory->name ?? 'N/A' }}
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ \Carbon\Carbon::parse($event->event_date)->format('d M Y') }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-200 text-right">Rp {{ number_format($event->total_price, 0, ',', '.') }}</td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                                Belum ada data event MICE yang lunas untuk ditampilkan.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {{-- >>>>> KODE BARU BERAKHIR DI SINI <<<<< --}}
+
             </div>
         </div>
     </div>
@@ -118,7 +178,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const overallSourceCanvas = document.getElementById('overallSourcePieChart');
     if (overallSourceCanvas) {
         const pieLabels = Object.values(incomeCategories);
-        const pieData = overallIncomeSourceData ? Object.keys(incomeCategories).map(key => overallIncomeSourceData['total_' + key] || 0) : [];
+        
+        // Correctly map the keys for pie data
+        const pieData = overallIncomeSourceData 
+            ? Object.keys(incomeCategories).map(key => {
+                const sourceKey = 'total_' + key;
+                return overallIncomeSourceData[sourceKey] || 0;
+            }) 
+            : [];
+        
         const hasPieData = pieData.some(v => v > 0);
 
         if (hasPieData) {
@@ -137,7 +205,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const overallIncomeByPropertyCanvas = document.getElementById('overallIncomeByPropertyBarChart');
     if (overallIncomeByPropertyCanvas) {
         if (overallIncomeByPropertyData && overallIncomeByPropertyData.length > 0) {
-            // [DIUBAH] Ambil data warna dari properti
             const propertyColors = overallIncomeByPropertyData.map(p => p.chart_color || '#36A2EB');
 
             new Chart(overallIncomeByPropertyCanvas, {
@@ -147,8 +214,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     datasets: [{
                         label: 'Total Pendapatan (Rp)',
                         data: overallIncomeByPropertyData.map(p => p.total_revenue || 0),
-                        backgroundColor: propertyColors, // Gunakan warna dari properti
-                        borderColor: propertyColors, // Gunakan warna dari properti
+                        backgroundColor: propertyColors,
+                        borderColor: propertyColors,
                         borderWidth: 1
                     }]
                 },

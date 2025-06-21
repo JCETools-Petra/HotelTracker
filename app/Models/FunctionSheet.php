@@ -39,4 +39,8 @@ class FunctionSheet extends Model
     {
         return $this->belongsTo(PricePackage::class);
     }
+    public function miceCategory()
+{
+    return $this->belongsTo(MiceCategory::class);
+}
 }

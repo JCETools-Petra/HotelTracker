@@ -19,15 +19,16 @@
                         @error('client_name') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                     </div>
                     <div class="mt-4">
-                        <label for="event_type" class="block font-medium text-sm text-gray-700">Jenis Acara</label>
-                        <select name="event_type" id="event_type" class="block mt-1 w-full rounded-md shadow-sm border-gray-300" required>
-                            <option value="Meeting">Meeting</option>
-                            <option value="Seminar">Seminar</option>
-                            <option value="Wedding">Wedding</option>
-                            <option value="Gathering">Gathering</option>
-                            <option value="Lainnya">Lainnya</option>
+                        <label for="mice_category_id" class="block font-medium text-sm text-gray-700">Kategori MICE</label>
+                        <select name="mice_category_id" id="mice_category_id" class="block mt-1 w-full rounded-md shadow-sm border-gray-300" required>
+                            <option value="">-- Pilih Kategori --</option>
+                            @foreach ($miceCategories as $category)
+                                <option value="{{ $category->id }}" {{ old('mice_category_id') == $category->id ? 'selected' : '' }}>
+                                    {{ $category->name }}
+                                </option>
+                            @endforeach
                         </select>
-                        @error('event_type') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                        @error('mice_category_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                     </div>
                     <div class="mt-4">
                         <label for="event_date" class="block font-medium text-sm text-gray-700">Tanggal Acara</label>

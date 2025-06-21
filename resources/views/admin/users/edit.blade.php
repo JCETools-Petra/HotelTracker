@@ -5,9 +5,9 @@
                 {{ __('Edit Pengguna: ') }} <span class="font-bold">{{ $user->name }}</span>
             </h2>
             <nav>
-                <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.index')">
+                <a href="{{ route('admin.users.index') }}" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
                     {{ __('Kembali ke Daftar Pengguna') }}
-                </x-nav-link>
+                </a>
             </nav>
         </div>
     </x-slot>
@@ -73,7 +73,7 @@
                         </div>
 
                         <div class="flex items-center justify-end mt-6">
-                            <a href="{{ route('admin.users.index') }}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md ... mr-4">
+                            <a href="{{ route('admin.users.index') }}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800 mr-4">
                                 {{ __('Batal') }}
                             </a>
                             <x-primary-button>

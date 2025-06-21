@@ -4,195 +4,108 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\Property;
+use App\Models\Property; // <-- TAMBAHKAN IMPORT
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rules;
 
 class UserController extends Controller
 {
-    /**
-     * Menampilkan daftar semua pengguna. (Bisa diakses admin & owner)
-     */
     public function index()
     {
-        $users = User::with('property')
-                     ->orderBy('name', 'asc')
-                     ->paginate(15);
-
+        // Mengambil user dengan data propertinya jika ada
+        $users = User::with('property')->latest()->paginate(10);
         return view('admin.users.index', compact('users'));
     }
 
-    /**
-     * Menampilkan form untuk membuat pengguna baru. (HANYA ADMIN)
-     */
     public function create()
     {
-        if (auth()->user()->role !== 'admin') {
-            abort(403, 'Akses Ditolak. Hanya admin yang bisa membuat pengguna baru.');
-        }
-
+        // PERUBAHAN: Mengambil semua properti untuk ditampilkan di dropdown
         $properties = Property::orderBy('name')->get();
-        
-        // Definisikan peran yang bisa dipilih oleh admin
-        $roles = [
-            'admin' => 'Admin',
-            'owner' => 'Owner',
-            'pengguna_properti' => 'Pengguna Properti'
-        ];
-
-        return view('admin.users.create', compact('properties', 'roles'));
+        return view('admin.users.create', compact('properties'));
     }
 
-    /**
-     * Menyimpan pengguna baru ke database. (HANYA ADMIN)
-     */
     public function store(Request $request)
     {
-        if (auth()->user()->role !== 'admin') {
-            abort(403, 'Akses Ditolak. Hanya admin yang bisa membuat pengguna baru.');
-        }
-
+        // PERUBAHAN: Menambahkan validasi untuk property_id
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'role' => ['required', 'string'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => ['required', Rule::in(['admin', 'owner', 'pengguna_properti'])],
-            // Properti hanya wajib jika perannya adalah pengguna properti
+            // property_id wajib diisi jika rolenya adalah pengguna_properti
             'property_id' => ['nullable', 'required_if:role,pengguna_properti', 'exists:properties,id'],
         ]);
 
         User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password),
             'role' => $request->role,
-            // Set property_id ke null jika peran bukan pengguna_properti
-            'property_id' => $request->role === 'pengguna_properti' ? $request->property_id : null,
-            'email_verified_at' => now(),
-            'remember_token' => Str::random(10),
+            'password' => Hash::make($request->password),
+            // PERUBAHAN: Menyimpan property_id
+            'property_id' => $request->role == 'pengguna_properti' ? $request->property_id : null,
         ]);
 
-        return redirect()->route('admin.users.index')->with('success', 'Pengguna baru berhasil ditambahkan.');
+        return redirect()->route('admin.users.index')->with('success', 'User berhasil dibuat.');
     }
 
-    /**
-     * Menampilkan form untuk mengedit pengguna. (HANYA ADMIN)
-     */
     public function edit(User $user)
     {
-        if (auth()->user()->role !== 'admin') {
-            abort(403, 'Akses Ditolak. Hanya admin yang bisa mengedit pengguna.');
-        }
-
+        // PERUBAHAN: Mengambil semua properti untuk form edit
         $properties = Property::orderBy('name')->get();
-        
-        $roles = [
-            'admin' => 'Admin',
-            'owner' => 'Owner',
-            'pengguna_properti' => 'Pengguna Properti'
-        ];
-
-        return view('admin.users.edit', compact('user', 'properties', 'roles'));
+        return view('admin.users.edit', compact('user', 'properties'));
     }
 
-    /**
-     * Memperbarui pengguna di database. (HANYA ADMIN)
-     */
     public function update(Request $request, User $user)
     {
-        if (auth()->user()->role !== 'admin') {
-            abort(403, 'Akses Ditolak. Hanya admin yang bisa memperbarui pengguna.');
-        }
-
+        // PERUBAHAN: Menambahkan validasi untuk property_id
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique(User::class)->ignore($user->id)],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'role' => ['required', 'string'],
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
-            'role' => ['required', Rule::in(['admin', 'owner', 'pengguna_properti'])],
             'property_id' => ['nullable', 'required_if:role,pengguna_properti', 'exists:properties,id'],
         ]);
 
-        $user->name = $request->name;
-        $user->email = $request->email;
-        $user->role = $request->role;
-        $user->property_id = $request->role === 'pengguna_properti' ? $request->property_id : null;
+        $userData = [
+            'name' => $request->name,
+            'email' => $request->email,
+            'role' => $request->role,
+            // PERUBAHAN: Mengupdate property_id
+            'property_id' => $request->role == 'pengguna_properti' ? $request->property_id : null,
+        ];
 
-        if (!empty($request->password)) {
-            $user->password = Hash::make($request->password);
+        if ($request->filled('password')) {
+            $userData['password'] = Hash::make($request->password);
         }
 
-        $user->save();
+        $user->update($userData);
 
-        return redirect()->route('admin.users.index')->with('success', 'Data pengguna berhasil diperbarui.');
+        return redirect()->route('admin.users.index')->with('success', 'User berhasil diperbarui.');
     }
 
-    /**
-     * Melakukan soft delete pada pengguna. (HANYA ADMIN)
-     */
     public function destroy(User $user)
     {
-        if (auth()->user()->role !== 'admin') {
-            abort(403, 'Akses Ditolak. Hanya admin yang bisa menghapus pengguna.');
-        }
-        
-        if (Auth::id() === $user->id) {
-            return redirect()->route('admin.users.index')->with('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
-        }
-
         $user->delete();
-
-        return redirect()->route('admin.users.index')->with('success', 'Pengguna "' . $user->name . '" berhasil dinonaktifkan.');
+        return redirect()->route('admin.users.index')->with('success', 'User berhasil dihapus.');
     }
 
-    /**
-     * Menampilkan daftar pengguna yang sudah di-soft delete. (Bisa diakses admin & owner)
-     */
-    public function trashedIndex()
+    public function trashed()
     {
-        $trashedUsers = User::onlyTrashed()
-                            ->with('property')
-                            ->orderBy('deleted_at', 'desc')
-                            ->paginate(15);
-
-        return view('admin.users.trashed', compact('trashedUsers'));
+        $users = User::onlyTrashed()->with('property')->latest()->paginate(10);
+        return view('admin.users.trashed', compact('users'));
     }
 
-    /**
-     * Memulihkan pengguna yang di-soft delete. (HANYA ADMIN)
-     */
     public function restore($id)
     {
-        if (auth()->user()->role !== 'admin') {
-            abort(403, 'Akses Ditolak. Hanya admin yang bisa memulihkan pengguna.');
-        }
-        
-        $user = User::onlyTrashed()->findOrFail($id);
-        
-        if (User::where('email', $user->email)->whereNull('deleted_at')->exists()) {
-            return redirect()->route('admin.users.trashed')->with('error', 'Tidak dapat memulihkan pengguna. Alamat email "' . $user->email . '" sudah digunakan oleh pengguna aktif lain.');
-        }
-        
-        $user->restore();
-
-        return redirect()->route('admin.users.trashed')->with('success', 'Pengguna "' . $user->name . '" berhasil dipulihkan.');
+        User::onlyTrashed()->findOrFail($id)->restore();
+        return redirect()->route('admin.users.trashed')->with('success', 'User berhasil dipulihkan.');
     }
 
-    /**
-     * Menghapus pengguna secara permanen dari database. (HANYA ADMIN)
-     */
     public function forceDelete($id)
     {
-        if (auth()->user()->role !== 'admin') {
-            abort(403, 'Akses Ditolak. Hanya admin yang bisa menghapus permanen.');
-        }
-        
-        $user = User::onlyTrashed()->findOrFail($id);
-        $user->forceDelete();
-
-        return redirect()->route('admin.users.trashed')->with('success', 'Pengguna berhasil dihapus secara permanen.');
+        User::onlyTrashed()->findOrFail($id)->forceDelete();
+        return redirect()->route('admin.users.trashed')->with('success', 'User berhasil dihapus permanen.');
     }
 }

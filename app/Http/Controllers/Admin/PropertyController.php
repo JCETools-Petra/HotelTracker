@@ -10,8 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
-use App\Exports\PropertyIncomesExport;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
 
 class PropertyController extends Controller
 {
@@ -73,6 +73,7 @@ class PropertyController extends Controller
         if ($startDate && $endDate) {
             $incomesQuery->whereBetween('date', [$startDate, $endDate]);
         } else {
+            // Default ke bulan berjalan jika tidak ada filter tanggal
             $defaultStartDate = Carbon::now()->startOfMonth();
             $defaultEndDate = Carbon::now()->endOfMonth();
             $incomesQuery->whereBetween('date', [$defaultStartDate, $defaultEndDate]);
@@ -83,12 +84,18 @@ class PropertyController extends Controller
         $incomes = $incomesQuery->orderBy('date', 'desc')->paginate(30);
 
         $incomeCategories = [
-            'offline_room_income' => 'Walk In Guest', 'online_room_income'  => 'OTA',
-            'ta_income' => 'TA/Travel Agent', 'gov_income' => 'Gov/Government',
-            'corp_income' => 'Corp/Corporation', 'compliment_income' => 'Compliment',
-            'house_use_income' => 'House Use', 'mice_income' => 'MICE',
-            'fnb_income' => 'F&B', 'others_income' => 'Lainnya',
+            'offline_room_income' => 'Walk In Guest',
+            'online_room_income'  => 'OTA',
+            'ta_income'           => 'TA/Travel Agent',
+            'gov_income'          => 'Gov/Government',
+            'corp_income'         => 'Corp/Corporation',
+            'compliment_income'   => 'Compliment',
+            'house_use_income'    => 'House Use',
+            'mice_income'         => 'MICE',
+            'fnb_income'          => 'F&B',
+            'others_income'       => 'Lainnya',
         ];
+        
         $categoryColumns = array_keys($incomeCategories);
         $totalRevenueRaw = implode(' + ', array_map(fn($col) => "IFNULL(`$col`, 0)", $categoryColumns));
         
@@ -104,17 +111,29 @@ class PropertyController extends Controller
             $selectSums[] = DB::raw("SUM(IFNULL(`{$column}`, 0)) as total_{$column}");
         }
         $sourceDistribution = (clone $filteredQuery)->select($selectSums)->first();
-        $dailyTrend = (clone $filteredQuery)->select('date', DB::raw("SUM({$totalRevenueRaw}) as total_daily_income"))
+        
+        // Untuk tren, ambil 30 hari terakhir jika tidak ada filter
+        $trendQuery = DailyIncome::where('property_id', $property->id);
+        if ($startDate && $endDate) {
+            $trendQuery->whereBetween('date', [$startDate, $endDate]);
+        } else {
+            $trendQuery->whereBetween('date', [Carbon::now()->subDays(29)->startOfDay(), Carbon::now()->endOfDay()]);
+        }
+
+        $dailyTrend = $trendQuery->select('date', DB::raw("SUM({$totalRevenueRaw}) as total_daily_income"))
             ->groupBy('date')->orderBy('date', 'asc')->get();
 
-        $targetMonth = $displayStartDate->copy()->startOfMonth();
+        $targetMonth = $displayEndDate->copy()->startOfMonth();
         $revenueTarget = RevenueTarget::where('property_id', $property->id)
             ->where('month_year', $targetMonth->format('Y-m-d'))
             ->first();
 
         $monthlyTarget = $revenueTarget->target_amount ?? 0;
-        $dailyTarget = $monthlyTarget > 0 ? $monthlyTarget / $displayStartDate->daysInMonth : 0;
+        $daysInMonth = $displayEndDate->daysInMonth;
+        $dailyTarget = $daysInMonth > 0 ? $monthlyTarget / $daysInMonth : 0;
+        
         $lastDayIncome = (clone $filteredQuery)->whereDate('date', $displayEndDate->toDateString())->sum(DB::raw($totalRevenueRaw));
+        
         $dailyTargetAchievement = $dailyTarget > 0 ? ($lastDayIncome / $dailyTarget) * 100 : 0;
 
         return view('admin.properties.show', compact(
@@ -146,7 +165,7 @@ class PropertyController extends Controller
         
         $validatedData = $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('properties')->ignore($property->id)],
-            'chart_color' => 'nullable|string|size:7',
+            'chart_color' => 'nullable|string|size:7|starts_with:#',
         ]);
 
         $property->update($validatedData);
@@ -188,10 +207,10 @@ class PropertyController extends Controller
     public function showComparisonResults(Request $request)
     {
         $validated = $request->validate([
-            'properties_ids'   => 'required|array|min:2',
-            'properties_ids.*' => 'integer|exists:properties,id',
-            'start_date'       => 'required|date',
-            'end_date'         => 'required|date|after_or_equal:start_date',
+            'properties_ids'     => 'required|array|min:2',
+            'properties_ids.*'   => 'integer|exists:properties,id',
+            'start_date'         => 'required|date',
+            'end_date'           => 'required|date|after_or_equal:start_date',
         ]);
 
         $propertyIds = $validated['properties_ids'];
@@ -199,11 +218,16 @@ class PropertyController extends Controller
         $endDate = Carbon::parse($validated['end_date'])->endOfDay();
 
         $incomeCategories = [
-            'offline_room_income' => 'Walk In Guest', 'online_room_income'  => 'OTA',
-            'ta_income'           => 'TA/Travel Agent', 'gov_income'          => 'Gov/Government',
-            'corp_income'         => 'Corp/Corporation', 'compliment_income'   => 'Compliment',
-            'house_use_income'    => 'House Use', 'mice_income'         => 'MICE',
-            'fnb_income'          => 'F&B', 'others_income'       => 'Lainnya',
+            'offline_room_income' => 'Walk In Guest',
+            'online_room_income'  => 'OTA',
+            'ta_income'           => 'TA/Travel Agent',
+            'gov_income'          => 'Gov/Government',
+            'corp_income'         => 'Corp/Corporation',
+            'compliment_income'   => 'Compliment',
+            'house_use_income'    => 'House Use',
+            'mice_income'         => 'MICE',
+            'fnb_income'          => 'F&B',
+            'others_income'       => 'Lainnya',
         ];
         $categoryColumns = array_keys($incomeCategories);
         $categoryLabels = array_values($incomeCategories);
@@ -236,7 +260,7 @@ class PropertyController extends Controller
                     $dataValues[] = $propertyData[$column];
                 }
             }
-            $datasetsForGroupedBar[] = ['label' => $property->name, 'data' => $dataValues, 'backgroundColor' => $colors[$index % count($colors)]];
+            $datasetsForGroupedBar[] = ['label' => $property->name, 'data' => $dataValues, 'backgroundColor' => $property->chart_color ?? $colors[$index % count($colors)]];
         }
         $chartDataGroupedBar = ['labels' => $categoryLabels, 'datasets' => $datasetsForGroupedBar];
 
@@ -250,31 +274,18 @@ class PropertyController extends Controller
                 ->groupBy('date')->orderBy('date', 'asc')->get()->keyBy(fn($item) => Carbon::parse($item->date)->isoFormat('D MMM'));
             
             $trendDataPoints = $dateLabels->map(fn($label) => $dailyIncomes->get($label)->daily_total_revenue ?? 0);
-            $datasetsForTrend[] = ['label' => $property->name, 'data' => $trendDataPoints, 'borderColor' => $colors[$index % count($colors)], 'fill' => false];
+            $datasetsForTrend[] = ['label' => $property->name, 'data' => $trendDataPoints, 'borderColor' => $property->chart_color ?? $colors[$index % count($colors)], 'fill' => false, 'tension' => 0.1];
         }
         $trendChartData = ['labels' => $dateLabels, 'datasets' => $datasetsForTrend];
 
         return view('admin.properties.compare_results', [
             'selectedPropertiesModels' => $selectedPropertiesModels,
-            'startDateFormatted' => $startDate->isoFormat('D MMMM'),
-            'endDateFormatted' => $endDate->isoFormat('D MMMM'),
+            'startDateFormatted' => $startDate->isoFormat('D MMMM YYYY'),
+            'endDateFormatted' => $endDate->isoFormat('D MMMM YYYY'),
             'comparisonData' => $comparisonData,
             'chartDataGroupedBar' => $chartDataGroupedBar,
             'trendChartData' => $trendChartData,
             'incomeCategories' => $incomeCategories,
         ]);
-    }
-    
-    /**
-     * Menangani permintaan ekspor detail pendapatan properti.
-     */
-    public function exportPropertyDetailsExcel(Property $property, Request $request)
-    {
-        return redirect()->back()->with('info', 'Fitur export sedang dalam pengembangan.');
-    }
-
-    public function exportPropertyDetailsCsv(Property $property, Request $request)
-    {
-        return redirect()->back()->with('info', 'Fitur export sedang dalam pengembangan.');
     }
 }

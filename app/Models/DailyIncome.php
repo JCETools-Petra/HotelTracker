@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DailyIncome extends Model
 {
@@ -17,40 +16,52 @@ class DailyIncome extends Model
      */
     protected $fillable = [
         'property_id',
-        'user_id', // Ditambahkan
+        'user_id', // Ditambahkan sesuai logika controller
         'date',
+        
+        // Kolom jumlah kamar
         'offline_rooms',
-        'offline_room_income', // Diperbaiki dari offline_income
         'online_rooms',
-        'online_room_income',  // Diperbaiki dari online_income
         'ta_rooms',
-        'ta_income',
         'gov_rooms',
-        'gov_income',
         'corp_rooms',
-        'corp_income',
         'compliment_rooms',
-        'compliment_income',
         'house_use_rooms',
+
+        // Kolom pendapatan
+        'offline_room_income',
+        'online_room_income',
+        'ta_income',
+        'gov_income',
+        'corp_income',
+        'compliment_income',
         'house_use_income',
-        'mice_income',    // Ditambahkan
-        'fnb_income',     // Ditambahkan
-        'others_income',  // Ditambahkan
+        'mice_income',
+        'fnb_income',
+        'others_income',
     ];
 
-
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
-        'date' => 'date', // Pastikan kolom date di-cast sebagai objek Carbon/Date
+        'date' => 'date',
     ];
 
-    // Relasi: DailyIncome dimiliki oleh satu Property
-    public function property(): BelongsTo
+    /**
+     * Mendapatkan properti yang memiliki pendapatan ini.
+     */
+    public function property()
     {
         return $this->belongsTo(Property::class);
     }
-
-    // Relasi: DailyIncome dicatat oleh satu User
-    public function user(): BelongsTo
+    
+    /**
+     * Mendapatkan pengguna yang mencatat pendapatan ini.
+     */
+    public function user()
     {
         return $this->belongsTo(User::class);
     }

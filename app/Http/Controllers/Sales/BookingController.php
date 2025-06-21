@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use App\Models\FunctionSheet; 
 use Illuminate\Support\Str;
 use App\Models\PricePackage;
+use App\Models\MiceCategory;
 
 class BookingController extends Controller
 {
@@ -66,7 +67,8 @@ class BookingController extends Controller
     public function create()
     {
         $properties = Property::orderBy('name')->get();
-        return view('sales.bookings.create', compact('properties'));
+        $miceCategories = MiceCategory::all();
+        return view('sales.bookings.create', compact('properties', 'packages', 'miceCategories'));
     }
 
     public function store(Request $request)
@@ -103,7 +105,8 @@ class BookingController extends Controller
     public function edit(Booking $booking)
     {
         $properties = Property::orderBy('name')->get();
-        return view('sales.bookings.edit', compact('booking', 'properties'));
+        $miceCategories = MiceCategory::all();
+        return view('sales.bookings.edit', compact('booking', 'properties', 'packages', 'miceCategories'));
     }
 
     public function update(Request $request, Booking $booking)

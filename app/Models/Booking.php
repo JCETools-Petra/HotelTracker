@@ -24,6 +24,8 @@ class Booking extends Model
         'total_price',      // <-- PASTIKAN INI ADA
         'down_payment',     // <-- PASTIKAN INI ADA
         'notes',
+        'mice_category_id', // Tambahkan ini
+        'payment_status',
     ];
 
     public function property()
@@ -34,5 +36,9 @@ class Booking extends Model
     public function functionSheet()
     {
         return $this->hasOne(FunctionSheet::class);
+    }
+    public function miceCategory()
+    {
+        return $this->belongsTo(\App\Models\MiceCategory::class);
     }
 }

@@ -88,6 +88,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::resource('price-packages', PricePackageController::class);
             Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
             Route::post('settings', [SettingController::class, 'store'])->name('settings.store');
+            Route::resource('mice-categories', App\Http\Controllers\Admin\MiceCategoryController::class);
         });
     
     // Grup route untuk Sales

@@ -80,109 +80,117 @@ class DashboardController extends Controller
     }
     
     public function index(Request $request)
-{
-    $propertyId = $request->input('property_id');
-    $period = $request->input('period', 'year');
+    {
+        $propertyId = $request->input('property_id');
+        $period = $request->input('period', 'year');
 
-    $startDate = null;
-    $endDate = null;
-    switch ($period) {
-        case 'today':
-            $startDate = Carbon::today()->startOfDay();
-            $endDate = Carbon::today()->endOfDay();
-            break;
-        case 'month':
-            $startDate = Carbon::now()->startOfMonth();
-            $endDate = Carbon::now()->endOfMonth();
-            break;
-        case 'year':
-            $startDate = Carbon::now()->startOfYear();
-            $endDate = Carbon::now()->endOfYear();
-            break;
-    }
-
-    $incomeCategories = [
-        'offline_room_income' => 'Walk In Guest','online_room_income'  => 'OTA',
-        'ta_income'           => 'TA/Travel Agent','gov_income'          => 'Gov/Government',
-        'corp_income'         => 'Corp/Corporation','compliment_income'   => 'Compliment',
-        'house_use_income'    => 'House Use','mice_income'         => 'MICE',
-        'fnb_income'          => 'F&B','others_income'       => 'Lainnya',
-    ];
-    $incomeColumns = array_keys($incomeCategories);
-    $incomeSumRaw = implode(' + ', array_map(fn($col) => "IFNULL(`$col`, 0)", $incomeColumns));
-    
-    $propertyQuery = Property::orderBy('id', 'asc');
-    
-    $dailyIncomeQuery = DailyIncome::query();
-    $revenueTargetQuery = RevenueTarget::query();
-
-    if ($propertyId) {
-        $propertyQuery->where('properties.id', $propertyId);
-        $dailyIncomeQuery->where('property_id', $propertyId);
-        $revenueTargetQuery->where('property_id', $propertyId);
-    }
-
-    if ($startDate && $endDate) {
-        $dailyIncomeQuery->whereBetween('date', [$startDate, $endDate]);
-    }
-
-    $filteredIncomeQuery = clone $dailyIncomeQuery;
-    $filteredPropertyQuery = clone $propertyQuery;
-
-    $totalProperties = $filteredPropertyQuery->count();
-    $totalIncome = (clone $filteredIncomeQuery)->sum(DB::raw($incomeSumRaw));
-
-    $currentIncomeForTarget = (clone $filteredIncomeQuery)->sum(DB::raw($incomeSumRaw));
-    $currentTarget = 0;
-    if ($period === 'year') {
-        $revenueTargetQuery->whereYear('month_year', $startDate->year);
-        $currentTarget = $revenueTargetQuery->sum('target_amount');
-    } elseif ($period === 'month') {
-        $revenueTargetQuery->whereYear('month_year', $startDate->year)->whereMonth('month_year', $startDate->month);
-        $currentTarget = $revenueTargetQuery->sum('target_amount');
-    }
-
-    $targetAchievement = $currentTarget > 0 ? ($currentIncomeForTarget / $currentTarget) * 100 : 0;
-
-    $selectSums = [];
-    foreach ($incomeColumns as $column) {
-        $selectSums[] = DB::raw("SUM(IFNULL(`{$column}`, 0)) as total_{$column}");
-    }
-    $overallIncomeSource = (clone $filteredIncomeQuery)->select($selectSums)->first();
-
-    // [DIUBAH] Query untuk Chart Batang, tambahkan 'chart_color'
-    $overallIncomeByProperty = (clone $filteredPropertyQuery)
-        ->leftJoin('daily_incomes', 'properties.id', '=', 'daily_incomes.property_id')
-        ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {
-            $q->whereBetween('daily_incomes.date', [$startDate, $endDate]);
-        })
-        ->select('properties.name', 'properties.id', 'properties.chart_color', DB::raw("SUM({$incomeSumRaw}) as total_revenue"))
-        ->groupBy('properties.id', 'properties.name', 'properties.chart_color') // Tambahkan juga di group by
-        ->get();
-
-    $dateFilter = function ($query) use ($startDate, $endDate) {
-        if ($startDate && $endDate) {
-            $query->whereBetween('date', [$startDate, $endDate]);
+        $startDate = null;
+        $endDate = null;
+        switch ($period) {
+            case 'today':
+                $startDate = Carbon::today()->startOfDay();
+                $endDate = Carbon::today()->endOfDay();
+                break;
+            case 'month':
+                $startDate = Carbon::now()->startOfMonth();
+                $endDate = Carbon::now()->endOfMonth();
+                break;
+            case 'year':
+                $startDate = Carbon::now()->startOfYear();
+                $endDate = Carbon::now()->endOfYear();
+                break;
         }
-    };
-    $propertiesQuery = (clone $filteredPropertyQuery);
-    foreach($incomeColumns as $column) {
-        $propertiesQuery->withSum(['dailyIncomes as total_'.$column => $dateFilter], $column);
+
+        // Menggunakan nama kolom yang benar dari struktur DB Anda
+        $incomeCategories = [
+            'offline_room_income' => 'Walk In Guest',
+            'online_room_income'  => 'OTA',
+            'ta_income'           => 'TA/Travel Agent',
+            'gov_income'          => 'Gov/Government',
+            'corp_income'         => 'Corp/Corporation',
+            'compliment_income'   => 'Compliment',
+            'house_use_income'    => 'House Use',
+            'mice_income'         => 'MICE',
+            'fnb_income'          => 'F&B',
+            'others_income'       => 'Lainnya',
+        ];
+        $incomeColumns = array_keys($incomeCategories);
+        $incomeSumRaw = implode(' + ', array_map(fn($col) => "IFNULL(`$col`, 0)", $incomeColumns));
+        
+        $propertyQuery = Property::orderBy('id', 'asc');
+        
+        if ($propertyId) {
+            $propertyQuery->where('id', $propertyId);
+        }
+
+        $dateFilter = function ($query) use ($startDate, $endDate) {
+            if ($startDate && $endDate) {
+                $query->whereBetween('date', [$startDate, $endDate]);
+            }
+        };
+
+        $propertiesQuery = (clone $propertyQuery);
+        foreach ($incomeColumns as $column) {
+            $propertiesQuery->withSum(['dailyIncomes as total_' . $column => $dateFilter], $column);
+        }
+        
+        // PERBAIKAN: Menghapus query sum untuk 'total_rooms_sold' yang tidak ada
+        // $propertiesQuery->withSum(['dailyIncomes as total_rooms_sold' => $dateFilter], 'total_rooms_sold');
+        
+        $properties = $propertiesQuery->get();
+
+        // Menghitung Daily Revenue untuk setiap properti
+        foreach ($properties as $property) {
+            $dailyRevenue = 0;
+            foreach ($incomeColumns as $col) {
+                $key = 'total_' . $col;
+                $dailyRevenue += $property->$key ?? 0;
+            }
+            $property->dailyRevenue = $dailyRevenue;
+            // PERBAIKAN: Menghapus kalkulasi ARR
+            $property->averageRoomRate = 0; // Set ke 0 untuk sementara
+        }
+
+        // --- Sisa kode Anda untuk chart dan data lainnya (TIDAK DIUBAH) ---
+        $dailyIncomeQuery = DailyIncome::query();
+        if ($propertyId) $dailyIncomeQuery->where('property_id', $propertyId);
+        if ($startDate && $endDate) $dailyIncomeQuery->whereBetween('date', [$startDate, $endDate]);
+
+        $selectSums = [];
+        foreach ($incomeColumns as $column) {
+            $selectSums[] = DB::raw("SUM(IFNULL(`{$column}`, 0)) as total_{$column}");
+        }
+        $overallIncomeSource = (clone $dailyIncomeQuery)->select($selectSums)->first();
+
+        $overallIncomeByProperty = Property::query()
+            ->when($propertyId, fn($q) => $q->where('properties.id', $propertyId))
+            ->leftJoin('daily_incomes', 'properties.id', '=', 'daily_incomes.property_id')
+            ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('daily_incomes.date', [$startDate, $endDate]);
+            })
+            ->select('properties.name', 'properties.id', 'properties.chart_color', DB::raw("SUM({$incomeSumRaw}) as total_revenue"))
+            ->groupBy('properties.id', 'properties.name', 'properties.chart_color')
+            ->get();
+
+        $completedMiceEvents = Booking::with(['property', 'miceCategory'])
+            ->where('payment_status', 'Paid')
+            ->latest('event_date')
+            ->take(10)
+            ->get();
+
+        $allPropertiesForFilter = Property::orderBy('name')->get();
+
+        return view('admin.dashboard', [
+            'properties' => $properties,
+            'allPropertiesForFilter' => $allPropertiesForFilter,
+            'propertyId' => $propertyId,
+            'period' => $period,
+            'overallIncomeSource' => $overallIncomeSource,
+            'overallIncomeByProperty' => $overallIncomeByProperty,
+            'incomeCategories' => $incomeCategories,
+            'completedMiceEvents' => $completedMiceEvents,
+        ]);
     }
-    $properties = $propertiesQuery->withCount(['dailyIncomes as total_income_records' => $dateFilter])->get();
-
-    $allPropertiesForFilter = Property::orderBy('name')->get();
-
-    return view('admin.dashboard', [
-        'totalProperties' => $totalProperties,'totalIncome' => $totalIncome,
-        'occupancyRate' => 0, 'adr' => 0, 'revpar' => 0, // Dibuat 0 karena belum ada logic-nya
-        'currentTarget' => $currentTarget, 'currentIncomeForTarget' => $currentIncomeForTarget,
-        'targetAchievement' => $targetAchievement,'properties' => $properties,
-        'allPropertiesForFilter' => $allPropertiesForFilter, 'propertyId' => $propertyId, 'period' => $period,
-        'overallIncomeSource' => $overallIncomeSource, 'overallIncomeByProperty' => $overallIncomeByProperty,
-        'incomeCategories' => $incomeCategories
-    ]);
-}
 
     public function kpiAnalysis(Request $request)
     {

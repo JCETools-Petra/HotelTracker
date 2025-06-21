@@ -2,16 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail; // Jika Anda menggunakan verifikasi email
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\SoftDeletes; // <-- 1. IMPORT SoftDeletes TRAIT
-use Illuminate\Database\Eloquent\Relations\BelongsTo; // Untuk relasi property
 
-class User extends Authenticatable implements MustVerifyEmail // Implement MustVerifyEmail jika Anda menggunakannya
+class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasFactory, Notifiable, SoftDeletes; // <-- 2. GUNAKAN SoftDeletes TRAIT DI SINI
+    use HasFactory, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -22,9 +21,8 @@ class User extends Authenticatable implements MustVerifyEmail // Implement MustV
         'name',
         'email',
         'password',
-        'role',         // Pastikan 'role' ada di sini jika Anda mengisinya via create()
-        'property_id',  // Pastikan 'property_id' ada di sini
-        'email_verified_at', // Jika Anda mengatur ini saat create user
+        'role',
+        'property_id', // <-- TAMBAHKAN INI
     ];
 
     /**
@@ -38,20 +36,23 @@ class User extends Authenticatable implements MustVerifyEmail // Implement MustV
     ];
 
     /**
-     * The attributes that should be cast.
+     * Get the attributes that should be cast.
      *
-     * @var array<string, string>
+     * @return array<string, string>
      */
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-        'deleted_at' => 'datetime', // Opsional, tapi baik untuk konsistensi casting
-    ];
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
+    }
 
     /**
-     * Mendapatkan properti yang terkait dengan pengguna (jika pengguna adalah tipe 'pengguna_properti').
+     * TAMBAHAN: Definisikan relasi "belongsTo" ke model Property.
+     * Ini memungkinkan kita untuk mengambil data properti dari user.
      */
-    public function property(): BelongsTo
+    public function property()
     {
         return $this->belongsTo(Property::class);
     }

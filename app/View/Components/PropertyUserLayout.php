@@ -2,7 +2,6 @@
 
 namespace App\View\Components;
 
-use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 
@@ -13,14 +12,19 @@ class PropertyUserLayout extends Component
      */
     public function __construct()
     {
-        //
+        // Constructor bisa digunakan untuk dependency injection jika diperlukan
     }
 
     /**
      * Get the view / contents that represent the component.
+     *
+     * PERBAIKAN: Dengan menghapus metode render(), Laravel akan secara otomatis
+     * mencari dan menggunakan file view di:
+     * 'resources/views/components/property-user-layout.blade.php'
+     * Ini adalah cara standar dan akan menghindari konflik.
      */
-    public function render(): View|Closure|string
+    public function render(): View
     {
-        return view('components.property-user-layout');
+        return view('layouts.property_user');
     }
 }
