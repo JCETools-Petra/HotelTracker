@@ -1,20 +1,32 @@
 <aside class="flex-shrink-0 w-64 bg-white dark:bg-gray-800 border-r dark:border-gray-700 flex flex-col">
     <div class="h-16 flex items-center justify-center border-b dark:border-gray-700 px-4">
-    <a href="{{ route('dashboard') }}">
-        @if($appSettings['logo_path'] ?? null)
-            {{-- Jika ada logo kustom, tampilkan --}}
-            <img src="{{ asset('storage/' . $appSettings['logo_path']) }}" alt="App Logo" style="width: auto; height: {{ $appSettings['logo_size'] ?? 40 }}px;">
-        @else
-            {{-- Jika tidak, tampilkan logo default --}}
-            <x-application-logo class="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200" />
-        @endif
-    </a>
-</div>
+        <a href="{{ route('dashboard') }}">
+            {{-- ======================= AWAL BLOK YANG DIUBAH ======================= --}}
+            @php
+                // Menggunakan kunci 'logo_path' dan pengaturan ukuran 'sidebar_logo_size'
+                $logoPath = $appSettings['logo_path'] ?? null;
+                $sidebarLogoSize = $appSettings['sidebar_logo_size'] ?? 40; // Default 40px
+                $appName = $appSettings['app_name'] ?? config('app.name', 'Laravel');
+            @endphp
+
+            @if($logoPath)
+                {{-- Jika ada logo kustom, tampilkan --}}
+                <img src="{{ asset('storage/' . $logoPath) }}" 
+                     alt="App Logo" 
+                     style="height: {{ $sidebarLogoSize }}px;"
+                     class="w-auto">
+            @else
+                {{-- Jika tidak, tampilkan nama aplikasi sebagai teks --}}
+                <span class="text-lg font-bold text-gray-800 dark:text-gray-200">{{ $appName }}</span>
+            @endif
+            {{-- ======================= AKHIR BLOK YANG DIUBAH ====================== --}}
+        </a>
+    </div>
 
     <nav class="flex-grow p-4 space-y-2">
         @auth
             {{-- ============================ --}}
-            {{--   MENU UNTUK ADMIN & OWNER   --}}
+            {{--    MENU UNTUK ADMIN & OWNER    --}}
             {{-- ============================ --}}
             @if(Auth::user()->role === 'admin' || Auth::user()->role === 'owner')
                 <x-side-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
@@ -81,10 +93,10 @@
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                 </x-slot>
                 {{ __('Pengaturan') }}
-            </x-side-nav-link>
+                </x-side-nav-link>
 
             {{-- ================== --}}
-            {{--   MENU UNTUK SALES   --}}
+            {{--    MENU UNTUK SALES    --}}
             {{-- ================== --}}
             @elseif(Auth::user()->role === 'sales')
                 <x-side-nav-link :href="route('sales.dashboard')" :active="request()->routeIs('sales.dashboard')">
@@ -109,7 +121,7 @@
                 </x-side-nav-link>
             
             {{-- ============================ --}}
-            {{--   MENU UNTUK PENGGUNA PROPERTI   --}}
+            {{--    MENU UNTUK PENGGUNA PROPERTI    --}}
             {{-- ============================ --}}
             @elseif(Auth::user()->role === 'pengguna_properti')
                 <x-side-nav-link :href="route('property.dashboard')" :active="request()->routeIs('property.dashboard')">

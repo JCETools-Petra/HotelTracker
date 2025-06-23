@@ -13,12 +13,23 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // [BARU] Kirim data pengaturan logo ke sidebar setiap kali view-nya dimuat
-        View::composer('layouts.sidebar', function ($view) {
+        // Coba ambil pengaturan dari cache
+        try {
             $settings = Cache::remember('app_settings', 60, function () {
-                return Setting::pluck('value', 'key');
+                // Pastikan tabel settings ada sebelum menjalankan query
+                if (\Illuminate\Support\Facades\Schema::hasTable('settings')) {
+                    return Setting::pluck('value', 'key');
+                }
+                return collect(); // Kembalikan koleksi kosong jika tabel tidak ada
             });
-            $view->with('appSettings', $settings);
-        });
+
+            // Bagikan data pengaturan ke semua view
+            View::share('appSettings', $settings);
+
+        } catch (\Exception $e) {
+            // Tangani error jika terjadi (misalnya, saat migrasi awal)
+            // Dengan cara ini, aplikasi tidak akan crash saat `php artisan migrate`
+            View::share('appSettings', collect());
+        }
     }
 }

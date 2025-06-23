@@ -80,7 +80,7 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ $booking->booking_number }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ $booking->client_name }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ \Carbon\Carbon::parse($booking->event_date)->format('d M Y') }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ $booking->property->name ?? 'N/A' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ $booking->room->name ?? 'N/A' }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                             @if($booking->status == 'Booking Pasti') bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100
@@ -89,28 +89,32 @@
                                             {{ $booking->status }}
                                         </span>
                                     </td>
+                                    {{-- ======================= AWAL BLOK YANG DIUBAH ======================= --}}
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                       <div class="flex items-center space-x-3">
-                                            <a href="{{ route('sales.bookings.edit', $booking) }}" class="text-indigo-600 hover:text-indigo-400" title="Edit Booking">Edit</a>
+                                        <div class="flex items-center space-x-2">
+                                            
+                                            <a href="{{ route('sales.bookings.edit', $booking) }}" class="px-2 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700" title="Edit Booking">Edit</a>
                                             
                                             @if($booking->status == 'Booking Pasti')
                                                 @if($booking->functionSheet)
-                                                    <a href="{{ route('sales.bookings.showBeo', $booking) }}" class="text-blue-600 hover:text-blue-400" title="Lihat BEO">Lihat</a>
-                                                    <a href="{{ route('sales.bookings.beo', $booking) }}" class="text-green-600 hover:text-green-400" title="Edit Function Sheet">BEO</a>
+                                                    <a href="{{ route('sales.bookings.showBeo', $booking) }}" class="px-2 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700" title="Lihat BEO">Lihat BEO</a>
+                                                    <a href="{{ route('sales.bookings.beo', $booking) }}" class="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700" title="Edit Function Sheet">Edit BEO</a>
                                                 @else
-                                                    <a href="{{ route('sales.bookings.beo', $booking) }}" class="text-green-600 hover:text-green-400" title="Lengkapi Function Sheet">BEO</a>
+                                                    <a href="{{ route('sales.bookings.beo', $booking) }}" class="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700" title="Lengkapi Function Sheet">Buat BEO</a>
                                                 @endif
                                             @endif
                                             
-                                            <a href="{{ route('sales.documents.quotation', $booking) }}" class="text-gray-500 hover:text-gray-300" title="Download Quotation">Quote</a>
+                                            <a href="{{ route('sales.documents.quotation', $booking) }}" class="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700" title="Download Quotation">Quote</a>
                                             
                                             <form action="{{ route('sales.bookings.destroy', $booking) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus booking ini?');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="text-red-600 hover:text-red-400" title="Hapus Booking">Hapus</button>
+                                                <button type="submit" class="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700" title="Hapus Booking">Hapus</button>
                                             </form>
+
                                         </div>
                                     </td>
+                                    {{-- ======================= AKHIR BLOK YANG DIUBAH ====================== --}}
                                 </tr>
                             @empty
                                 <tr>
