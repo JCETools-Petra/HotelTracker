@@ -1,7 +1,7 @@
 <x-app-layout>
     @php
         // Definisikan warna di sini agar bisa diakses oleh HTML dan JavaScript
-        $chartColors = ['#e6194B', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#42d4f4', '#f032e6', '#bfef45', '#808000'];
+        $chartColors = ['#e6194B', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#42d4f4', '#f032e6', '#bfef45', '#808000', '#000075', '#a9a9a9'];
     @endphp
 
     <x-slot name="header">
@@ -44,6 +44,7 @@
                 <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Ringkasan Pendapatan Keseluruhan (Periode: {{ Str::title($period) }})</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     
+                    {{-- ======================= PIE CHART DENGAN BREAKDOWN F&B ======================= --}}
                     <div class="p-4 border dark:border-gray-700 rounded-lg">
                         <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">Distribusi Sumber Pendapatan</h4>
                         <div id="pieChartContainer" class="flex flex-col md:flex-row items-center gap-4" style="min-height: 300px;">
@@ -64,10 +65,6 @@
                     </div>
                 </div>
 
-                {{-- ========================================================== --}}
-                {{-- >> KODE LENGKAP DIMULAI DI SINI << --}}
-                {{-- ========================================================== --}}
-
                 {{-- Property Details Title and Export Buttons --}}
                 <div class="flex flex-wrap justify-between items-center mt-8 mb-4">
                     <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Detail Properti</h3>
@@ -83,7 +80,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     @forelse($properties as $property)
                         <div class="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-lg shadow-sm">
-                           @include('admin.properties._property_card', ['incomeCategories' => $incomeCategories])
+                            @include('admin.properties._property_card', ['incomeCategories' => $incomeCategories])
                         </div>
                     @empty
                         <div class="col-span-full text-center py-8">
@@ -132,11 +129,6 @@
                         </div>
                     </div>
                 </div>
-
-                {{-- ========================================================== --}}
-                {{-- >> AKHIR DARI KODE LENGKAP << --}}
-                {{-- ========================================================== --}}
-
             </div>
         </div>
     </div>
@@ -157,6 +149,7 @@
         let myPieChart;
 
         // >> SCRIPT UNTUK MEMBUAT PIE CHART INTERAKTIF <<
+        // Kode ini sekarang secara otomatis akan menyertakan Breakfast, Lunch, dan Dinner
         const pieCanvas = document.getElementById('overallSourcePieChart');
         const pieLegendContainer = document.getElementById('pieChartLegend');
         const pieChartContainer = document.getElementById('pieChartContainer');

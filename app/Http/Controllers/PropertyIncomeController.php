@@ -19,10 +19,6 @@ class PropertyIncomeController extends Controller
     public function dashboard()
     {
         $user = Auth::user();
-        if (!$user) {
-            return redirect()->route('login');
-        }
-
         $property = $user->property;
 
         if (!$property) {
@@ -101,7 +97,7 @@ class PropertyIncomeController extends Controller
             return redirect('/')->with('error', 'Tidak dapat menyimpan data, Anda tidak terkait dengan properti.');
         }
 
-        // 1. Validasi semua input dari form
+        // 1. Validasi semua input dari form (DENGAN KOLOM BARU)
         $validatedData = $request->validate([
             'date' => 'required|date|unique:daily_incomes,date,NULL,id,property_id,'.$property->id,
             'offline_rooms' => 'required|integer|min:0',
@@ -119,7 +115,9 @@ class PropertyIncomeController extends Controller
             'house_use_rooms' => 'required|integer|min:0',
             'house_use_income' => 'required|numeric|min:0',
             'mice_income' => 'required|numeric|min:0',
-            'fnb_income' => 'required|numeric|min:0',
+            'breakfast_income' => 'required|numeric|min:0',
+            'lunch_income' => 'required|numeric|min:0',
+            'dinner_income' => 'required|numeric|min:0',
             'others_income' => 'required|numeric|min:0',
         ], [
             'date.unique' => 'Pendapatan untuk tanggal ini sudah pernah dicatat.',
@@ -136,47 +134,23 @@ class PropertyIncomeController extends Controller
             $validatedData['gov_income'] + $validatedData['corp_income'] + $validatedData['compliment_income'] +
             $validatedData['house_use_income'] + $validatedData['mice_income'];
 
-        $total_revenue = $total_rooms_revenue + $validatedData['fnb_income'] + $validatedData['others_income'];
+        $total_fb_revenue = $validatedData['breakfast_income'] + $validatedData['lunch_income'] + $validatedData['dinner_income'];
+        $total_revenue = $total_rooms_revenue + $total_fb_revenue + $validatedData['others_income'];
+        
         $arr = ($total_rooms_sold > 0) ? ($total_rooms_revenue / $total_rooms_sold) : 0;
         $occupancy = ($property->total_rooms > 0) ? ($total_rooms_sold / $property->total_rooms) * 100 : 0;
 
-        // 3. Siapkan data yang akan dimasukkan ke database (hanya kolom yang ada)
-        $incomeData = [
-            'date' => $validatedData['date'],
+        // 3. Siapkan data yang akan dimasukkan ke database
+        $incomeData = array_merge($validatedData, [
             'property_id' => $property->id,
             'user_id' => $user->id,
-            
-            // ======== TAMBAHKAN BAGIAN INI ========
-            // Kolom jumlah kamar
-            'offline_rooms' => $validatedData['offline_rooms'],
-            'online_rooms' => $validatedData['online_rooms'],
-            'ta_rooms' => $validatedData['ta_rooms'],
-            'gov_rooms' => $validatedData['gov_rooms'],
-            'corp_rooms' => $validatedData['corp_rooms'],
-            'compliment_rooms' => $validatedData['compliment_rooms'],
-            'house_use_rooms' => $validatedData['house_use_rooms'],
-            // =======================================
-            
-            // Kategori pendapatan
-            'offline_room_income' => $validatedData['offline_room_income'],
-            'online_room_income' => $validatedData['online_room_income'],
-            'ta_income' => $validatedData['ta_income'],
-            'gov_income' => $validatedData['gov_income'],
-            'corp_income' => $validatedData['corp_income'],
-            'compliment_income' => $validatedData['compliment_income'],
-            'house_use_income' => $validatedData['house_use_income'],
-            'mice_income' => $validatedData['mice_income'],
-            'fnb_income' => $validatedData['fnb_income'],
-            'others_income' => $validatedData['others_income'],
-
-            // Kolom hasil kalkulasi
             'total_rooms_sold' => $total_rooms_sold,
             'total_rooms_revenue' => $total_rooms_revenue,
-            'total_fb_revenue' => $validatedData['fnb_income'],
+            'total_fb_revenue' => $total_fb_revenue,
             'total_revenue' => $total_revenue,
             'arr' => $arr,
             'occupancy' => $occupancy,
-        ];
+        ]);
 
         // 4. Simpan data ke database
         DailyIncome::create($incomeData);
@@ -190,14 +164,10 @@ class PropertyIncomeController extends Controller
     public function edit(DailyIncome $dailyIncome)
     {
         $user = Auth::user();
-
-        // PERBAIKAN: Gunakan perbandingan '!=' bukan '!==' untuk fleksibilitas tipe data
         if ($user->role !== 'admin' && $user->property_id != $dailyIncome->property_id) {
             abort(403, 'Akses tidak diizinkan untuk mengedit data ini.');
         }
-
-        $property = ($user->role === 'admin') ? $dailyIncome->property : $user->property;
-        
+        $property = $user->property;
         return view('property.income.edit', compact('dailyIncome', 'property'));
     }
 
@@ -206,13 +176,12 @@ class PropertyIncomeController extends Controller
      */
     public function update(Request $request, DailyIncome $dailyIncome)
     {
-        // Pengecekan keamanan yang kita bahas sebelumnya
         $user = Auth::user();
         if ($user->role !== 'admin' && $user->property_id != $dailyIncome->property_id) {
             abort(403, 'Akses tidak diizinkan untuk memperbarui data ini.');
         }
 
-        // 1. Validasi semua input dari form (MENGGUNAKAN KOLOM BARU)
+        // 1. Validasi semua input dari form (DENGAN KOLOM BARU)
         $validatedData = $request->validate([
             'date' => 'required|date|unique:daily_incomes,date,' . $dailyIncome->id . ',id,property_id,' . $dailyIncome->property_id,
             'offline_rooms' => 'required|integer|min:0',
@@ -230,15 +199,16 @@ class PropertyIncomeController extends Controller
             'house_use_rooms' => 'required|integer|min:0',
             'house_use_income' => 'required|numeric|min:0',
             'mice_income' => 'required|numeric|min:0',
-            'fnb_income' => 'required|numeric|min:0',
+            'breakfast_income' => 'required|numeric|min:0',
+            'lunch_income' => 'required|numeric|min:0',
+            'dinner_income' => 'required|numeric|min:0',
             'others_income' => 'required|numeric|min:0',
         ], [
             'date.unique' => 'Pendapatan untuk tanggal ini sudah ada.',
         ]);
 
-        // 2. Kalkulasi ulang nilai total (LOGIKA DIAMBIL DARI METHOD STORE ANDA)
+        // 2. Kalkulasi ulang nilai total
         $property = $dailyIncome->property;
-
         $total_rooms_sold =
             $validatedData['offline_rooms'] + $validatedData['online_rooms'] + $validatedData['ta_rooms'] +
             $validatedData['gov_rooms'] + $validatedData['corp_rooms'] + $validatedData['compliment_rooms'] +
@@ -249,20 +219,22 @@ class PropertyIncomeController extends Controller
             $validatedData['gov_income'] + $validatedData['corp_income'] + $validatedData['compliment_income'] +
             $validatedData['house_use_income'] + $validatedData['mice_income'];
 
-        $total_revenue = $total_rooms_revenue + $validatedData['fnb_income'] + $validatedData['others_income'];
+        $total_fb_revenue = $validatedData['breakfast_income'] + $validatedData['lunch_income'] + $validatedData['dinner_income'];
+        $total_revenue = $total_rooms_revenue + $total_fb_revenue + $validatedData['others_income'];
+        
         $arr = ($total_rooms_sold > 0) ? ($total_rooms_revenue / $total_rooms_sold) : 0;
         $occupancy = ($property->total_rooms > 0) ? ($total_rooms_sold / $property->total_rooms) * 100 : 0;
 
-        // 3. Siapkan data yang akan diperbarui (ditambah kolom kalkulasi)
+        // 3. Siapkan data yang akan diperbarui
         $updateData = array_merge($validatedData, [
             'total_rooms_sold' => $total_rooms_sold,
             'total_rooms_revenue' => $total_rooms_revenue,
-            'total_fb_revenue' => $validatedData['fnb_income'], // Asumsi fnb_income adalah total_fb_revenue
+            'total_fb_revenue' => $total_fb_revenue,
             'total_revenue' => $total_revenue,
             'arr' => $arr,
             'occupancy' => $occupancy,
         ]);
-
+        
         // 4. Update data di database
         $dailyIncome->update($updateData);
 
@@ -282,8 +254,7 @@ class PropertyIncomeController extends Controller
         if (!$user) {
             return redirect()->route('login');
         }
-
-        // PERBAIKAN: Gunakan perbandingan '!=' bukan '!=='
+        
         if ($user->role !== 'admin' && $user->property_id != $dailyIncome->property_id) {
             abort(403, 'Akses tidak diizinkan untuk menghapus data ini.');
         }

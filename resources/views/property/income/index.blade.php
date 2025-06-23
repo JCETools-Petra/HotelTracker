@@ -27,7 +27,20 @@
 
                     {{-- FORM FILTER TANGGAL --}}
                     <form method="GET" action="{{ route('property.income.index') }}" class="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg shadow">
-                        {{-- ... (Isi form filter Anda biarkan seperti apa adanya) ... --}}
+                        <div class="flex flex-col md:flex-row md:items-end md:space-x-4 space-y-4 md:space-y-0">
+                            <div class="flex-1">
+                                <label for="start_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tanggal Mulai</label>
+                                <input type="date" name="start_date" id="start_date" value="{{ request('start_date') }}" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <div class="flex-1">
+                                <label for="end_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tanggal Selesai</label>
+                                <input type="date" name="end_date" id="end_date" value="{{ request('end_date') }}" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Filter</button>
+                                <a href="{{ route('property.income.index') }}" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700">Reset</a>
+                            </div>
+                        </div>
                     </form>
                     
                     @if(!$incomes->isEmpty())
@@ -36,7 +49,6 @@
                                 <thead class="bg-gray-50 dark:bg-gray-700">
                                     <tr>
                                         <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tanggal</th>
-                                        {{-- Header Tabel Baru --}}
                                         <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Walk In (Kamar/Rp)</th>
                                         <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">OTA (Kamar/Rp)</th>
                                         <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">TA (Kamar/Rp)</th>
@@ -54,7 +66,9 @@
                                 <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                     @foreach($incomes as $income)
                                     @php
+                                        // ======================= AWAL PERUBAHAN KALKULASI =======================
                                         // Kalkulasi total pendapatan dari semua sumber
+                                        // ($income->fb_income) akan secara otomatis memanggil accessor di model
                                         $totalIncome = ($income->offline_room_income ?? 0) +
                                                        ($income->online_room_income ?? 0) +
                                                        ($income->ta_income ?? 0) +
@@ -63,30 +77,29 @@
                                                        ($income->compliment_income ?? 0) +
                                                        ($income->house_use_income ?? 0) +
                                                        ($income->mice_income ?? 0) +
-                                                       ($income->fnb_income ?? 0) +
+                                                       ($income->fb_income ?? 0) + // Ini akan menjumlahkan Breakfast, Lunch, Dinner
                                                        ($income->others_income ?? 0);
+                                        // ======================= AKHIR PERUBAHAN KALKULASI ======================
                                     @endphp
                                     <tr>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ \Carbon\Carbon::parse($income->date)->isoFormat('D MMM YYYY') }}</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ \Carbon\Carbon::parse($income->date)->isoFormat('D MMM YY') }}</td>
                                         
-                                        {{-- ================== PERBAIKAN UTAMA DI SINI ================== --}}
-                                        {{-- Menampilkan data dari kolom yang benar: offline_* dan online_* --}}
                                         <td class="px-4 py-4 whitespace-nowrap text-sm text-center">{{ $income->offline_rooms ?? 0 }} / <span class="text-gray-500 dark:text-gray-300">{{ number_format($income->offline_room_income ?? 0, 0, ',', '.') }}</span></td>
                                         <td class="px-4 py-4 whitespace-nowrap text-sm text-center">{{ $income->online_rooms ?? 0 }} / <span class="text-gray-500 dark:text-gray-300">{{ number_format($income->online_room_income ?? 0, 0, ',', '.') }}</span></td>
-                                        
-                                        {{-- Menampilkan data untuk kategori baru --}}
                                         <td class="px-4 py-4 whitespace-nowrap text-sm text-center">{{ $income->ta_rooms ?? 0 }} / <span class="text-gray-500 dark:text-gray-300">{{ number_format($income->ta_income ?? 0, 0, ',', '.') }}</span></td>
                                         <td class="px-4 py-4 whitespace-nowrap text-sm text-center">{{ $income->gov_rooms ?? 0 }} / <span class="text-gray-500 dark:text-gray-300">{{ number_format($income->gov_income ?? 0, 0, ',', '.') }}</span></td>
                                         <td class="px-4 py-4 whitespace-nowrap text-sm text-center">{{ $income->corp_rooms ?? 0 }} / <span class="text-gray-500 dark:text-gray-300">{{ number_format($income->corp_income ?? 0, 0, ',', '.') }}</span></td>
                                         <td class="px-4 py-4 whitespace-nowrap text-sm text-center">{{ $income->compliment_rooms ?? 0 }} / <span class="text-gray-500 dark:text-gray-300">{{ number_format($income->compliment_income ?? 0, 0, ',', '.') }}</span></td>
                                         <td class="px-4 py-4 whitespace-nowrap text-sm text-center">{{ $income->house_use_rooms ?? 0 }} / <span class="text-gray-500 dark:text-gray-300">{{ number_format($income->house_use_income ?? 0, 0, ',', '.') }}</span></td>
 
-                                        {{-- Menampilkan data lama --}}
                                         <td class="px-4 py-4 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-300">{{ number_format($income->mice_income ?? 0, 0, ',', '.') }}</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-300">{{ number_format($income->fnb_income ?? 0, 0, ',', '.') }}</td>
+                                        
+                                        {{-- ======================= AWAL PERUBAHAN TAMPILAN ======================= --}}
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-300">{{ number_format($income->fb_income ?? 0, 0, ',', '.') }}</td>
+                                        {{-- ======================= AKHIR PERUBAHAN TAMPILAN ====================== --}}
+
                                         <td class="px-4 py-4 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-300">{{ number_format($income->others_income ?? 0, 0, ',', '.') }}</td>
                                         
-                                        {{-- Total dan Aksi --}}
                                         <td class="px-4 py-4 whitespace-nowrap text-sm font-semibold text-right text-gray-900 dark:text-gray-100">{{ number_format($totalIncome, 0, ',', '.') }}</td>
                                         <td class="px-4 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                                             <a href="{{ route('property.income.edit', $income->id) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200">Edit</a>

@@ -21,6 +21,143 @@ class DashboardController extends Controller
     /**
      * Menampilkan dashboard admin dengan data ringkasan, KPI, dan chart yang telah difilter.
      */
+    public function __invoke(Request $request)
+    {
+        // 1. Pengaturan Filter
+        $allPropertiesForFilter = Property::orderBy('name')->get();
+        $propertyId = $request->input('property_id');
+        $period = $request->input('period', 'month');
+        
+        $startDate = null;
+        $endDate = null;
+
+        // Logika untuk menentukan rentang tanggal berdasarkan periode
+        switch ($period) {
+            case 'today':
+                $startDate = Carbon::today()->startOfDay();
+                $endDate = Carbon::today()->endOfDay();
+                break;
+            case 'year':
+                $startDate = Carbon::now()->startOfYear();
+                $endDate = Carbon::now()->endOfYear();
+                break;
+            case 'month':
+            default:
+                $startDate = Carbon::now()->startOfMonth();
+                $endDate = Carbon::now()->endOfMonth();
+                break;
+        }
+
+        $dateFilter = function ($query) use ($startDate, $endDate) {
+            $query->whereBetween('date', [$startDate, $endDate]);
+        };
+        
+        // 2. Definisi Kategori Pendapatan (TANPA fnb_income)
+        $incomeCategories = [
+            'offline_room_income' => 'Walk In',
+            'online_room_income' => 'OTA',
+            'ta_income' => 'Travel Agent',
+            'gov_income' => 'Government',
+            'corp_income' => 'Corporation',
+            'compliment_income' => 'Compliment',
+            'house_use_income' => 'House Use',
+            'mice_income' => 'MICE',
+            'breakfast_income' => 'Breakfast',
+            'lunch_income' => 'Lunch',
+            'dinner_income' => 'Dinner',
+            'others_income' => 'Lain-lain',
+        ];
+
+        $incomeCategoryKeys = array_keys($incomeCategories);
+
+        // 3. Query untuk Pie Chart dan Legenda
+        $selectsForPie = array_map(fn($key) => DB::raw("SUM(COALESCE({$key}, 0)) as total_{$key}"), $incomeCategoryKeys);
+        $overallIncomeSource = DailyIncome::query()
+            ->when($propertyId, fn($q) => $q->where('property_id', $propertyId))
+            ->where($dateFilter)
+            ->selectRaw(implode(', ', $selectsForPie))
+            ->first();
+
+        // 4. Query untuk Bar Chart Pendapatan per Properti
+        $overallIncomeByProperty = DailyIncome::query()
+            ->join('properties', 'daily_incomes.property_id', '=', 'properties.id')
+            ->select('properties.name', 'properties.chart_color', DB::raw('SUM(total_revenue) as total_revenue'))
+            ->when($propertyId, fn($q) => $q->where('property_id', $propertyId))
+            ->where($dateFilter)
+            ->groupBy('properties.name', 'properties.chart_color')
+            ->orderBy('total_revenue', 'desc')
+            ->get();
+
+        // 5. Query untuk Kartu Properti Individual (Sumber Eror)
+        $propertiesQuery = Property::query()->when($propertyId, fn($q) => $q->where('id', $propertyId));
+        
+        // Loop dinamis untuk menjumlahkan setiap kategori pendapatan yang BENAR
+        foreach ($incomeCategoryKeys as $column) {
+            $propertiesQuery->withSum(['incomes as total_' . $column => $dateFilter], $column);
+        }
+        
+        $roomCountColumns = ['offline_rooms', 'online_rooms', 'ta_rooms', 'gov_rooms', 'corp_rooms', 'compliment_rooms', 'house_use_rooms'];
+        foreach ($roomCountColumns as $column) {
+            $propertiesQuery->withSum(['incomes as total_' . $column => $dateFilter], $column);
+        }
+        
+        $properties = $propertiesQuery->get();
+
+        // 6. Ambil dan distribusikan data MICE dan kalkulasi
+        $miceDateFilter = function ($query) use ($startDate, $endDate) {
+            $query->whereBetween('event_date', [$startDate, $endDate]);
+        };
+
+        $miceRevenues = Booking::where('status', 'Booking Pasti')
+            ->where($miceDateFilter)
+            ->when($propertyId, fn($q) => $q->where('property_id', $propertyId))
+            ->select('property_id', 'mice_category_id', DB::raw('SUM(total_price) as total_mice_revenue'))
+            ->groupBy('property_id', 'mice_category_id')
+            ->with('miceCategory:id,name')
+            ->get()
+            ->groupBy('property_id');
+            
+        foreach ($properties as $property) {
+            $property->mice_revenue_breakdown = $miceRevenues->get($property->id) ?? collect();
+            
+            $totalMiceRevenue = $property->mice_revenue_breakdown->sum('total_mice_revenue');
+            
+            $totalDailyIncome = 0;
+            foreach($incomeCategoryKeys as $key) {
+                $totalDailyIncome += $property->{'total_'.$key} ?? 0;
+            }
+            $property->dailyRevenue = $totalDailyIncome + $totalMiceRevenue;
+
+            $totalRoomsSold = 0;
+            foreach($roomCountColumns as $key) {
+                $totalRoomsSold += $property->{'total_'.$key} ?? 0;
+            }
+            
+            $totalRoomRevenue = 0;
+            foreach (['offline_room_income', 'online_room_income', 'ta_income', 'gov_income', 'corp_income', 'compliment_income', 'house_use_income'] as $key) {
+                $totalRoomRevenue += $property->{'total_'.$key} ?? 0;
+            }
+
+            $property->averageRoomRate = $totalRoomsSold > 0 ? $totalRoomRevenue / $totalRoomsSold : 0;
+        }
+
+        // 7. Query untuk Laporan Event MICE Lunas Terbaru
+        $completedMiceEvents = Booking::where('status', 'Booking Pasti')
+            ->where('payment_status', 'Lunas')
+            ->when($propertyId, fn($q) => $q->where('property_id', $propertyId))
+            ->where($miceDateFilter)
+            ->with('property', 'miceCategory')
+            ->latest('event_date')
+            ->limit(5)
+            ->get();
+            
+        return view('admin.dashboard', compact(
+            'allPropertiesForFilter', 'propertyId', 'period',
+            'overallIncomeSource', 'incomeCategories',
+            'overallIncomeByProperty', 'properties', 'completedMiceEvents'
+        ));
+    }
+    
     public function salesAnalytics()
     {
         // ======================================================

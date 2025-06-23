@@ -97,6 +97,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('settings', [SettingController::class, 'store'])->name('settings.store');
             Route::resource('mice-categories', App\Http\Controllers\Admin\MiceCategoryController::class);
             Route::resource('properties.rooms', App\Http\Controllers\Admin\RoomController::class)->shallow();
+            Route::get('/activity-log', [App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('activity_log.index');
         });
     
     // Grup route untuk Sales
