@@ -2,17 +2,28 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class MiceCategory extends Model
 {
-    // Di dalam class MiceCategory
-    public function functionSheets()
-    {
-        return $this->hasMany(FunctionSheet::class);
-    }
+    use HasFactory;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'name',
+        'description',
+    ];
+
+    /**
+     * Get the bookings for the MICE category.
+     */
     public function bookings()
-{
-    return $this->hasMany(\App\Models\Booking::class);
-}
+    {
+        return $this->hasMany(Booking::class);
+    }
 }

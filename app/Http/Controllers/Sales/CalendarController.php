@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Sales;
 
 use App\Http\Controllers\Controller;
-use App\Models\Booking;
 use Illuminate\Http\Request;
+use App\Models\Booking;
 
 class CalendarController extends Controller
 {
     /**
-     * Menampilkan halaman kalender.
+     * Menampilkan halaman utama kalender.
      */
     public function index()
     {
@@ -17,29 +17,41 @@ class CalendarController extends Controller
     }
 
     /**
-     * Menyediakan data event dalam format JSON untuk FullCalendar.
+     * Menyediakan data event untuk kalender dalam format JSON.
      */
-    public function events()
+    public function events(Request $request)
     {
-        $bookings = Booking::all();
+        $salesUser = auth()->user();
 
-        $events = $bookings->map(function ($booking) {
-            $color = '#f59e0b'; // Default: Kuning (Booking Sementara)
+        // Pastikan pengguna memiliki properti yang terikat
+        if (!$salesUser->property_id) {
+            return response()->json([]);
+        }
+
+        // Ambil semua booking dari properti milik sales yang sedang login
+        // Eager load relasi 'room' untuk efisiensi dan menghindari N+1 query
+        $bookings = Booking::with('room') 
+            ->where('property_id', $salesUser->property_id)
+            ->where('status', '!=', 'Cancel') // Abaikan booking yang sudah di-cancel
+            ->get();
+
+        $events = [];
+        foreach ($bookings as $booking) {
+            // Tentukan warna berdasarkan status booking
+            $color = '#f59e0b'; // Default: Kuning untuk Booking Sementara
             if ($booking->status === 'Booking Pasti') {
-                $color = '#10b981'; // Hijau (Booking Pasti)
-            } elseif ($booking->status === 'Cancel') {
-                $color = '#ef4444'; // Merah (Cancel)
+                $color = '#10b981'; // Hijau untuk Booking Pasti
             }
 
-            return [
-                'title' => $booking->client_name . ' - ' . $booking->event_type,
-                'start' => $booking->event_date . 'T' . $booking->start_time,
-                'end' => $booking->event_date . 'T' . $booking->end_time,
-                'url' => route('sales.bookings.edit', $booking), // Link ke halaman edit booking
+            $events[] = [
+                'title' => $booking->client_name . ' (' . ($booking->room->name ?? 'N/A') . ')',
+                'start' => $booking->event_date->format('Y-m-d') . 'T' . $booking->start_time,
+                'end' => $booking->event_date->format('Y-m-d') . 'T' . $booking->end_time,
+                'url' => route('sales.bookings.edit', $booking), // Link saat event diklik
                 'backgroundColor' => $color,
                 'borderColor' => $color,
             ];
-        });
+        }
 
         return response()->json($events);
     }

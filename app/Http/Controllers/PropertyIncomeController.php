@@ -146,6 +146,17 @@ class PropertyIncomeController extends Controller
             'property_id' => $property->id,
             'user_id' => $user->id,
             
+            // ======== TAMBAHKAN BAGIAN INI ========
+            // Kolom jumlah kamar
+            'offline_rooms' => $validatedData['offline_rooms'],
+            'online_rooms' => $validatedData['online_rooms'],
+            'ta_rooms' => $validatedData['ta_rooms'],
+            'gov_rooms' => $validatedData['gov_rooms'],
+            'corp_rooms' => $validatedData['corp_rooms'],
+            'compliment_rooms' => $validatedData['compliment_rooms'],
+            'house_use_rooms' => $validatedData['house_use_rooms'],
+            // =======================================
+            
             // Kategori pendapatan
             'offline_room_income' => $validatedData['offline_room_income'],
             'online_room_income' => $validatedData['online_room_income'],
@@ -195,18 +206,15 @@ class PropertyIncomeController extends Controller
      */
     public function update(Request $request, DailyIncome $dailyIncome)
     {
+        // Pengecekan keamanan yang kita bahas sebelumnya
         $user = Auth::user();
-
-        // PERBAIKAN: Gunakan perbandingan '!=' bukan '!=='
         if ($user->role !== 'admin' && $user->property_id != $dailyIncome->property_id) {
             abort(403, 'Akses tidak diizinkan untuk memperbarui data ini.');
         }
 
-        $propertyIdForValidation = $dailyIncome->property_id;
-
-        // 1. Validasi semua input dari form
+        // 1. Validasi semua input dari form (MENGGUNAKAN KOLOM BARU)
         $validatedData = $request->validate([
-            'date' => 'required|date|unique:daily_incomes,date,' . $dailyIncome->id . ',id,property_id,' . $propertyIdForValidation,
+            'date' => 'required|date|unique:daily_incomes,date,' . $dailyIncome->id . ',id,property_id,' . $dailyIncome->property_id,
             'offline_rooms' => 'required|integer|min:0',
             'offline_room_income' => 'required|numeric|min:0',
             'online_rooms' => 'required|integer|min:0',
@@ -228,7 +236,9 @@ class PropertyIncomeController extends Controller
             'date.unique' => 'Pendapatan untuk tanggal ini sudah ada.',
         ]);
 
-        // 2. Kalkulasi ulang nilai total berdasarkan input yang diperbarui
+        // 2. Kalkulasi ulang nilai total (LOGIKA DIAMBIL DARI METHOD STORE ANDA)
+        $property = $dailyIncome->property;
+
         $total_rooms_sold =
             $validatedData['offline_rooms'] + $validatedData['online_rooms'] + $validatedData['ta_rooms'] +
             $validatedData['gov_rooms'] + $validatedData['corp_rooms'] + $validatedData['compliment_rooms'] +
@@ -238,17 +248,16 @@ class PropertyIncomeController extends Controller
             $validatedData['offline_room_income'] + $validatedData['online_room_income'] + $validatedData['ta_income'] +
             $validatedData['gov_income'] + $validatedData['corp_income'] + $validatedData['compliment_income'] +
             $validatedData['house_use_income'] + $validatedData['mice_income'];
-        
-        $property = $dailyIncome->property;
+
         $total_revenue = $total_rooms_revenue + $validatedData['fnb_income'] + $validatedData['others_income'];
         $arr = ($total_rooms_sold > 0) ? ($total_rooms_revenue / $total_rooms_sold) : 0;
         $occupancy = ($property->total_rooms > 0) ? ($total_rooms_sold / $property->total_rooms) * 100 : 0;
 
-        // 3. Siapkan data yang akan diperbarui
+        // 3. Siapkan data yang akan diperbarui (ditambah kolom kalkulasi)
         $updateData = array_merge($validatedData, [
             'total_rooms_sold' => $total_rooms_sold,
             'total_rooms_revenue' => $total_rooms_revenue,
-            'total_fb_revenue' => $validatedData['fnb_income'],
+            'total_fb_revenue' => $validatedData['fnb_income'], // Asumsi fnb_income adalah total_fb_revenue
             'total_revenue' => $total_revenue,
             'arr' => $arr,
             'occupancy' => $occupancy,
@@ -256,7 +265,7 @@ class PropertyIncomeController extends Controller
 
         // 4. Update data di database
         $dailyIncome->update($updateData);
-        
+
         if ($user->role === 'admin') {
             return redirect()->route('admin.properties.show', $dailyIncome->property_id)->with('success', 'Data pendapatan berhasil diperbarui.');
         }

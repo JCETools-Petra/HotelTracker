@@ -7,12 +7,7 @@
                 {{ __('Manajemen Pengguna') }}
             </h2>
             <nav class="flex space-x-4">
-                <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
-                    {{ __('Dashboard') }}
-                </x-nav-link>
-                <x-nav-link :href="route('admin.properties.compare.form')" :active="request()->routeIs('admin.properties.compare.form') || request()->routeIs('admin.properties.compare.results')">
-                    {{ __('Bandingkan Properti') }}
-                </x-nav-link>
+                <br>
                 <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.index') || request()->routeIs('admin.users.create') || request()->routeIs('admin.users.edit')">
                     {{ __('Manajemen Pengguna') }}
                 </x-nav-link>

@@ -13,7 +13,7 @@ use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Booking;
-use App\Models\PricePackage; 
+use App\Models\PricePackage;
 use App\Exports\AdminPropertiesSummaryExport;
 
 class DashboardController extends Controller
@@ -101,7 +101,6 @@ class DashboardController extends Controller
                 break;
         }
 
-        // Menggunakan nama kolom yang benar dari struktur DB Anda
         $incomeCategories = [
             'offline_room_income' => 'Walk In Guest',
             'online_room_income'  => 'OTA',
@@ -116,7 +115,7 @@ class DashboardController extends Controller
         ];
         $incomeColumns = array_keys($incomeCategories);
         $incomeSumRaw = implode(' + ', array_map(fn($col) => "IFNULL(`$col`, 0)", $incomeColumns));
-        
+
         $propertyQuery = Property::orderBy('id', 'asc');
         
         if ($propertyId) {
@@ -129,29 +128,56 @@ class DashboardController extends Controller
             }
         };
 
+        $roomCountColumns = ['offline_rooms', 'online_rooms', 'ta_rooms', 'gov_rooms', 'corp_rooms', 'compliment_rooms', 'house_use_rooms'];
         $propertiesQuery = (clone $propertyQuery);
         foreach ($incomeColumns as $column) {
             $propertiesQuery->withSum(['dailyIncomes as total_' . $column => $dateFilter], $column);
         }
-        
-        // PERBAIKAN: Menghapus query sum untuk 'total_rooms_sold' yang tidak ada
-        // $propertiesQuery->withSum(['dailyIncomes as total_rooms_sold' => $dateFilter], 'total_rooms_sold');
+        foreach ($roomCountColumns as $column) {
+            $propertiesQuery->withSum(['dailyIncomes as total_' . $column => $dateFilter], $column);
+        }
         
         $properties = $propertiesQuery->get();
 
-        // Menghitung Daily Revenue untuk setiap properti
+        $miceRevenues = Booking::where('status', 'Booking Pasti')
+            ->whereBetween('event_date', [$startDate, $endDate])
+            ->select('property_id', 'mice_category_id', DB::raw('SUM(total_price) as total_mice_revenue'))
+            ->groupBy('property_id', 'mice_category_id')
+            ->with('miceCategory:id,name')
+            ->get()
+            ->groupBy('property_id');
+
         foreach ($properties as $property) {
             $dailyRevenue = 0;
             foreach ($incomeColumns as $col) {
                 $key = 'total_' . $col;
                 $dailyRevenue += $property->$key ?? 0;
             }
+
+            $propertyMiceRevenues = $miceRevenues->get($property->id);
+            if ($propertyMiceRevenues) {
+                $dailyRevenue += $propertyMiceRevenues->sum('total_mice_revenue');
+                $property->mice_revenue_breakdown = $propertyMiceRevenues;
+            } else {
+                $property->mice_revenue_breakdown = collect();
+            }
+            
             $property->dailyRevenue = $dailyRevenue;
-            // PERBAIKAN: Menghapus kalkulasi ARR
-            $property->averageRoomRate = 0; // Set ke 0 untuk sementara
+
+            $totalArrRevenue = 0;
+            $totalArrRoomsSold = 0;
+            $arrRevenueCategories = ['offline_room_income', 'online_room_income', 'ta_income', 'gov_income', 'corp_income'];
+            $arrRoomsCategories = ['offline_rooms', 'online_rooms', 'ta_rooms', 'gov_rooms', 'corp_rooms'];
+
+            foreach($arrRevenueCategories as $cat) {
+                $totalArrRevenue += $property->{'total_' . $cat} ?? 0;
+            }
+            foreach($arrRoomsCategories as $cat) {
+                $totalArrRoomsSold += $property->{'total_' . $cat} ?? 0;
+            }
+            $property->averageRoomRate = ($totalArrRoomsSold > 0) ? ($totalArrRevenue / $totalArrRoomsSold) : 0;
         }
 
-        // --- Sisa kode Anda untuk chart dan data lainnya (TIDAK DIUBAH) ---
         $dailyIncomeQuery = DailyIncome::query();
         if ($propertyId) $dailyIncomeQuery->where('property_id', $propertyId);
         if ($startDate && $endDate) $dailyIncomeQuery->whereBetween('date', [$startDate, $endDate]);
@@ -162,11 +188,43 @@ class DashboardController extends Controller
         }
         $overallIncomeSource = (clone $dailyIncomeQuery)->select($selectSums)->first();
 
+        // ==========================================================
+        // >> PERUBAHAN DIMULAI DI SINI <<
+        // ==========================================================
+
+        // 1. Ambil total pendapatan MICE dari tabel Bookings
+        $miceBookingQuery = Booking::where('status', 'Booking Pasti');
+        if ($propertyId) {
+            $miceBookingQuery->where('property_id', $propertyId);
+        }
+        if ($startDate && $endDate) {
+            $miceBookingQuery->whereBetween('event_date', [$startDate, $endDate]);
+        }
+        $miceRevenueFromSales = $miceBookingQuery->sum('total_price');
+
+        // 2. Jika tidak ada data pendapatan harian sama sekali, buat objek kosong
+        if (!$overallIncomeSource) {
+            $overallIncomeSource = new \stdClass();
+            foreach($incomeColumns as $col) {
+                $overallIncomeSource->{'total_'.$col} = 0;
+            }
+        }
+        
+        // 3. Tambahkan pendapatan MICE dari Sales ke total pendapatan MICE
+        //    (Ini akan menjumlahkan MICE dari daily_incomes dan MICE dari bookings)
+        $overallIncomeSource->total_mice_income = ($overallIncomeSource->total_mice_income ?? 0) + $miceRevenueFromSales;
+
+        // ==========================================================
+        // >> PERUBAHAN SELESAI DI SINI <<
+        // ==========================================================
+        
         $overallIncomeByProperty = Property::query()
             ->when($propertyId, fn($q) => $q->where('properties.id', $propertyId))
-            ->leftJoin('daily_incomes', 'properties.id', '=', 'daily_incomes.property_id')
-            ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {
-                $q->whereBetween('daily_incomes.date', [$startDate, $endDate]);
+            ->leftJoin('daily_incomes', function ($join) use ($startDate, $endDate) {
+                $join->on('properties.id', '=', 'daily_incomes.property_id');
+                if ($startDate && $endDate) {
+                    $join->whereBetween('daily_incomes.date', [$startDate, $endDate]);
+                }
             })
             ->select('properties.name', 'properties.id', 'properties.chart_color', DB::raw("SUM({$incomeSumRaw}) as total_revenue"))
             ->groupBy('properties.id', 'properties.name', 'properties.chart_color')

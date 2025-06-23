@@ -9,6 +9,11 @@ class Booking extends Model
 {
     use HasFactory;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'booking_number',
         'booking_date',
@@ -19,26 +24,55 @@ class Booking extends Model
         'end_time',
         'participants',
         'property_id',
+        'room_id',
         'person_in_charge',
         'status',
-        'total_price',      // <-- PASTIKAN INI ADA
-        'down_payment',     // <-- PASTIKAN INI ADA
         'notes',
-        'mice_category_id', // Tambahkan ini
+        'price_package_id',
+        'total_price',
         'payment_status',
+        'mice_category_id',
     ];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'booking_date' => 'date',
+        'event_date' => 'date',
+    ];
+
+    /**
+     * Get the property that owns the booking.
+     */
     public function property()
     {
         return $this->belongsTo(Property::class);
     }
 
+    /**
+     * Get the room for the booking.
+     */
+    public function room()
+    {
+        return $this->belongsTo(Room::class);
+    }
+    
+    /**
+     * Get the MICE category for the booking.
+     */
+    public function miceCategory()
+    {
+        return $this->belongsTo(MiceCategory::class);
+    }
+
+    /**
+     * Get the function sheet for the booking.
+     */
     public function functionSheet()
     {
         return $this->hasOne(FunctionSheet::class);
-    }
-    public function miceCategory()
-    {
-        return $this->belongsTo(\App\Models\MiceCategory::class);
     }
 }

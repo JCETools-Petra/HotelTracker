@@ -60,7 +60,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('property.')
         ->group(function () {
             Route::get('/dashboard', [PropertyIncomeController::class, 'dashboard'])->name('dashboard');
-            Route::resource('income', PropertyIncomeController::class)->except('show');
+            Route::get('/income/create', [PropertyIncomeController::class, 'create'])->name('income.create');
+            Route::post('/income', [PropertyIncomeController::class, 'store'])->name('income.store');
+            Route::get('/income', [PropertyIncomeController::class, 'index'])->name('income.index');
+            Route::get('/income/{dailyIncome}/edit', [PropertyIncomeController::class, 'edit'])->name('income.edit');
+            Route::put('/income/{dailyIncome}', [PropertyIncomeController::class, 'update'])->name('income.update');
+            Route::delete('/income/{dailyIncome}', [PropertyIncomeController::class, 'destroy'])->name('income.destroy');
+            Route::get('/income/export/excel', [PropertyIncomeController::class, 'exportIncomesExcel'])->name('income.export.excel');
+            Route::get('/income/export/csv', [PropertyIncomeController::class, 'exportIncomesCsv'])->name('income.export.csv');
         });
 
     // Rute untuk Admin dan Owner
@@ -89,6 +96,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
             Route::post('settings', [SettingController::class, 'store'])->name('settings.store');
             Route::resource('mice-categories', App\Http\Controllers\Admin\MiceCategoryController::class);
+            Route::resource('properties.rooms', App\Http\Controllers\Admin\RoomController::class)->shallow();
         });
     
     // Grup route untuk Sales

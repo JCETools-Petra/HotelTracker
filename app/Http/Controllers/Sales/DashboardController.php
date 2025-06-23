@@ -3,55 +3,72 @@
 namespace App\Http\Controllers\Sales;
 
 use App\Http\Controllers\Controller;
-use App\Models\Booking;
 use Illuminate\Http\Request;
+use App\Models\Booking;
 use Carbon\Carbon;
-use App\Models\FunctionSheet;
 
 class DashboardController extends Controller
 {
-    /**
-     * Menampilkan halaman dashboard untuk sales dengan data ringkasan.
-     */
     public function index()
     {
-        // Tentukan rentang waktu bulan ini
+        $salesUser = auth()->user();
+        $propertyId = $salesUser->property_id;
+
+        // Jika sales tidak terikat ke properti, kembalikan data kosong
+        if (!$propertyId) {
+            return view('sales.dashboard', [
+                'totalBookingThisMonth' => 0,
+                'confirmedBookingThisMonth' => 0,
+                'estimatedRevenueThisMonth' => 0,
+                'totalParticipantsThisMonth' => 0,
+                'upcomingEvents' => collect(),
+                'latestBooking' => null
+            ]);
+        }
+        
         $startOfMonth = Carbon::now()->startOfMonth();
         $endOfMonth = Carbon::now()->endOfMonth();
 
-        // 1. Ambil data untuk kartu statistik
-        $totalBookingsThisMonth = Booking::whereBetween('created_at', [$startOfMonth, $endOfMonth])->count();
-        
-        $confirmedBookingsThisMonth = Booking::where('status', 'Booking Pasti')
-            ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+        // Data untuk kartu statistik
+        $totalBookingThisMonth = Booking::where('property_id', $propertyId)
+            ->whereBetween('booking_date', [$startOfMonth, $endOfMonth])
             ->count();
-        
-        $estimatedRevenueThisMonth = Booking::where('status', 'Booking Pasti')
+            
+        $confirmedBookingThisMonth = Booking::where('property_id', $propertyId)
+            ->where('status', 'Booking Pasti')
+            ->whereBetween('booking_date', [$startOfMonth, $endOfMonth])
+            ->count();
+
+        $estimatedRevenueThisMonth = Booking::where('property_id', $propertyId)
+            ->where('status', 'Booking Pasti')
             ->whereBetween('event_date', [$startOfMonth, $endOfMonth])
             ->sum('total_price');
 
-        $totalPaxThisMonth = Booking::where('status', 'Booking Pasti')
+        $totalParticipantsThisMonth = Booking::where('property_id', $propertyId)
+            ->where('status', 'Booking Pasti')
             ->whereBetween('event_date', [$startOfMonth, $endOfMonth])
             ->sum('participants');
 
-        // 2. Ambil data untuk jadwal event 7 hari ke depan
-        $upcomingEvents = Booking::where('status', 'Booking Pasti')
+        // PERBAIKAN: Eager load relasi 'miceCategory' untuk efisiensi
+        $upcomingEvents = Booking::where('property_id', $propertyId)
+            ->where('status', 'Booking Pasti')
             ->whereBetween('event_date', [Carbon::today(), Carbon::today()->addDays(7)])
+            ->with('miceCategory') // <-- Eager loading relasi
             ->orderBy('event_date', 'asc')
             ->orderBy('start_time', 'asc')
             ->get();
             
-        // 3. Ambil data 5 booking terbaru
-        $recentBookings = Booking::with('property')->latest()->take(5)->get();
-
+        $latestBooking = Booking::where('property_id', $propertyId)
+            ->latest()
+            ->first();
 
         return view('sales.dashboard', compact(
-            'totalBookingsThisMonth',
-            'confirmedBookingsThisMonth',
+            'totalBookingThisMonth',
+            'confirmedBookingThisMonth',
             'estimatedRevenueThisMonth',
-            'totalPaxThisMonth',
+            'totalParticipantsThisMonth',
             'upcomingEvents',
-            'recentBookings'
+            'latestBooking'
         ));
     }
 }

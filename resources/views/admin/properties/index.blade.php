@@ -9,7 +9,6 @@
                     {{ __('Dashboard') }}
                 </x-nav-link>
 
-                {{-- ================== PERUBAHAN 1: Sembunyikan Tombol Tambah untuk Non-Admin ================== --}}
                 @if(auth()->user()->role == 'admin')
                     <a href="{{ route('admin.properties.create') }}"
                        class="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2 bg-blue-600 dark:bg-blue-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 dark:hover:bg-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
@@ -43,7 +42,6 @@
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nama Properti</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Dibuat Pada</th>
                                     
-                                    {{-- ================== PERUBAHAN 2: Sembunyikan Kolom Aksi untuk Non-Admin ================== --}}
                                     @if(auth()->user()->role == 'admin')
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Aksi</th>
                                     @endif
@@ -62,12 +60,16 @@
                                             {{ $property->created_at ? $property->created_at->isoFormat('D MMM YYYY, HH:mm') : '-' }}
                                         </td>
 
-                                        {{-- ================== PERUBAHAN 3: Sembunyikan Tombol Aksi untuk Non-Admin ================== --}}
                                         @if(auth()->user()->role == 'admin')
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                                {{-- ============================================= --}}
+                                                {{-- >> TOMBOL BARU DITAMBAHKAN DI SINI << --}}
+                                                {{-- ============================================= --}}
+                                                <a href="{{ route('admin.properties.rooms.index', $property) }}" class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-200">Ruangan</a>
+                                                {{-- ============================================= --}}
+                                                
                                                 <a href="{{ route('admin.properties.edit', $property->id) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200">Edit</a>
                                                 
-                                                {{-- Tombol Hapus diaktifkan dan diamankan --}}
                                                 <form method="POST" action="{{ route('admin.properties.destroy', $property->id) }}" class="inline-block" onsubmit="return confirm('Yakin ingin menghapus properti ini?');">
                                                     @csrf
                                                     @method('DELETE')

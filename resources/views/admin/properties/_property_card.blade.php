@@ -19,12 +19,36 @@
                         </td>
                     </tr>
                     @endforeach
+
+                    {{-- ========================================================== --}}
+                    {{-- >> KODE BARU UNTUK MENAMPILKAN PENDAPATAN MICE << --}}
+                    {{-- ========================================================== --}}
+                    @if(isset($property->mice_revenue_breakdown) && $property->mice_revenue_breakdown->isNotEmpty())
+                        {{-- Judul untuk sub-bagian MICE --}}
+                        <tr class="border-t border-dashed border-gray-300 dark:border-gray-600">
+                            <td class="pt-3 pb-1 pr-4 font-semibold text-gray-500 dark:text-gray-400" colspan="2">Pendapatan MICE (dari Sales)</td>
+                        </tr>
+                        {{-- Rincian per kategori MICE --}}
+                        @foreach($property->mice_revenue_breakdown as $mice)
+                            <tr>
+                                <td class="py-1.5 pr-4 pl-4">{{ $mice->miceCategory->name ?? 'Lainnya' }}</td>
+                                <td class="py-1.5 text-right font-medium text-gray-700 dark:text-gray-300">
+                                    Rp {{ number_format($mice->total_mice_revenue, 0, ',', '.') }}
+                                </td>
+                            </tr>
+                        @endforeach
+                    @endif
+                    {{-- ========================================================== --}}
+                    {{-- >> AKHIR DARI KODE BARU << --}}
+                    {{-- ========================================================== --}}
+
                 </tbody>
                 <tfoot class="text-gray-800 dark:text-gray-200">
                     {{-- Menampilkan data yang sudah dihitung di controller --}}
                     <tr class="border-t-2 border-gray-300 dark:border-gray-700">
                         <td class="pt-3 pr-4 font-semibold">Daily Revenue</td>
                         <td class="pt-3 text-right text-base font-bold">
+                            {{-- $property->dailyRevenue sekarang sudah termasuk total MICE --}}
                             Rp {{ number_format($property->dailyRevenue ?? 0, 0, ',', '.') }}
                         </td>
                     </tr>

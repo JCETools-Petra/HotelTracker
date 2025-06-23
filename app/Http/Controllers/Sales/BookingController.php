@@ -5,20 +5,20 @@ namespace App\Http\Controllers\Sales;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Property;
-use Illuminate\Http\Request;
-use App\Models\FunctionSheet; 
-use Illuminate\Support\Str;
-use App\Models\PricePackage;
+use App\Models\Room;
 use App\Models\MiceCategory;
+use App\Models\PricePackage;
+use App\Models\FunctionSheet;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class BookingController extends Controller
 {
-    public function index(Request $request) // <-- Tambahkan Request $request
+    public function index(Request $request)
     {
-        // Mulai dengan query dasar
-        $query = Booking::query();
+        $salesUser = auth()->user();
+        $query = Booking::where('property_id', $salesUser->property_id);
 
-        // 1. Terapkan filter pencarian (berdasarkan nama klien atau nomor booking)
         if ($request->filled('search')) {
             $searchTerm = $request->input('search');
             $query->where(function ($q) use ($searchTerm) {
@@ -26,135 +26,152 @@ class BookingController extends Controller
                   ->orWhere('booking_number', 'like', "%{$searchTerm}%");
             });
         }
-
-        // 2. Terapkan filter status
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
         }
-
-        // 3. Terapkan filter rentang tanggal acara
         if ($request->filled('start_date')) {
             $query->whereDate('event_date', '>=', $request->input('start_date'));
         }
-
         if ($request->filled('end_date')) {
             $query->whereDate('event_date', '<=', $request->input('end_date'));
         }
 
-        // Ambil hasil query dengan relasi property, urutkan, dan paginasi
-        $bookings = $query->with('property')->latest()->paginate(10);
-        
-        // Penting: Sertakan query string dalam link paginasi
+        $bookings = $query->with('room')->latest()->paginate(10);
         $bookings->appends($request->all());
 
         return view('sales.bookings.index', compact('bookings'));
     }
 
-    public function showBeo(Booking $booking)
-    {
-        // Memastikan BEO sudah ada, jika tidak, redirect ke halaman edit BEO
-        if (!$booking->functionSheet) {
-            return redirect()->route('sales.bookings.beo', $booking)
-                ->with('error', 'Silakan lengkapi Function Sheet terlebih dahulu.');
-        }
-
-        return view('sales.bookings.show-beo', [
-            'booking' => $booking,
-            'beo' => $booking->functionSheet
-        ]);
-    }
-
     public function create()
     {
-        $properties = Property::orderBy('name')->get();
-        $miceCategories = MiceCategory::all();
-        return view('sales.bookings.create', compact('properties', 'packages', 'miceCategories'));
+        $salesUser = auth()->user();
+        if (!$property = $salesUser->property) {
+            return redirect()->route('sales.dashboard')->with('error', 'Akun Anda tidak terikat ke properti manapun.');
+        }
+
+        $rooms = $property->rooms()->orderBy('name')->get();
+        $miceCategories = MiceCategory::orderBy('name')->get();
+        $packages = PricePackage::where('is_active', true)->get();
+
+        return view('sales.bookings.create', compact('property', 'rooms', 'packages', 'miceCategories'));
     }
 
     public function store(Request $request)
     {
-        $request->validate([
+        $salesUser = auth()->user();
+        if (!$salesUser->property_id) {
+             return redirect()->back()->with('error', 'Akun Anda tidak terikat ke properti manapun.');
+        }
+
+        $validatedData = $request->validate([
             'booking_date' => 'required|date',
             'client_name' => 'required|string|max:255',
-            'event_type' => 'required|string|max:255',
             'event_date' => 'required|date',
             'start_time' => 'required',
             'end_time' => 'required|after:start_time',
             'participants' => 'required|integer|min:1',
-            'property_id' => 'required|exists:properties,id',
             'person_in_charge' => 'required|string|max:255',
             'status' => 'required|in:Booking Sementara,Booking Pasti,Cancel',
             'notes' => 'nullable|string',
+            'room_id' => 'required|exists:rooms,id',
+            'mice_category_id' => 'nullable|exists:mice_categories,id',
         ]);
 
-        $bookingData = $request->all();
-        // Generate nomor booking unik
-        $bookingData['booking_number'] = 'BKN-' . date('Ymd') . '-' . strtoupper(Str::random(4));
+        $bookingData = $validatedData;
+        $bookingData['event_type'] = $request->input('event_type', 'MICE');
+        $bookingData['booking_number'] = 'BKN-' . date('Ymd') . '-' . Str::random(4);
+        $bookingData['property_id'] = $salesUser->property_id;
+        $bookingData['total_price'] = 0;
+        $bookingData['payment_status'] = 'Pending';
 
         Booking::create($bookingData);
 
-        return redirect()->route('sales.bookings.index')->with('success', 'Booking berhasil ditambahkan.');
+        return redirect()->route('sales.bookings.index')->with('success', 'Booking baru berhasil ditambahkan.');
     }
 
     public function show(Booking $booking)
     {
-        // Untuk BEO di masa depan
+        if (auth()->user()->property_id != $booking->property_id) {
+            abort(403);
+        }
         return view('sales.bookings.show', compact('booking'));
     }
 
     public function edit(Booking $booking)
     {
+        if (auth()->user()->property_id != $booking->property_id) {
+            abort(403, 'Akses ditolak.');
+        }
+
+        // PERBAIKAN: Mengirimkan SEMUA properti agar view tidak error,
+        // meskipun seharusnya tidak bisa diubah oleh Sales.
         $properties = Property::orderBy('name')->get();
+        $property = $booking->property;
+        $rooms = $property->rooms()->orderBy('name')->get();
         $miceCategories = MiceCategory::all();
-        return view('sales.bookings.edit', compact('booking', 'properties', 'packages', 'miceCategories'));
+        $packages = PricePackage::where('is_active', true)->get();
+
+        return view('sales.bookings.edit', compact('booking', 'properties', 'property', 'rooms', 'packages', 'miceCategories'));
     }
 
     public function update(Request $request, Booking $booking)
     {
-        $request->validate([
+        if (auth()->user()->property_id != $booking->property_id) {
+            abort(403, 'Akses ditolak.');
+        }
+
+        // Validasi disesuaikan dengan form edit yang mungkin berbeda
+        $validatedData = $request->validate([
             'booking_date' => 'required|date',
             'client_name' => 'required|string|max:255',
-            'event_type' => 'required|string|max:255',
             'event_date' => 'required|date',
             'start_time' => 'required',
             'end_time' => 'required|after:start_time',
             'participants' => 'required|integer|min:1',
-            'property_id' => 'required|exists:properties,id',
             'person_in_charge' => 'required|string|max:255',
             'status' => 'required|in:Booking Sementara,Booking Pasti,Cancel',
             'notes' => 'nullable|string',
+            'room_id' => 'required|exists:rooms,id',
+            'mice_category_id' => 'nullable|exists:mice_categories,id'
+            // Hapus validasi untuk total_price dan payment_status jika tidak di-edit di sini
         ]);
+        
+        // Jangan biarkan property_id diubah oleh sales
+        unset($validatedData['property_id']);
 
-        $booking->update($request->all());
+        $booking->update($validatedData);
 
         return redirect()->route('sales.bookings.index')->with('success', 'Booking berhasil diperbarui.');
     }
 
     public function destroy(Booking $booking)
     {
+        if (auth()->user()->property_id != $booking->property_id) {
+            abort(403, 'Akses ditolak.');
+        }
         $booking->delete();
         return redirect()->route('sales.bookings.index')->with('success', 'Booking berhasil dihapus.');
     }
+
     public function beo(Booking $booking)
     {
-        if ($booking->status !== 'Booking Pasti') {
-            return redirect()->route('sales.bookings.index')->with('error', 'Hanya booking dengan status "Booking Pasti" yang bisa dibuatkan BEO.');
+        if ($booking->status !== 'Booking Pasti' || auth()->user()->property_id != $booking->property_id) {
+            return redirect()->route('sales.bookings.index')->with('error', 'Aksi tidak diizinkan.');
         }
 
         $beo = $booking->functionSheet ?? new FunctionSheet();
         $departments = ['SECURITY', 'BANQUET', 'CHEF KICTHEN', 'ENGINEERING', 'PUBLIC AREA', 'STEWARDING', 'FRONT OFFICE', 'ACCOUNTING'];
-        
-        // Ambil paket harga yang aktif
         $pricePackages = PricePackage::where('is_active', true)->orderBy('name')->get();
 
         return view('sales.bookings.beo', compact('booking', 'beo', 'departments', 'pricePackages'));
     }
 
-    /**
-     * Menyimpan data BEO (create atau update) (Versi Revisi).
-     */
     public function storeBeo(Request $request, Booking $booking)
     {
+        if (auth()->user()->property_id != $booking->property_id) {
+            abort(403);
+        }
+
         $validated = $request->validate([
             'contact_phone' => 'nullable|string|max:20',
             'room_setup' => 'required|string',
@@ -166,7 +183,6 @@ class BookingController extends Controller
             'notes' => 'nullable|string',
         ]);
         
-        // Fungsi untuk membersihkan baris kosong dari input dinamis
         $filterEmpty = function ($items) {
             if (empty($items)) return null;
             return array_filter($items, function ($item) {
@@ -174,14 +190,11 @@ class BookingController extends Controller
             });
         };
 
-        // Ambil detail paket harga yang dipilih
         $pricePackage = PricePackage::find($validated['price_package_id']);
         
-        // Simpan atau update Function Sheet
-        $functionSheet = $booking->functionSheet()->updateOrCreate(
-            ['booking_id' => $booking->id], // Cari berdasarkan ini
-            [ // Data untuk disimpan
-                // [FIX] Logika nomor BEO sekarang aman dari error 'null'
+        $booking->functionSheet()->updateOrCreate(
+            ['booking_id' => $booking->id],
+            [
                 'beo_number' => $booking->functionSheet?->beo_number ?? 'BEO-' . date('Y') . '-' . str_pad($booking->id, 5, '0', STR_PAD_LEFT),
                 'dealed_by' => auth()->user()->name,
                 'contact_phone' => $validated['contact_phone'],
@@ -195,17 +208,16 @@ class BookingController extends Controller
             ]
         );
 
-        // Hitung dan update total harga di booking utama
         $totalPrice = $pricePackage->price * $booking->participants;
         $booking->update(['total_price' => $totalPrice]);
 
-        // Redirect dengan pesan sukses
         return redirect()->route('sales.bookings.index')->with('success', 'Function Sheet (BEO) berhasil disimpan.');
     }
+
     public function printBeo(Booking $booking)
     {
-        if (!$booking->functionSheet) {
-            return redirect()->back()->with('error', 'Function Sheet belum dibuat.');
+        if (!$booking->functionSheet || auth()->user()->property_id != $booking->property_id) {
+            return redirect()->back()->with('error', 'Aksi tidak diizinkan.');
         }
 
         return view('sales.bookings.print-beo', [
@@ -213,4 +225,16 @@ class BookingController extends Controller
             'beo' => $booking->functionSheet
         ]);
     }
+    public function showBeo(Booking $booking)
+    {
+        if (auth()->user()->property_id != $booking->property_id || !$booking->functionSheet) {
+            return redirect()->route('sales.bookings.index')->with('error', 'BEO tidak ditemukan atau Anda tidak berwenang.');
+        }
+
+        return view('sales.bookings.show-beo', [
+            'booking' => $booking,
+            'beo' => $booking->functionSheet
+        ]);
+    }
+
 }
