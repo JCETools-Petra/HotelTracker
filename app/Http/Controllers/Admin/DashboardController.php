@@ -52,7 +52,7 @@ class DashboardController extends Controller
             $query->whereBetween('date', [$startDate, $endDate]);
         };
         
-        // 2. Definisi Kategori Pendapatan (TANPA fnb_income)
+        // 2. Definisi Kategori Pendapatan (SUDAH DIPERBAIKI DAN KONSISTEN)
         $incomeCategories = [
             'offline_room_income' => 'Walk In',
             'online_room_income' => 'OTA',
@@ -88,17 +88,19 @@ class DashboardController extends Controller
             ->orderBy('total_revenue', 'desc')
             ->get();
 
-        // 5. Query untuk Kartu Properti Individual (Sumber Eror)
+        // 5. Query untuk Kartu Properti Individual
         $propertiesQuery = Property::query()->when($propertyId, fn($q) => $q->where('id', $propertyId));
         
         // Loop dinamis untuk menjumlahkan setiap kategori pendapatan yang BENAR
+        // NAMA RELASI DIPERBAIKI: incomes -> dailyIncomes
         foreach ($incomeCategoryKeys as $column) {
-            $propertiesQuery->withSum(['incomes as total_' . $column => $dateFilter], $column);
+            $propertiesQuery->withSum(['dailyIncomes as total_' . $column => $dateFilter], $column);
         }
         
         $roomCountColumns = ['offline_rooms', 'online_rooms', 'ta_rooms', 'gov_rooms', 'corp_rooms', 'compliment_rooms', 'house_use_rooms'];
+        // NAMA RELASI DIPERBAIKI: incomes -> dailyIncomes
         foreach ($roomCountColumns as $column) {
-            $propertiesQuery->withSum(['incomes as total_' . $column => $dateFilter], $column);
+            $propertiesQuery->withSum(['dailyIncomes as total_' . $column => $dateFilter], $column);
         }
         
         $properties = $propertiesQuery->get();
@@ -238,17 +240,20 @@ class DashboardController extends Controller
                 break;
         }
 
+        // KATEGORI PENDAPATAN DIPERBAIKI AGAR KONSISTEN
         $incomeCategories = [
-            'offline_room_income' => 'Walk In Guest',
-            'online_room_income'  => 'OTA',
-            'ta_income'           => 'TA/Travel Agent',
-            'gov_income'          => 'Gov/Government',
-            'corp_income'         => 'Corp/Corporation',
-            'compliment_income'   => 'Compliment',
-            'house_use_income'    => 'House Use',
-            'mice_income'         => 'MICE',
-            'fnb_income'          => 'F&B',
-            'others_income'       => 'Lainnya',
+            'offline_room_income' => 'Walk In',
+            'online_room_income' => 'OTA',
+            'ta_income' => 'Travel Agent',
+            'gov_income' => 'Government',
+            'corp_income' => 'Corporation',
+            'compliment_income' => 'Compliment',
+            'house_use_income' => 'House Use',
+            'mice_income' => 'MICE',
+            'breakfast_income' => 'Breakfast',
+            'lunch_income' => 'Lunch',
+            'dinner_income' => 'Dinner',
+            'others_income' => 'Lain-lain',
         ];
         $incomeColumns = array_keys($incomeCategories);
         $incomeSumRaw = implode(' + ', array_map(fn($col) => "IFNULL(`$col`, 0)", $incomeColumns));
@@ -401,16 +406,22 @@ class DashboardController extends Controller
         $propertyMomFilterId = $request->input('property_mom_filter_id');
         $allPropertiesForFilter = Property::orderBy('name')->get();
 
+        // KATEGORI PENDAPATAN (F&B DIGABUNGKAN)
         $categories = [
-            'offline_room_income' => 'Walk In Guest', 'online_room_income'  => 'OTA',
-            'ta_income'           => 'TA/Travel Agent', 'gov_income'          => 'Gov/Government',
-            'corp_income'         => 'Corp/Corporation', 'compliment_income'   => 'Compliment',
-            'house_use_income'    => 'House Use', 'mice_income'         => 'MICE',
-            'fnb_income'          => 'F&B', 'others_income'       => 'Lainnya',
+            'offline_room_income' => 'Walk In',
+            'online_room_income' => 'OTA',
+            'ta_income' => 'Travel Agent',
+            'gov_income' => 'Government',
+            'corp_income' => 'Corporation',
+            'compliment_income' => 'Compliment',
+            'house_use_income' => 'House Use',
+            'mice_income' => 'MICE',
+            'total_fb_revenue' => 'F&B',
+            'others_income' => 'Lain-lain',
         ];
         $categoryColumns = array_keys($categories);
         $categoryLabels = array_values($categories);
-        $categoryColors = ['#e6194B', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#42d4f4', '#f032e6', '#bfef45', '#808000'];
+        $categoryColors = ['#e6194B', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#42d4f4', '#f032e6', '#bfef45', '#808000', '#000075', '#a9a9a9'];
         $incomeSumRaw = implode(' + ', array_map(fn($col) => "IFNULL(`$col`, 0)", $categoryColumns));
 
         // --- Inisialisasi variabel ---
@@ -459,7 +470,7 @@ class DashboardController extends Controller
                 $trendKontribusiData['datasets'][] = [
                     'label' => $categoryLabels[$key],
                     'data' => $monthlyCategoryIncome->pluck('total_'.$column.'_monthly')->all(),
-                    'borderColor' => $categoryColors[$key], 'backgroundColor' => $categoryColors[$key],
+                    'borderColor' => $categoryColors[$key % count($categoryColors)], 'backgroundColor' => $categoryColors[$key % count($categoryColors)],
                     'fill' => false, 'tension' => 0.1
                 ];
             }
@@ -502,7 +513,7 @@ class DashboardController extends Controller
             }
 
             if ($currentMonthTotals) {
-                $multiMonthCategoryGrowth[$currentMonthCarbon->isoFormat('MMMM YYYY')] = $growthForCurrentMonth;
+                $multiMonthCategoryGrowth[$currentMonthCarbon->isoFormat('MMMMfindIndex')] = $growthForCurrentMonth;
             }
         }
 
@@ -528,7 +539,7 @@ class DashboardController extends Controller
             $propertyTargetAchievements[] = ['id' => $property->id, 'name' => $property->name, 'total_target' => $totalTargetAmountForPeriod, 'total_actual' => $totalActualRevenueForPeriod, 'achievement_percentage' => $hasValidTarget ? round($achievementPercentage, 2) : null, 'has_valid_target' => $hasValidTarget];
         }
         $averageOverallAchievement = ($propertiesWithTargetsCount > 0) ? round($totalAchievementSum / $propertiesWithTargetsCount, 2) : null;
-        $percentagePropertiesAchieved = ($propertiesWithTargetsCount > 0) ? round(($propertiesAchievedTargetCount / $propertiesWithTargetsCount) * 100, 2) : 0;
+        $percentagePropertiesAchieved = ($propertiesWithTargetsCount > 0) ? round(($propertiesWithTargetsCount / $propertiesWithTargetsCount) * 100, 2) : 0;
         $sortableAchievements = array_filter($propertyTargetAchievements, fn($item) => $item['has_valid_target']);
         usort($sortableAchievements, fn($a, $b) => $b['achievement_percentage'] <=> $a['achievement_percentage']);
         $topPropertyTarget = !empty($sortableAchievements) ? $sortableAchievements[0] : null;
@@ -611,7 +622,7 @@ class DashboardController extends Controller
         $monthlyAchievementPercentage = ($totalMonthlyTarget > 0) ? ($monthToDateActual / $totalMonthlyTarget) * 100 : 0;
 
         $monthlyPacingData = [
-            'monthName' => $pacingMonth->isoFormat('MMMM YYYY'),
+            'monthName' => $pacingMonth->isoFormat('MMMMfindIndex'),
             'totalMonthlyTarget' => $totalMonthlyTarget,
             'monthToDateActual' => $monthToDateActual,
             'totalRemainingTarget' => $totalRemainingTarget,
