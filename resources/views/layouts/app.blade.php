@@ -5,7 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Laravel') }}</title>
+    {{-- =================================================================== --}}
+    {{-- >> AWAL PERUBAHAN: Judul dan Favicon Dinamis dari Pengaturan << --}}
+    {{-- =================================================================== --}}
+    <title>{{ setting('app_name', config('app.name', 'Laravel')) }}</title>
+    
+    @if(setting('favicon_path'))
+        <link rel="icon" href="{{ asset('storage/' . setting('favicon_path')) }}" type="image/png">
+    @else
+        {{-- Fallback jika tidak ada favicon di pengaturan --}}
+        <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
+    @endif
+    {{-- =================================================================== --}}
+    {{-- >> AKHIR PERUBAHAN <<                                            --}}
+    {{-- =================================================================== --}}
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">

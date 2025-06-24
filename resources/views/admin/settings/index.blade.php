@@ -1,4 +1,4 @@
-<x-admin-layout>
+<x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
             {{ __('Pengaturan Aplikasi') }}
@@ -6,65 +6,73 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
-                    
-                    @if (session('success'))
-                        <div class="mb-4 p-4 bg-green-100 text-green-800 rounded-lg">
-                            {{ session('success') }}
-                        </div>
-                    @endif
-
                     <form action="{{ route('admin.settings.store') }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         <div class="space-y-6">
+                            
+                            <!-- Nama Aplikasi -->
+                            <div>
+                                <x-input-label for="app_name" :value="__('Nama Aplikasi')" />
+                                <x-text-input id="app_name" name="app_name" type="text" class="mt-1 block w-full" :value="old('app_name', $settings['app_name']->value ?? '')" required autofocus />
+                                <x-input-error class="mt-2" :messages="$errors->get('app_name')" />
+                            </div>
 
-                            <div class="border-b border-gray-200 dark:border-gray-700 pb-6">
-                                <h3 class="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100">Branding</h3>
-                                <div class="mt-4 grid grid-cols-1 gap-y-6 sm:grid-cols-6 sm:gap-x-6">
-                                    <div class="sm:col-span-6">
-                                        <label for="app_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nama Aplikasi</label>
-                                        <input type="text" name="app_name" id="app_name" value="{{ $settings['app_name'] ?? '' }}" class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-                                    </div>
+                            <!-- Logo Aplikasi -->
+                            <div class="mt-4">
+                                <x-input-label for="logo_path" :value="__('Logo Aplikasi (Disarankan .png transparan)')" />
+                                <div class="mt-2 flex items-center space-x-4">
+                                    @if(isset($settings['logo_path']) && $settings['logo_path']->value)
+                                        <img src="{{ asset('storage/' . $settings['logo_path']->value) }}" alt="Logo saat ini" class="h-16 w-16 bg-gray-200 dark:bg-gray-700 p-1 rounded-md object-contain">
+                                    @endif
+                                    <x-text-input id="logo_path" name="logo_path" type="file" class="block w-full" />
+                                </div>
+                                <x-input-error class="mt-2" :messages="$errors->get('logo_path')" />
+                            </div>
 
-                                    <div class="sm:col-span-6">
-                                        <label for="app_logo" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Logo Aplikasi</label>
-                                        <input type="file" name="app_logo" id="app_logo" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                                        @if(isset($settings['logo_path']) && $settings['logo_path'])
-                                            <div class="mt-2">
-                                                <img src="{{ asset('storage/' . $settings['logo_path']) }}" alt="Current Logo" class="h-16 w-auto">
-                                            </div>
-                                        @endif
-                                    </div>
-                                    
-                                    {{-- Input untuk ukuran logo LOGIN --}}
-                                    <div class="sm:col-span-3">
-                                        <label for="logo_size" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Ukuran Logo Login (px)</label>
-                                        <input type="number" name="logo_size" id="logo_size" value="{{ $settings['logo_size'] ?? 80 }}" class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="Contoh: 80">
-                                        <p class="mt-1 text-xs text-gray-500">Tinggi logo dalam piksel di halaman login.</p>
-                                    </div>
+                            <!-- ============================================== -->
+                            <!-- >> AWAL: Form Input Baru untuk Favicon << -->
+                            <!-- ============================================== -->
+                            <div class="mt-4">
+                                <x-input-label for="favicon_path" :value="__('Favicon (.png atau .ico)')" />
+                                <div class="mt-2 flex items-center space-x-4">
+                                    @if(isset($settings['favicon_path']) && $settings['favicon_path']->value)
+                                        <img src="{{ asset('storage/' . $settings['favicon_path']->value) }}" alt="Favicon saat ini" class="h-8 w-8 bg-gray-200 dark:bg-gray-700 p-1 rounded-md object-contain">
+                                    @endif
+                                    <x-text-input id="favicon_path" name="favicon_path" type="file" class="block w-full" />
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Unggah gambar kotak (misal: 32x32 atau 64x64 piksel) untuk hasil terbaik.</p>
+                                <x-input-error class="mt-2" :messages="$errors->get('favicon_path')" />
+                            </div>
+                            <!-- ============================================== -->
+                            <!-- >> AKHIR: Form Input Baru untuk Favicon <<  -->
+                            <!-- ============================================== -->
 
-                                    {{-- ======================= AWAL BLOK YANG DITAMBAHKAN ======================= --}}
-                                    <div class="sm:col-span-3">
-                                        <label for="sidebar_logo_size" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Ukuran Logo Sidebar (px)</label>
-                                        <input type="number" name="sidebar_logo_size" id="sidebar_logo_size" value="{{ $settings['sidebar_logo_size'] ?? 40 }}" class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="Contoh: 40">
-                                        <p class="mt-1 text-xs text-gray-500">Tinggi logo dalam piksel di sidebar.</p>
-                                    </div>
-                                    {{-- ======================= AKHIR BLOK YANG DITAMBAHKAN ======================= --}}
-
+                            <!-- Ukuran Logo -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                                <div>
+                                    <x-input-label for="logo_size" :value="__('Ukuran Logo Login (px)')" />
+                                    <x-text-input id="logo_size" name="logo_size" type="number" class="mt-1 block w-full" :value="old('logo_size', $settings['logo_size']->value ?? '120')" />
+                                    <p class="text-xs text-gray-500 mt-1">Tinggi logo dalam piksel di halaman login.</p>
+                                    <x-input-error class="mt-2" :messages="$errors->get('logo_size')" />
+                                </div>
+                                <div>
+                                    <x-input-label for="sidebar_logo_size" :value="__('Ukuran Logo Sidebar (px)')" />
+                                    <x-text-input id="sidebar_logo_size" name="sidebar_logo_size" type="number" class="mt-1 block w-full" :value="old('sidebar_logo_size', $settings['sidebar_logo_size']->value ?? '75')" />
+                                    <p class="text-xs text-gray-500 mt-1">Tinggi logo dalam piksel di sidebar.</p>
+                                    <x-input-error class="mt-2" :messages="$errors->get('sidebar_logo_size')" />
                                 </div>
                             </div>
-                            
-                        </div>
 
-                        <div class="mt-6">
-                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Simpan Pengaturan</button>
+                            <div class="flex items-center gap-4 mt-6">
+                                <x-primary-button>{{ __('Simpan Pengaturan') }}</x-primary-button>
+                            </div>
                         </div>
                     </form>
-
                 </div>
             </div>
         </div>
     </div>
-</x-admin-layout>
+</x-app-layout>

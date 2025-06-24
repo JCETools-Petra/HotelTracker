@@ -48,11 +48,11 @@
                     Ringkasan Pendapatan {{ $property->name }}
                 </h3>
                 <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                     @if($displayStartDate && $displayEndDate)
-                        Periode: {{ $displayStartDate->isoFormat('D MMMM YYYY') }} - {{ $displayEndDate->isoFormat('D MMMM YYYY') }}
-                     @else
-                        (Menampilkan data 30 hari terakhir untuk tren, dan keseluruhan untuk distribusi jika tidak ada filter)
-                     @endif
+                       @if($displayStartDate && $displayEndDate)
+                           Periode: {{ $displayStartDate->isoFormat('D MMMM YYYY') }} - {{ $displayEndDate->isoFormat('D MMMM YYYY') }}
+                       @else
+                           (Menampilkan data 30 hari terakhir untuk tren, dan keseluruhan untuk distribusi jika tidak ada filter)
+                       @endif
                 </p>
 
                 <div class="mb-6 p-4 bg-indigo-50 dark:bg-indigo-900 rounded-lg">
@@ -62,7 +62,6 @@
                     </p>
                 </div>
 
-                {{-- ================== KODE BARU UNTUK TARGET HARIAN ================== --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div class="p-4 bg-green-50 dark:bg-green-900 rounded-lg shadow">
                         <h4 class="text-lg font-medium text-green-700 dark:text-green-300">Target Harian ({{ $displayEndDate->isoFormat('D MMM') }})</h4>
@@ -80,7 +79,6 @@
                         </p>
                     </div>
                 </div>
-                {{-- ================== AKHIR KODE BARU ================== --}}
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="p-4 border dark:border-gray-700 rounded-lg">
@@ -120,15 +118,32 @@
                             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                 @foreach ($incomes as $income)
                                     @php
-                                        $rowTotal = 0;
-                                        foreach(array_keys($incomeCategories) as $column) {
-                                            $rowTotal += $income->{$column} ?? 0;
-                                        }
+                                        // Hitung total per baris dari data yang sudah diproses di controller
+                                        $rowTotal = ($income->offline_room_income ?? 0) +
+                                                    ($income->online_room_income ?? 0) +
+                                                    ($income->ta_income ?? 0) +
+                                                    ($income->gov_income ?? 0) +
+                                                    ($income->corp_income ?? 0) +
+                                                    ($income->compliment_income ?? 0) +
+                                                    ($income->house_use_income ?? 0) +
+                                                    ($income->mice_booking_total ?? 0) + // Gunakan MICE dari booking
+                                                    ($income->breakfast_income ?? 0) +
+                                                    ($income->lunch_income ?? 0) +
+                                                    ($income->dinner_income ?? 0) +
+                                                    ($income->others_income ?? 0);
                                     @endphp
                                     <tr>
                                         <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ \Carbon\Carbon::parse($income->date)->isoFormat('dddd, D MMM YYYY') }}</td>
                                         @foreach(array_keys($incomeCategories) as $column)
-                                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">{{ number_format($income->{$column} ?? 0, 0, ',', '.') }}</td>
+                                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">
+                                                @if($column === 'fnb_income')
+                                                    {{ number_format(($income->breakfast_income ?? 0) + ($income->lunch_income ?? 0) + ($income->dinner_income ?? 0), 0, ',', '.') }}
+                                                @elseif($column === 'mice_income')
+                                                    {{ number_format($income->mice_booking_total ?? 0, 0, ',', '.') }}
+                                                @else
+                                                    {{ number_format($income->{$column} ?? 0, 0, ',', '.') }}
+                                                @endif
+                                            </td>
                                         @endforeach
                                         <td class="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-gray-100 text-right">{{ number_format($rowTotal, 0, ',', '.') }}</td>
                                     </tr>

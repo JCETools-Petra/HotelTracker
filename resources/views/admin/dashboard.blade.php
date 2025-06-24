@@ -141,22 +141,38 @@
         Chart.defaults.color = isDarkMode ? '#e5e7eb' : '#6b7280';
         Chart.defaults.borderColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
 
+        // ==========================================================
+        // >> AWAL PERUBAHAN: Gunakan variabel baru untuk Pie Chart <<
+        // ==========================================================
+        const pieChartData = @json($pieChartDataSource);
+        const pieChartCategories = @json($pieChartCategories);
+        
+        // Variabel lama dipertahankan jika digunakan oleh bagian lain dari halaman
         const overallIncomeSourceData = @json($overallIncomeSource);
-        const overallIncomeByPropertyData = @json($overallIncomeByProperty);
         const incomeCategories = @json($incomeCategories);
+        // ==========================================================
+        // >> AKHIR PERUBAHAN <<
+        // ==========================================================
+        
+        const overallIncomeByPropertyData = @json($overallIncomeByProperty);
         const chartColors = @json($chartColors);
 
         let myPieChart;
 
         // >> SCRIPT UNTUK MEMBUAT PIE CHART INTERAKTIF <<
-        // Kode ini sekarang secara otomatis akan menyertakan Breakfast, Lunch, dan Dinner
         const pieCanvas = document.getElementById('overallSourcePieChart');
         const pieLegendContainer = document.getElementById('pieChartLegend');
         const pieChartContainer = document.getElementById('pieChartContainer');
 
         if (pieCanvas && pieLegendContainer && pieChartContainer) {
-            const pieLabels = Object.values(incomeCategories);
-            const pieDataValues = overallIncomeSourceData ? Object.keys(incomeCategories).map(key => overallIncomeSourceData['total_' + key] || 0) : [];
+            // ==========================================================
+            // >> AWAL PERUBAHAN: Gunakan variabel baru untuk Pie Chart <<
+            // ==========================================================
+            const pieLabels = Object.values(pieChartCategories);
+            const pieDataValues = pieChartData ? Object.keys(pieChartCategories).map(key => pieChartData['total_' + key] || 0) : [];
+            // ==========================================================
+            // >> AKHIR PERUBAHAN <<
+            // ==========================================================
             
             const hasPieData = pieDataValues.some(v => v > 0);
 

@@ -98,6 +98,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::resource('mice-categories', App\Http\Controllers\Admin\MiceCategoryController::class);
             Route::resource('properties.rooms', App\Http\Controllers\Admin\RoomController::class)->shallow();
             Route::get('/activity-log', [App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('activity_log.index');
+            Route::get('calendar', [CalendarController::class, 'index'])->name('calendar.index');
+            Route::get('calendar/events', [CalendarController::class, 'events'])->name('calendar.events');
         });
     
     // Grup route untuk Sales

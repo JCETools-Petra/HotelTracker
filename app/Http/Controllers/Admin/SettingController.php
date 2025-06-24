@@ -6,58 +6,65 @@ use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Cache; // Pastikan Cache di-import
+use Illuminate\Support\Facades\Cache;
 
 class SettingController extends Controller
 {
     public function index()
     {
-        // Ambil semua setting dan ubah menjadi array asosiatif (key => value)
-        $settings = Setting::pluck('value', 'key');
+        // Mengambil semua pengaturan sebagai koleksi yang diindeks oleh 'key'
+        $settings = Setting::all()->keyBy('key');
         return view('admin.settings.index', compact('settings'));
     }
 
     public function store(Request $request)
     {
-        // ======================= AWAL BLOK YANG DIUBAH =======================
-        
-        // 1. Tambahkan validasi untuk semua input
-        $request->validate([
-            'app_name' => 'nullable|string|max:255',
-            'logo' => 'nullable|image|mimes:png,jpg,jpeg,svg|max:2048',
-            'logo_size' => 'nullable|integer|min:20|max:200',
-            'sidebar_logo_size' => 'nullable|integer|min:20|max:200',
+        // Validasi input
+        $validatedData = $request->validate([
+            'app_name' => 'required|string|max:255',
+            'logo_path' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'favicon_path' => 'nullable|image|mimes:png,ico|max:512', // Validasi untuk favicon
+            'logo_size' => 'nullable|integer|min:10',
+            'sidebar_logo_size' => 'nullable|integer|min:10',
         ]);
 
-        // 2. Tambahkan logika untuk menyimpan Nama Aplikasi
-        if ($request->filled('app_name')) {
-            Setting::updateOrCreate(['key' => 'app_name'], ['value' => $request->app_name]);
+        // Proses dan simpan setiap pengaturan
+        foreach ($validatedData as $key => $value) {
+            Setting::updateOrCreate(['key' => $key], ['value' => $value]);
         }
-
-        // Proses upload logo jika ada file baru
-        if ($request->hasFile('logo')) {
+        
+        // Menangani unggahan Logo Aplikasi
+        if ($request->hasFile('logo_path')) {
+            // Hapus logo lama jika ada
             $oldLogo = Setting::where('key', 'logo_path')->first();
             if ($oldLogo && $oldLogo->value) {
                 Storage::disk('public')->delete($oldLogo->value);
             }
-            $path = $request->file('logo')->store('branding', 'public');
+            // Simpan logo baru
+            $path = $request->file('logo_path')->store('branding', 'public');
             Setting::updateOrCreate(['key' => 'logo_path'], ['value' => $path]);
         }
-        
-        // Simpan ukuran logo login jika diisi
-        if ($request->filled('logo_size')) {
-            Setting::updateOrCreate(['key' => 'logo_size'], ['value' => $request->logo_size]);
-        }
 
-        // Simpan ukuran logo sidebar jika diisi
-        if ($request->filled('sidebar_logo_size')) {
-            Setting::updateOrCreate(['key' => 'sidebar_logo_size'], ['value' => $request->sidebar_logo_size]);
+        // ==============================================================
+        // >> AWAL: Logika Baru untuk Menangani Unggahan Favicon <<
+        // ==============================================================
+        if ($request->hasFile('favicon_path')) {
+            // Hapus favicon lama jika ada
+            $oldFavicon = Setting::where('key', 'favicon_path')->first();
+            if ($oldFavicon && $oldFavicon->value) {
+                Storage::disk('public')->delete($oldFavicon->value);
+            }
+            // Simpan favicon baru
+            $faviconPath = $request->file('favicon_path')->store('branding', 'public');
+            Setting::updateOrCreate(['key' => 'favicon_path'], ['value' => $faviconPath]);
         }
-        // ======================= AKHIR BLOK YANG DIUBAH ======================
+        // ==============================================================
+        // >> AKHIR: Logika Baru untuk Menangani Unggahan Favicon <<
+        // ==============================================================
 
-        // Hapus cache agar perubahan langsung terlihat di seluruh aplikasi
+        // Hapus cache pengaturan agar perubahan langsung diterapkan
         Cache::forget('app_settings');
 
-        return redirect()->back()->with('success', 'Pengaturan berhasil disimpan.');
+        return redirect()->route('admin.settings.index')->with('success', 'Pengaturan berhasil diperbarui.');
     }
 }
