@@ -16,11 +16,17 @@ class PricePackageController extends Controller
 
     public function create()
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         return view('admin.price_packages.create');
     }
 
     public function store(Request $request)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         $request->validate([
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
@@ -34,11 +40,17 @@ class PricePackageController extends Controller
 
     public function edit(PricePackage $pricePackage)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         return view('admin.price_packages.edit', compact('pricePackage'));
     }
 
     public function update(Request $request, PricePackage $pricePackage)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         $request->validate([
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
@@ -56,6 +68,9 @@ class PricePackageController extends Controller
 
     public function destroy(PricePackage $pricePackage)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         $pricePackage->delete();
         return redirect()->route('admin.price-packages.index')->with('success', 'Paket harga berhasil dihapus.');
     }

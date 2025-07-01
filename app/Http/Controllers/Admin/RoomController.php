@@ -23,6 +23,9 @@ class RoomController extends Controller
      */
     public function create(Property $property)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         return view('admin.rooms.create', compact('property'));
     }
 
@@ -31,6 +34,9 @@ class RoomController extends Controller
      */
     public function store(Request $request, Property $property)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'capacity' => 'nullable|string|max:255',
@@ -48,6 +54,9 @@ class RoomController extends Controller
      */
     public function edit(Room $room)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         $property = $room->property;
         return view('admin.rooms.edit', compact('room', 'property'));
     }
@@ -57,6 +66,9 @@ class RoomController extends Controller
      */
     public function update(Request $request, Room $room)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'capacity' => 'nullable|string|max:255',
@@ -74,6 +86,9 @@ class RoomController extends Controller
      */
     public function destroy(Room $room)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         $property = $room->property;
         $room->delete();
 

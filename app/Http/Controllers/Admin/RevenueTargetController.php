@@ -47,6 +47,9 @@ class RevenueTargetController extends Controller
     // app\Http\Controllers\Admin\RevenueTargetController.php
     public function create()
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         $properties = Property::orderBy('name')->get();
         ($properties); // PASTIKAN INI MASIH ADA UNTUK SEKARANG
 
@@ -61,6 +64,9 @@ class RevenueTargetController extends Controller
      */
     public function store(Request $request)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         $request->validate([
             'property_id' => 'required|exists:properties,id',
             'month_year' => [
@@ -102,6 +108,9 @@ class RevenueTargetController extends Controller
      */
     public function edit(RevenueTarget $revenueTarget)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         $properties = Property::orderBy('name')->get(); // Juga butuh ini untuk edit
         // Format month_year ke YYYY-MM untuk ditampilkan di input type="month"
         $revenueTarget->month_year_form = Carbon::parse($revenueTarget->month_year)->format('Y-m');
@@ -113,6 +122,9 @@ class RevenueTargetController extends Controller
      */
     public function update(Request $request, RevenueTarget $revenueTarget) // Route Model Binding
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
          $request->validate([
             'property_id' => 'required|exists:properties,id',
             'month_year' => [
@@ -145,6 +157,9 @@ class RevenueTargetController extends Controller
      */
     public function destroy(RevenueTarget $revenueTarget) // Route Model Binding
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         $revenueTarget->delete();
         return redirect()->route('admin.revenue-targets.index')
             ->with('success', 'Target pendapatan berhasil dihapus.');

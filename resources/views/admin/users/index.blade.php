@@ -19,11 +19,13 @@
                 <x-nav-link :href="route('admin.users.trashed')" :active="request()->routeIs('admin.users.trashed')">
                     {{ __('Pengguna Dinonaktifkan') }}
                 </x-nav-link>
-                {{-- Tombol untuk Tambah Pengguna Baru --}}
-                <a href="{{ route('admin.users.create') }}"
-                   class="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 dark:hover:bg-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
-                    {{ __('+ Tambah Pengguna') }}
-                </a>
+                @if(auth()->user()->role == 'admin')
+                    {{-- Tombol untuk Tambah Pengguna Baru --}}
+                    <a href="{{ route('admin.users.create') }}"
+                       class="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 dark:hover:bg-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
+                        {{ __('+ Tambah Pengguna') }}
+                    </a>
+                @endif
             </nav>
         </div>
     </x-slot>
@@ -80,17 +82,19 @@
                                             {{ $user->created_at ? $user->created_at->isoFormat('D MMM YYYY, HH:mm') : '-' }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                                            <a href="{{ route('admin.users.edit', $user->id) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200">Edit</a>
-                                            
-                                            {{-- !! FORM HAPUS (SOFT DELETE) !! --}}
-                                            @if(Auth::id() !== $user->id) {{-- Admin tidak bisa menghapus diri sendiri --}}
-                                                <form method="POST" action="{{ route('admin.users.destroy', $user->id) }}" class="inline-block" onsubmit="return confirm('Apakah Anda yakin ingin menonaktifkan pengguna {{ addslashes($user->name) }}? Pengguna ini tidak akan bisa login lagi tetapi datanya tetap ada.');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200">Nonaktifkan</button>
-                                                </form>
+                                            @if(auth()->user()->role == 'admin')
+                                                <a href="{{ route('admin.users.edit', $user->id) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200">Edit</a>
+
+                                                {{-- !! FORM HAPUS (SOFT DELETE) !! --}}
+                                                @if(Auth::id() !== $user->id)
+                                                    <form method="POST" action="{{ route('admin.users.destroy', $user->id) }}" class="inline-block" onsubmit="return confirm('Apakah Anda yakin ingin menonaktifkan pengguna {{ addslashes($user->name) }}? Pengguna ini tidak akan bisa login lagi tetapi datanya tetap ada.');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200">Nonaktifkan</button>
+                                                    </form>
+                                                @endif
+                                                {{-- !! AKHIR FORM HAPUS !! --}}
                                             @endif
-                                            {{-- !! AKHIR FORM HAPUS !! --}}
                                         </td>
                                     </tr>
                                 @empty

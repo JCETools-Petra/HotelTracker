@@ -25,6 +25,9 @@ class UserController extends Controller
      */
     public function create()
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         $properties = Property::orderBy('name')->get();
         
         // Definisikan daftar peran yang bisa dipilih
@@ -44,6 +47,9 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
@@ -78,6 +84,9 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         $properties = Property::orderBy('name')->get();
 
         // Definisikan daftar peran yang bisa dipilih
@@ -97,6 +106,9 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
@@ -125,6 +137,9 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         // Jangan hapus user dengan ID 1 (biasanya super admin)
         if ($user->id === 1) {
             return redirect()->route('admin.users.index')->with('error', 'Super Admin tidak dapat dihapus.');
@@ -138,6 +153,9 @@ class UserController extends Controller
      */
     public function trashedIndex()
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         $users = User::onlyTrashed()->with('property')->latest()->paginate(10);
         return view('admin.users.trashed', compact('users'));
     }
@@ -147,6 +165,9 @@ class UserController extends Controller
      */
     public function restore($id)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         User::onlyTrashed()->findOrFail($id)->restore();
         return redirect()->route('admin.users.trashed')->with('success', 'Pengguna berhasil dipulihkan.');
     }
@@ -156,6 +177,9 @@ class UserController extends Controller
      */
     public function forceDelete($id)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         User::onlyTrashed()->findOrFail($id)->forceDelete();
         return redirect()->route('admin.users.trashed')->with('success', 'Pengguna berhasil dihapus permanen.');
     }
