@@ -22,6 +22,9 @@ class MiceCategoryController extends Controller
      */
     public function create()
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         return view('admin.mice_categories.create');
     }
 
@@ -30,6 +33,9 @@ class MiceCategoryController extends Controller
      */
     public function store(Request $request)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:mice_categories,name',
             'description' => 'nullable|string',
@@ -56,6 +62,9 @@ class MiceCategoryController extends Controller
      */
     public function edit(MiceCategory $miceCategory)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         return view('admin.mice_categories.edit', compact('miceCategory'));
     }
 
@@ -64,6 +73,9 @@ class MiceCategoryController extends Controller
      */
     public function update(Request $request, MiceCategory $miceCategory)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:mice_categories,name,' . $miceCategory->id,
             'description' => 'nullable|string',
@@ -80,6 +92,9 @@ class MiceCategoryController extends Controller
      */
     public function destroy(MiceCategory $miceCategory)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         try {
             $miceCategory->delete();
             return redirect()->route('admin.mice-categories.index')

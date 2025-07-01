@@ -19,6 +19,9 @@ class SettingController extends Controller
 
     public function store(Request $request)
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
+        }
         // Validasi input
         $validatedData = $request->validate([
             'app_name' => 'required|string|max:255',
