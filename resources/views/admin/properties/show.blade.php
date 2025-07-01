@@ -100,9 +100,12 @@
 
             {{-- Tabel Riwayat Pendapatan --}}
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6">
-                <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                    Riwayat Pendapatan Harian
-                </h3>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Riwayat Pendapatan Harian</h3>
+                    @if(auth()->user()->role === 'admin')
+                        <a href="{{ route('admin.properties.incomes.create', $property->id) }}" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm">Tambah Pendapatan</a>
+                    @endif
+                </div>
                 @if($incomes->isEmpty())
                     <p class="text-gray-600 dark:text-gray-400">Tidak ada data pendapatan untuk periode yang dipilih.</p>
                 @else
@@ -115,6 +118,9 @@
                                         <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ $label }}</th>
                                     @endforeach
                                     <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider font-bold">Total</th>
+                                    @if(auth()->user()->role === 'admin')
+                                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Aksi</th>
+                                    @endif
                                 </tr>
                             </thead>
                             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -148,6 +154,16 @@
                                             </td>
                                         @endforeach
                                         <td class="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-gray-100 text-right">{{ number_format($rowTotal, 0, ',', '.') }}</td>
+                                        @if(auth()->user()->role === 'admin')
+                                            <td class="px-4 py-4 whitespace-nowrap text-sm space-x-2">
+                                                <a href="{{ route('admin.properties.incomes.edit', $income->id) }}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
+                                                <form action="{{ route('admin.properties.incomes.destroy', $income->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Hapus data ini?');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="text-red-600 hover:text-red-900">Hapus</button>
+                                                </form>
+                                            </td>
+                                        @endif
                                     </tr>
                                 @endforeach
                             </tbody>

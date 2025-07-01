@@ -70,13 +70,19 @@ class PropertyIncomeController extends Controller
     /**
      * Menampilkan form untuk membuat data pendapatan harian baru.
      */
-    public function create()
+    public function create(Property $property = null)
     {
         $user = Auth::user();
-        $property = $user->property;
 
-        if (!$property) {
-            return redirect('/')->with('error', 'Anda tidak terkait dengan properti manapun.');
+        if ($user->role === 'admin') {
+            if (!$property) {
+                return redirect()->back()->with('error', 'Properti tidak ditemukan.');
+            }
+        } else {
+            $property = $user->property;
+            if (!$property) {
+                return redirect('/')->with('error', 'Anda tidak terkait dengan properti manapun.');
+            }
         }
 
         return view('property.income.create', [
@@ -88,13 +94,19 @@ class PropertyIncomeController extends Controller
     /**
      * Menyimpan data pendapatan harian baru ke database.
      */
-    public function store(Request $request)
+    public function store(Request $request, Property $property = null)
     {
         $user = Auth::user();
-        $property = $user->property;
 
-        if (!$property) {
-            return redirect('/')->with('error', 'Tidak dapat menyimpan data, Anda tidak terkait dengan properti.');
+        if ($user->role === 'admin') {
+            if (!$property) {
+                return redirect()->back()->with('error', 'Properti tidak ditemukan.');
+            }
+        } else {
+            $property = $user->property;
+            if (!$property) {
+                return redirect('/')->with('error', 'Tidak dapat menyimpan data, Anda tidak terkait dengan properti.');
+            }
         }
 
         // 1. Validasi semua input dari form (DENGAN KOLOM BARU)
@@ -155,6 +167,10 @@ class PropertyIncomeController extends Controller
         // 4. Simpan data ke database
         DailyIncome::create($incomeData);
 
+        if ($user->role === 'admin') {
+            return redirect()->route('admin.properties.show', $property->id)->with('success', 'Pendapatan harian berhasil dicatat.');
+        }
+
         return redirect()->route('property.income.index')->with('success', 'Pendapatan harian berhasil dicatat.');
     }
 
@@ -167,7 +183,7 @@ class PropertyIncomeController extends Controller
         if ($user->role !== 'admin' && $user->property_id != $dailyIncome->property_id) {
             abort(403, 'Akses tidak diizinkan untuk mengedit data ini.');
         }
-        $property = $user->property;
+        $property = $user->role === 'admin' ? $dailyIncome->property : $user->property;
         return view('property.income.edit', compact('dailyIncome', 'property'));
     }
 
@@ -263,7 +279,8 @@ class PropertyIncomeController extends Controller
         $dailyIncome->delete();
 
         if ($user->role === 'admin') {
-            return back()->with('success', 'Data pendapatan untuk tanggal ' . Carbon::parse($originalDate)->isoFormat('D MMMM YYYY') . ' berhasil dihapus.');
+            return redirect()->route('admin.properties.show', $dailyIncome->property_id)
+                ->with('success', 'Data pendapatan untuk tanggal ' . Carbon::parse($originalDate)->isoFormat('D MMMM YYYY') . ' berhasil dihapus.');
         }
 
         return redirect()->route('property.income.index')->with('success', 'Data pendapatan untuk tanggal ' . Carbon::parse($originalDate)->isoFormat('D MMMM YYYY') . ' berhasil dihapus.');

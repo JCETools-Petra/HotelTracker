@@ -90,12 +90,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
             
             Route::resource('users', AdminUserController::class)->except(['show']);
             Route::get('users/trashed', [AdminUserController::class, 'trashedIndex'])->name('users.trashed');
-            Route::put('users/{id}/restore', [AdminUserController::class, 'restore'])->name('users.restore');  
+            Route::put('users/{id}/restore', [AdminUserController::class, 'restore'])->name('users.restore');
             Route::delete('users/{id}/force-delete', [AdminUserController::class, 'forceDelete'])->name('users.forceDelete');
-            
+
             // [FIX] Pindahkan route spesifik SEBELUM route resource
             Route::get('/properties/compare', [AdminPropertyController::class, 'showComparisonForm'])->name('properties.compare_page');
             Route::get('/properties/compare/results', [AdminPropertyController::class, 'showComparisonResults'])->name('properties.compare.results');
+
+            // Kelola pendapatan harian untuk setiap properti
+            Route::get('properties/{property}/incomes/create', [PropertyIncomeController::class, 'create'])->name('properties.incomes.create');
+            Route::post('properties/{property}/incomes', [PropertyIncomeController::class, 'store'])->name('properties.incomes.store');
+            Route::get('properties/incomes/{dailyIncome}/edit', [PropertyIncomeController::class, 'edit'])->name('properties.incomes.edit');
+            Route::put('properties/incomes/{dailyIncome}', [PropertyIncomeController::class, 'update'])->name('properties.incomes.update');
+            Route::delete('properties/incomes/{dailyIncome}', [PropertyIncomeController::class, 'destroy'])->name('properties.incomes.destroy');
             Route::resource('properties', AdminPropertyController::class);
             
             Route::resource('revenue-targets', RevenueTargetController::class);

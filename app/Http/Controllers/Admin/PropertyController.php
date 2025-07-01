@@ -106,6 +106,7 @@ class PropertyController extends Controller
 
             $dayData = new \stdClass();
             $dayData->date = $date->toDateTimeString();
+            $dayData->id = $income->id ?? null;
 
             foreach ($dbDailyIncomeColumns as $column) {
                 $dayData->{$column} = $income->{$column} ?? 0;
