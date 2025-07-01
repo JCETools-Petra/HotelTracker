@@ -230,6 +230,9 @@ class PropertyController extends Controller
     /**
      * Menampilkan hasil perbandingan properti.
      */
+    /**
+     * Menampilkan hasil perbandingan properti.
+     */
     public function showComparisonResults(Request $request)
     {
         $validated = $request->validate([
@@ -271,15 +274,25 @@ class PropertyController extends Controller
         $totalRevenueRaw = implode(' + ', array_map(fn($col) => "IFNULL(`$col`, 0)", $dbCategoryColumns));
         $selectedPropertiesModels = Property::whereIn('id', $propertyIds)->get();
 
+        // =====================================================================
+        // >> AWAL PERBAIKAN 1: Mengambil data booking untuk setiap properti <<
+        // =====================================================================
         foreach ($selectedPropertiesModels as $property) {
+            // 1. Ambil data agregat dari DailyIncome (seperti sebelumnya)
             $incomeDetails = DailyIncome::where('property_id', $property->id)
                 ->whereBetween('date', [$startDate, $endDate])
                 ->select(DB::raw("SUM({$totalRevenueRaw}) as total_revenue, " . implode(', ', array_map(fn($col) => "SUM(IFNULL(`{$col}`, 0)) as `{$col}`", $dbCategoryColumns))))
                 ->first();
+            
+            // 2. [BARU] Ambil total pendapatan MICE dari tabel Booking
+            $miceRevenueFromBooking = Booking::where('property_id', $property->id)
+                ->where('status', 'Booking Pasti') // Pastikan status sesuai
+                ->whereBetween('event_date', [$startDate, $endDate])
+                ->sum('total_price'); // Ganti 'total_price' jika nama kolom berbeda
 
             $dataPoint = ['name' => $property->name];
             
-            // Proses data untuk tampilan, gabungkan F&B
+            // 3. Proses data untuk tampilan, gabungkan F&B
             $totalFnb = ($incomeDetails->breakfast_income ?? 0) + ($incomeDetails->lunch_income ?? 0) + ($incomeDetails->dinner_income ?? 0);
             $dataPoint['offline_room_income'] = $incomeDetails->offline_room_income ?? 0;
             $dataPoint['online_room_income'] = $incomeDetails->online_room_income ?? 0;
@@ -288,14 +301,24 @@ class PropertyController extends Controller
             $dataPoint['corp_income'] = $incomeDetails->corp_income ?? 0;
             $dataPoint['compliment_income'] = $incomeDetails->compliment_income ?? 0;
             $dataPoint['house_use_income'] = $incomeDetails->house_use_income ?? 0;
-            $dataPoint['mice_income'] = $incomeDetails->mice_income ?? 0;
             $dataPoint['fnb_income'] = $totalFnb;
             $dataPoint['others_income'] = $incomeDetails->others_income ?? 0;
             
-            $dataPoint['total_revenue'] = $incomeDetails->total_revenue ?? 0;
+            // 4. [MODIFIKASI] Gabungkan MICE dari DailyIncome dan Booking
+            $miceFromDailyIncome = $incomeDetails->mice_income ?? 0;
+            $dataPoint['mice_income'] = $miceFromDailyIncome + $miceRevenueFromBooking;
+            
+            // 5. [MODIFIKASI] Kalkulasi ulang total pendapatan
+            $totalFromDailyIncome = $incomeDetails->total_revenue ?? 0;
+            $dataPoint['total_revenue'] = $totalFromDailyIncome + $miceRevenueFromBooking;
+            
             $comparisonData[] = $dataPoint;
         }
+        // =====================================================================
+        // >> AKHIR PERBAIKAN 1 <<
+        // =====================================================================
 
+        // Data untuk Grouped Bar Chart (Tidak perlu diubah, karena sudah membaca dari $comparisonData)
         $datasetsForGroupedBar = [];
         $colors = ['rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)', 'rgba(255, 206, 86, 0.7)', 'rgba(75, 192, 192, 0.7)', 'rgba(153, 102, 255, 0.7)', 'rgba(255, 159, 64, 0.7)'];
         foreach ($selectedPropertiesModels as $index => $property) {
@@ -313,15 +336,45 @@ class PropertyController extends Controller
         $period = CarbonPeriod::create($startDate, '1 day', $endDate);
         $dateLabels = collect($period)->map(fn($date) => $date->isoFormat('D MMM'));
         $datasetsForTrend = [];
+        
+        // =====================================================================
+        // >> AWAL PERBAIKAN 2: Mengambil data booking untuk grafik tren <<
+        // =====================================================================
         foreach ($selectedPropertiesModels as $index => $property) {
+            // 1. Ambil tren pendapatan harian dari DailyIncome (seperti sebelumnya)
             $dailyIncomes = DailyIncome::where('property_id', $property->id)
                 ->whereBetween('date', [$startDate, $endDate])
                 ->select('date', DB::raw("SUM({$totalRevenueRaw}) as daily_total_revenue"))
-                ->groupBy('date')->orderBy('date', 'asc')->get()->keyBy(fn($item) => Carbon::parse($item->date)->isoFormat('D MMM'));
+                ->groupBy('date')->orderBy('date', 'asc')->get()
+                ->keyBy(fn($item) => Carbon::parse($item->date)->isoFormat('D MMM'));
             
-            $trendDataPoints = $dateLabels->map(fn($label) => $dailyIncomes->get($label)->daily_total_revenue ?? 0);
-            $datasetsForTrend[] = ['label' => $property->name, 'data' => $trendDataPoints, 'borderColor' => $property->chart_color ?? $colors[$index % count($colors)], 'fill' => false, 'tension' => 0.1];
+            // 2. [BARU] Ambil tren pendapatan MICE harian dari Booking
+            $dailyMiceFromBookings = Booking::where('property_id', $property->id)
+                ->where('status', 'Booking Pasti')
+                ->whereBetween('event_date', [$startDate, $endDate])
+                ->select(DB::raw('DATE(event_date) as date'), DB::raw('SUM(total_price) as daily_mice_revenue'))
+                ->groupBy('date')
+                ->get()
+                ->keyBy(fn($item) => Carbon::parse($item->date)->isoFormat('D MMM'));
+            
+            // 3. [MODIFIKASI] Gabungkan kedua sumber data untuk mendapatkan tren total
+            $trendDataPoints = $dateLabels->map(function($label) use ($dailyIncomes, $dailyMiceFromBookings) {
+                $incomeTotal = $dailyIncomes->get($label)->daily_total_revenue ?? 0;
+                $miceTotal = $dailyMiceFromBookings->get($label)->daily_mice_revenue ?? 0;
+                return $incomeTotal + $miceTotal;
+            });
+
+            $datasetsForTrend[] = [
+                'label' => $property->name, 
+                'data' => $trendDataPoints, 
+                'borderColor' => $property->chart_color ?? $colors[$index % count($colors)], 
+                'fill' => false, 
+                'tension' => 0.1
+            ];
         }
+        // =====================================================================
+        // >> AKHIR PERBAIKAN 2 <<
+        // =====================================================================
         $trendChartData = ['labels' => $dateLabels, 'datasets' => $datasetsForTrend];
 
         return view('admin.properties.compare_results', [

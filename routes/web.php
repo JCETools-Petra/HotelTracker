@@ -1,5 +1,12 @@
 <?php
 
+use Illuminate\Support\Facades\Artisan;
+
+Route::get('/debug-semua-route-saya', function () {
+    Artisan::call('route:list');
+    return "<pre>" . Artisan::output() . "</pre>";
+});
+
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\PricePackageController;
 use App\Http\Controllers\Admin\PropertyController as AdminPropertyController;
@@ -87,7 +94,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('users/{id}/force-delete', [AdminUserController::class, 'forceDelete'])->name('users.forceDelete');
             
             // [FIX] Pindahkan route spesifik SEBELUM route resource
-            Route::get('/properties/compare', [AdminPropertyController::class, 'showComparisonForm'])->name('properties.compare.form');
+            Route::get('/properties/compare', [AdminPropertyController::class, 'showComparisonForm'])->name('properties.compare_page');
             Route::get('/properties/compare/results', [AdminPropertyController::class, 'showComparisonResults'])->name('properties.compare.results');
             Route::resource('properties', AdminPropertyController::class);
             

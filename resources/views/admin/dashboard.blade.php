@@ -44,7 +44,6 @@
                 <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Ringkasan Pendapatan Keseluruhan (Periode: {{ Str::title($period) }})</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     
-                    {{-- ======================= PIE CHART DENGAN BREAKDOWN F&B ======================= --}}
                     <div class="p-4 border dark:border-gray-700 rounded-lg">
                         <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">Distribusi Sumber Pendapatan</h4>
                         <div id="pieChartContainer" class="flex flex-col md:flex-row items-center gap-4" style="min-height: 300px;">
@@ -89,15 +88,17 @@
                     @endforelse
                 </div>
                 
-                {{-- Laporan Event MICE Lunas --}}
+                {{-- ========================================================================= --}}
+                {{-- >> AWAL PENYESUAIAN BAGIAN LAPORAN MICE << --}}
+                {{-- ========================================================================= --}}
                 <div class="mt-8">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Laporan Event MICE Lunas Terbaru</h3>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Laporan Event MICE</h3>
                     <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                         <div class="p-0">
                             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                 <thead class="bg-gray-50 dark:bg-gray-700/50">
                                     <tr>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Event</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nama Pemesan</th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Hotel</th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Kategori</th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tanggal</th>
@@ -105,8 +106,10 @@
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                    @forelse ($completedMiceEvents as $event)
+                                    {{-- Menggunakan variabel $recentMiceBookings dari controller --}}
+                                    @forelse ($recentMiceBookings as $event)
                                         <tr>
+                                            {{-- Menggunakan customer_name sesuai struktur tabel bookings --}}
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{{ $event->client_name }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $event->property->name ?? 'N/A' }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
@@ -120,7 +123,8 @@
                                     @empty
                                         <tr>
                                             <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                                                Belum ada data event MICE yang lunas untuk ditampilkan.
+                                                {{-- Pesan disesuaikan --}}
+                                                Tidak ada data event MICE pada periode ini.
                                             </td>
                                         </tr>
                                     @endforelse
@@ -129,6 +133,10 @@
                         </div>
                     </div>
                 </div>
+                {{-- ========================================================================= --}}
+                {{-- >> AKHIR PENYESUAIAN << --}}
+                {{-- ========================================================================= --}}
+
             </div>
         </div>
     </div>
@@ -141,39 +149,19 @@
         Chart.defaults.color = isDarkMode ? '#e5e7eb' : '#6b7280';
         Chart.defaults.borderColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
 
-        // ==========================================================
-        // >> AWAL PERUBAHAN: Gunakan variabel baru untuk Pie Chart <<
-        // ==========================================================
         const pieChartData = @json($pieChartDataSource);
         const pieChartCategories = @json($pieChartCategories);
-        
-        // Variabel lama dipertahankan jika digunakan oleh bagian lain dari halaman
-        const overallIncomeSourceData = @json($overallIncomeSource);
-        const incomeCategories = @json($incomeCategories);
-        // ==========================================================
-        // >> AKHIR PERUBAHAN <<
-        // ==========================================================
-        
         const overallIncomeByPropertyData = @json($overallIncomeByProperty);
         const chartColors = @json($chartColors);
-
         let myPieChart;
 
-        // >> SCRIPT UNTUK MEMBUAT PIE CHART INTERAKTIF <<
         const pieCanvas = document.getElementById('overallSourcePieChart');
         const pieLegendContainer = document.getElementById('pieChartLegend');
         const pieChartContainer = document.getElementById('pieChartContainer');
 
         if (pieCanvas && pieLegendContainer && pieChartContainer) {
-            // ==========================================================
-            // >> AWAL PERUBAHAN: Gunakan variabel baru untuk Pie Chart <<
-            // ==========================================================
             const pieLabels = Object.values(pieChartCategories);
             const pieDataValues = pieChartData ? Object.keys(pieChartCategories).map(key => pieChartData['total_' + key] || 0) : [];
-            // ==========================================================
-            // >> AKHIR PERUBAHAN <<
-            // ==========================================================
-            
             const hasPieData = pieDataValues.some(v => v > 0);
 
             if (hasPieData) {
@@ -182,7 +170,6 @@
                     data: { labels: pieLabels, datasets: [{ data: pieDataValues, backgroundColor: chartColors }] },
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
                 });
-
                 pieLegendContainer.innerHTML = '';
                 
                 pieLabels.forEach((label, index) => {
@@ -211,13 +198,11 @@
                         pieLegendContainer.appendChild(legendItem);
                     }
                 });
-
             } else {
                 pieChartContainer.innerHTML = `<div class="flex items-center justify-center w-full h-full text-gray-500 dark:text-gray-400">Tidak ada data untuk filter ini.</div>`;
             }
         }
 
-        // >> SCRIPT UNTUK BAR CHART (Tidak ada perubahan) <<
         const barCanvas = document.getElementById('overallIncomeByPropertyBarChart');
         if (barCanvas) {
             const hasBarData = overallIncomeByPropertyData && overallIncomeByPropertyData.some(p => p.total_revenue > 0);
