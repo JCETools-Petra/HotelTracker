@@ -1,12 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Artisan;
-
-Route::get('/debug-semua-route-saya', function () {
-    Artisan::call('route:list');
-    return "<pre>" . Artisan::output() . "</pre>";
-});
-
+// Pastikan untuk menambahkan use statement untuk IncomeController yang baru
+use App\Http\Controllers\Admin\IncomeController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\PricePackageController;
 use App\Http\Controllers\Admin\PropertyController as AdminPropertyController;
@@ -96,7 +92,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
             // [FIX] Pindahkan route spesifik SEBELUM route resource
             Route::get('/properties/compare', [AdminPropertyController::class, 'showComparisonForm'])->name('properties.compare_page');
             Route::get('/properties/compare/results', [AdminPropertyController::class, 'showComparisonResults'])->name('properties.compare.results');
+            
+            // ==========================================================
+            // >> AWAL PERUBAHAN <<
+            // ==========================================================
             Route::resource('properties', AdminPropertyController::class);
+            // Daftarkan route untuk Incomes di dalam Properties
+            Route::resource('properties.incomes', IncomeController::class)->shallow()->except(['index', 'show']);
+            // ==========================================================
+            // >> AKHIR PERUBAHAN <<
+            // ==========================================================
             
             Route::resource('revenue-targets', RevenueTargetController::class);
             Route::resource('price-packages', PricePackageController::class);
@@ -107,6 +112,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/activity-log', [App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('activity_log.index');
             Route::get('calendar', [CalendarController::class, 'index'])->name('calendar.index');
             Route::get('calendar/events', [CalendarController::class, 'events'])->name('calendar.events');
+
+            // Hapus baris lama yang menyebabkan kebingungan
+            // Route::resource('incomes', IncomeController::class)->except(['show']);
+
         });
     
     // Grup route untuk Sales

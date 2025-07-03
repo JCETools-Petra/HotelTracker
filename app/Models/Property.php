@@ -32,4 +32,8 @@ class Property extends Model
     {
         return $this->hasMany(Room::class);
     }
+    public function incomes()
+{
+    return $this->hasMany(Income::class);
+}
 }

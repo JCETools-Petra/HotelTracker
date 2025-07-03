@@ -15,25 +15,60 @@
             
             {{-- Filter Section --}}
             <div class="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-                <form action="{{ route('admin.dashboard') }}" method="GET" class="flex flex-col md:flex-row md:items-end md:space-x-4 space-y-4 md:space-y-0">
-                    <div class="flex-1">
-                        <label for="property_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Pilih Properti</label>
-                        <select name="property_id" id="property_id" class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" onchange="this.form.submit()">
-                            <option value="">Semua Properti</option>
-                            @foreach($allPropertiesForFilter as $property)
-                                <option value="{{ $property->id }}" {{ $propertyId == $property->id ? 'selected' : '' }}>
-                                    {{ $property->name }}
-                                </option>
-                            @endforeach
-                        </select>
+                <form action="{{ route('admin.dashboard') }}" method="GET" class="space-y-4">
+                    {{-- Baris Filter Properti & Periode Cepat --}}
+                    <div class="flex flex-col md:flex-row md:items-end md:space-x-4 space-y-4 md:space-y-0">
+                        <div class="flex-1">
+                            <label for="property_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Pilih Properti</label>
+                            <select name="property_id" id="property_id" class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" onchange="this.form.submit()">
+                                <option value="">Semua Properti</option>
+                                @foreach($allPropertiesForFilter as $property)
+                                    <option value="{{ $property->id }}" {{ $propertyId == $property->id ? 'selected' : '' }}>
+                                        {{ $property->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Pilih Periode</label>
+                            <div class="mt-1 flex rounded-md shadow-sm filter-button-group">
+                                <button type="submit" name="period" value="today" class="filter-button rounded-l-md {{ $period == 'today' ? 'active' : '' }}">Hari Ini</button>
+                                <button type="submit" name="period" value="month" class="filter-button -ml-px {{ $period == 'month' ? 'active' : '' }}">Bulan Ini</button>
+                                <button type="submit" name="period" value="year" class="filter-button -ml-px {{ $period == 'year' ? 'active' : '' }}">Tahun Ini</button>
+                                <a href="{{ route('admin.dashboard') }}" class="filter-button -ml-px rounded-r-md">Reset</a>
+                            </div>
+                        </div>
                     </div>
-                    <div class="flex-shrink-0">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Pilih Periode</label>
-                        <div class="mt-1 flex rounded-md shadow-sm filter-button-group">
-                            <button type="submit" name="period" value="today" class="filter-button rounded-l-md {{ $period == 'today' ? 'active' : '' }}">Hari Ini</button>
-                            <button type="submit" name="period" value="month" class="filter-button -ml-px {{ $period == 'month' ? 'active' : '' }}">Bulan Ini</button>
-                            <button type="submit" name="period" value="year" class="filter-button -ml-px {{ $period == 'year' ? 'active' : '' }}">Tahun Ini</button>
-                            <a href="{{ route('admin.dashboard') }}" class="filter-button -ml-px rounded-r-md">Reset</a>
+                    
+                    {{-- Tombol Filter Bulan --}}
+                    <div class="pt-4 border-t dark:border-gray-700">
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Pilih Bulan (Tahun {{ now()->year }}):</label>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            @php
+                                $currentYear = now()->year;
+                                $months = [
+                                    1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'Mei', 6 => 'Jun',
+                                    7 => 'Jul', 8 => 'Agu', 9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
+                                ];
+                            @endphp
+                            @foreach ($months as $monthNumber => $monthName)
+                                @php
+                                    $monthStartDate = \Carbon\Carbon::create($currentYear, $monthNumber)->startOfMonth();
+                                    $monthEndDate = \Carbon\Carbon::create($currentYear, $monthNumber)->endOfMonth();
+                                    
+                                    // URL sekarang hanya berisi start_date, end_date, dan property_id jika ada
+                                    $queryParams = array_merge(request()->only('property_id'), [
+                                        'start_date' => $monthStartDate->toDateString(),
+                                        'end_date' => $monthEndDate->toDateString()
+                                    ]);
+                                    $isActive = ($period == 'custom') && (request('start_date') == $queryParams['start_date']);
+                                @endphp
+                                <a href="{{ route('admin.dashboard', $queryParams) }}"
+                                   class="inline-flex items-center px-3 py-1.5 border rounded-md text-xs font-medium transition ease-in-out duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500
+                                          {{ $isActive ? 'bg-indigo-600 text-white border-transparent shadow-sm' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-500 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600' }}">
+                                    {{ $monthName }}
+                                </a>
+                            @endforeach
                         </div>
                     </div>
                 </form>
@@ -41,7 +76,13 @@
 
             {{-- Main Content Section --}}
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Ringkasan Pendapatan Keseluruhan (Periode: {{ Str::title($period) }})</h3>
+                 <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Ringkasan Pendapatan (Periode: 
+                    @if($period == 'custom')
+                        {{ \Carbon\Carbon::parse(request('start_date'))->isoFormat('D MMM YY') }} - {{ \Carbon\Carbon::parse(request('end_date'))->isoFormat('D MMM YY') }}
+                    @else
+                        {{ Str::title($period) }}
+                    @endif
+                )</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     
                     <div class="p-4 border dark:border-gray-700 rounded-lg">
@@ -88,9 +129,7 @@
                     @endforelse
                 </div>
                 
-                {{-- ========================================================================= --}}
-                {{-- >> AWAL PENYESUAIAN BAGIAN LAPORAN MICE << --}}
-                {{-- ========================================================================= --}}
+                {{-- MICE Report Section --}}
                 <div class="mt-8">
                     <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Laporan Event MICE</h3>
                     <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
@@ -106,10 +145,8 @@
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                    {{-- Menggunakan variabel $recentMiceBookings dari controller --}}
                                     @forelse ($recentMiceBookings as $event)
                                         <tr>
-                                            {{-- Menggunakan customer_name sesuai struktur tabel bookings --}}
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{{ $event->client_name }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $event->property->name ?? 'N/A' }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
@@ -123,7 +160,6 @@
                                     @empty
                                         <tr>
                                             <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                                                {{-- Pesan disesuaikan --}}
                                                 Tidak ada data event MICE pada periode ini.
                                             </td>
                                         </tr>
@@ -133,9 +169,6 @@
                         </div>
                     </div>
                 </div>
-                {{-- ========================================================================= --}}
-                {{-- >> AKHIR PENYESUAIAN << --}}
-                {{-- ========================================================================= --}}
 
             </div>
         </div>

@@ -2,120 +2,189 @@
 
 namespace App\Exports;
 
-use App\Models\Property;
 use App\Models\DailyIncome;
 use App\Models\Booking;
-use Illuminate\Http\Request;
-use Maatwebsite\Excel\Concerns\FromCollection;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
-use Carbon\Carbon;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+// =============================================
+// >> AWAL PERUBAHAN 1: Tambahkan use statement ini <<
+// =============================================
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
+// =============================================
+// >> AKHIR PERUBAHAN 1 <<
+// =============================================
 
-class AdminPropertiesSummaryExport implements FromCollection, WithHeadings, WithMapping
+// =================================================================
+// >> AWAL PERUBAHAN 2: Tambahkan "WithColumnFormatting" di sini <<
+// =================================================================
+class AdminPropertiesSummaryExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize, WithStyles, WithEvents, WithColumnFormatting
+// =================================================================
+// >> AKHIR PERUBAHAN 2 <<
+// =================================================================
 {
-    protected $request;
+    protected $startDate;
+    protected $endDate;
+    protected $propertyId;
+    protected $miceRevenues;
 
-    public function __construct(Request $request)
+    public function __construct($startDate, $endDate, $propertyId)
     {
-        $this->request = $request;
+        $this->startDate = $startDate;
+        $this->endDate = $endDate;
+        $this->propertyId = $propertyId;
+
+        $this->miceRevenues = Booking::where('status', 'Booking Pasti')
+            ->whereBetween('event_date', [$this->startDate, $this->endDate])
+            ->when($this->propertyId, function ($query, $propertyId) {
+                return $query->where('property_id', $propertyId);
+            })
+            ->select('property_id', DB::raw('DATE(event_date) as date'), DB::raw('SUM(total_price) as total_mice'))
+            ->groupBy('property_id', 'date')
+            ->get()
+            ->keyBy(function ($item) {
+                return $item->property_id . '_' . Carbon::parse($item->date)->toDateString();
+            });
     }
 
-    /**
-    * @return \Illuminate\Support\Collection
-    */
-    public function collection()
+    public function query()
     {
-        // 1. Ambil filter dari request
-        $propertyId = $this->request->input('property_id');
-        $period = $this->request->input('period', 'month');
+        $query = DailyIncome::query()
+            ->with('property:id,name')
+            ->whereBetween('date', [$this->startDate, $this->endDate]);
 
-        // 2. Tentukan rentang tanggal
-        $startDate = null;
-        $endDate = null;
-        switch ($period) {
-            case 'today':
-                $startDate = Carbon::today()->startOfDay();
-                $endDate = Carbon::today()->endOfDay();
-                break;
-            case 'year':
-                $startDate = Carbon::now()->startOfYear();
-                $endDate = Carbon::now()->endOfYear();
-                break;
-            case 'month':
-            default:
-                $startDate = Carbon::now()->startOfMonth();
-                $endDate = Carbon::now()->endOfMonth();
-                break;
+        if ($this->propertyId) {
+            $query->where('property_id', $this->propertyId);
         }
 
-        // 3. Ambil daftar properti yang akan diekspor
-        $properties = Property::when($propertyId, function ($query, $propertyId) {
-            return $query->where('id', $propertyId);
-        })->get();
-
-        // 4. Proses setiap properti untuk menghitung total pendapatannya
-        $properties->transform(function ($property) use ($startDate, $endDate) {
-            
-            // Ambil semua pendapatan harian untuk properti ini dalam rentang waktu
-            $incomes = DailyIncome::where('property_id', $property->id)
-                                  ->whereBetween('date', [$startDate, $endDate])
-                                  ->get();
-            
-            // Ambil semua pendapatan MICE dari booking untuk properti ini
-            $miceRevenue = Booking::where('property_id', $property->id)
-                                  ->where('status', 'Booking Pasti')
-                                  ->whereBetween('event_date', [$startDate, $endDate])
-                                  ->sum('total_price');
-
-            // Hitung setiap kategori pendapatan
-            $property->total_income_records = $incomes->count();
-            $property->total_mice_revenue = $miceRevenue;
-            $property->total_fnb_revenue = $incomes->sum('breakfast_income') + $incomes->sum('lunch_income') + $incomes->sum('dinner_income');
-            $property->total_offline_revenue = $incomes->sum('offline_room_income');
-            $property->total_online_revenue = $incomes->sum('online_room_income');
-            $property->total_other_revenue = $incomes->sum('ta_income') + $incomes->sum('gov_income') + $incomes->sum('corp_income') + $incomes->sum('compliment_income') + $incomes->sum('house_use_income') + $incomes->sum('others_income');
-            
-            // Hitung Grand Total
-            $property->grand_total = $property->total_mice_revenue + $property->total_fnb_revenue + $property->total_offline_revenue + $property->total_online_revenue + $property->total_other_revenue;
-
-            return $property;
-        });
-
-        return $properties;
+        return $query->orderBy('property_id', 'asc')->orderBy('date', 'asc');
     }
 
-    /**
-     * @return array
-     */
     public function headings(): array
     {
         return [
+            'Tanggal',
             'Nama Properti',
-            'Total Catatan Pendapatan',
-            'Total Pendapatan MICE (Rp)',
-            'Total Pendapatan F&B (Rp)',
-            'Total Pendapatan Kamar Offline (Rp)',
-            'Total Pendapatan Kamar Online (Rp)',
-            'Total Pendapatan Lainnya (Rp)',
-            'Grand Total Pendapatan (Rp)',
+            'Kamar (Walk-In)',
+            'Pendapatan (Walk-In)',
+            'Kamar (OTA)',
+            'Pendapatan (OTA)',
+            'Kamar (TA)',
+            'Pendapatan (TA)',
+            'Kamar (Gov)',
+            'Pendapatan (Gov)',
+            'Kamar (Corp)',
+            'Pendapatan (Corp)',
+            'Kamar (Compliment)',
+            'Pendapatan (Compliment)',
+            'Kamar (House Use)',
+            'Pendapatan (House Use)',
+            'Pendapatan (MICE)',
+            'Pendapatan (Sarapan)',
+            'Pendapatan (Makan Siang)',
+            'Pendapatan (Makan Malam)',
+            'Pendapatan (Lainnya)',
+            'TOTAL PENDAPATAN HARIAN'
         ];
     }
 
-    /**
-     * @param mixed $property
-     * @return array
-     */
-    public function map($property): array
+    public function map($income): array
+    {
+        $dateString = Carbon::parse($income->date)->toDateString();
+        
+        $miceKey = $income->property_id . '_' . $dateString;
+        $miceRevenue = $this->miceRevenues->get($miceKey)->total_mice ?? 0;
+
+        $totalHarian = 
+            ($income->offline_room_income ?? 0) +
+            ($income->online_room_income ?? 0) +
+            ($income->ta_income ?? 0) +
+            ($income->gov_income ?? 0) +
+            ($income->corp_income ?? 0) +
+            ($income->compliment_income ?? 0) +
+            ($income->house_use_income ?? 0) +
+            $miceRevenue +
+            ($income->breakfast_income ?? 0) +
+            ($income->lunch_income ?? 0) +
+            ($income->dinner_income ?? 0) +
+            ($income->others_income ?? 0);
+
+        return [
+            $dateString,
+            $income->property->name ?? 'N/A',
+            $income->offline_rooms ?? 0,
+            (float) ($income->offline_room_income ?? 0),
+            $income->online_rooms ?? 0,
+            (float) ($income->online_room_income ?? 0),
+            $income->ta_rooms ?? 0,
+            (float) ($income->ta_income ?? 0),
+            $income->gov_rooms ?? 0,
+            (float) ($income->gov_income ?? 0),
+            $income->corp_rooms ?? 0,
+            (float) ($income->corp_income ?? 0),
+            $income->compliment_rooms ?? 0,
+            (float) ($income->compliment_income ?? 0),
+            $income->house_use_rooms ?? 0,
+            (float) ($income->house_use_income ?? 0),
+            (float) $miceRevenue,
+            (float) ($income->breakfast_income ?? 0),
+            (float) ($income->lunch_income ?? 0),
+            (float) ($income->dinner_income ?? 0),
+            (float) ($income->others_income ?? 0),
+            (float) $totalHarian
+        ];
+    }
+
+    public function styles(Worksheet $sheet)
     {
         return [
-            $property->name,
-            $property->total_income_records,
-            $property->total_mice_revenue,
-            $property->total_fnb_revenue,
-            $property->total_offline_revenue,
-            $property->total_online_revenue,
-            $property->total_other_revenue,
-            $property->grand_total,
+            1 => ['font' => ['bold' => true]],
+        ];
+    }
+    
+    // =================================================================
+    // >> AWAL PERUBAHAN 3: Tambahkan method baru ini untuk format mata uang <<
+    // =================================================================
+    public function columnFormats(): array
+    {
+        // Format Rupiah untuk semua kolom pendapatan
+        $rupiahFormat = '"Rp"#,##0.00';
+
+        return [
+            'D' => $rupiahFormat, // Pendapatan (Walk-In)
+            'F' => $rupiahFormat, // Pendapatan (OTA)
+            'H' => $rupiahFormat, // Pendapatan (TA)
+            'J' => $rupiahFormat, // Pendapatan (Gov)
+            'L' => $rupiahFormat, // Pendapatan (Corp)
+            'N' => $rupiahFormat, // Pendapatan (Compliment)
+            'P' => $rupiahFormat, // Pendapatan (House Use)
+            'Q' => $rupiahFormat, // Pendapatan (MICE)
+            'R' => $rupiahFormat, // Pendapatan (Sarapan)
+            'S' => $rupiahFormat, // Pendapatan (Makan Siang)
+            'T' => $rupiahFormat, // Pendapatan (Makan Malam)
+            'U' => $rupiahFormat, // Pendapatan (Lainnya)
+            'V' => $rupiahFormat, // TOTAL PENDAPATAN HARIAN
+        ];
+    }
+    // =================================================================
+    // >> AKHIR PERUBAHAN 3 <<
+    // =================================================================
+
+    public function registerEvents(): array
+    {
+        return [
+            AfterSheet::class => function(AfterSheet $event) {
+                // Mengaktifkan AutoFilter pada seluruh kolom yang digunakan
+                $event->sheet->getDelegate()->setAutoFilter($event->sheet->calculateWorksheetDimension());
+            },
         ];
     }
 }

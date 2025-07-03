@@ -65,17 +65,17 @@ class PropertyController extends Controller
     {
         $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date'))->startOfDay() : null;
         $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date'))->endOfDay() : null;
-
+    
         $displayStartDate = $startDate ?: Carbon::now()->startOfMonth();
         $displayEndDate = $endDate ?: Carbon::now()->endOfMonth();
-
+    
         // Kategori untuk ditampilkan di view
         $incomeCategories = [
             'offline_room_income' => 'Walk In Guest', 'online_room_income' => 'OTA', 'ta_income' => 'TA/Travel Agent',
             'gov_income' => 'Gov/Government', 'corp_income' => 'Corp/Corporation', 'compliment_income' => 'Compliment',
             'house_use_income' => 'House Use', 'mice_income' => 'MICE', 'fnb_income' => 'F&B', 'others_income' => 'Lainnya',
         ];
-
+    
         // Kolom asli di DB daily_incomes
         $dbDailyIncomeColumns = [
             'offline_room_income', 'online_room_income', 'ta_income', 'gov_income', 'corp_income', 'compliment_income',
@@ -86,53 +86,48 @@ class PropertyController extends Controller
         $dailyIncomesData = DailyIncome::where('property_id', $property->id)
                                         ->whereBetween('date', [$displayStartDate, $displayEndDate])
                                         ->get()->keyBy(fn($item) => Carbon::parse($item->date)->toDateString());
-
+    
         $dailyMiceFromBookings = Booking::where('property_id', $property->id)
                                         ->where('status', 'Booking Pasti')
                                         ->whereBetween('event_date', [$displayStartDate, $displayEndDate])
                                         ->select(DB::raw('DATE(event_date) as date'), DB::raw('SUM(total_price) as total_mice'))
                                         ->groupBy('date')->get()->keyBy(fn($item) => Carbon::parse($item->date)->toDateString());
-
+    
         // 2. Buat daftar tanggal lengkap untuk periode yang dipilih
         $period = CarbonPeriod::create($displayStartDate, $displayEndDate);
         
-        // =====================================================================
-        // >> AWAL PERBAIKAN: Variabel $dbDailyIncomeColumns ditambahkan ke 'use' <<
-        // =====================================================================
         $fullDateRangeData = collect($period)->map(function ($date) use ($dailyIncomesData, $dailyMiceFromBookings, $dbDailyIncomeColumns) {
             $dateString = $date->toDateString();
             $income = $dailyIncomesData->get($dateString);
             $mice = $dailyMiceFromBookings->get($dateString);
-
+    
             $dayData = new \stdClass();
             $dayData->date = $date->toDateTimeString();
-
+            $dayData->id = $income->id ?? null;
+    
             foreach ($dbDailyIncomeColumns as $column) {
                 $dayData->{$column} = $income->{$column} ?? 0;
             }
             
             $dayData->mice_booking_total = $mice->total_mice ?? 0;
             $dayData->mice_income = $dayData->mice_booking_total;
-
+    
             return $dayData;
-        })->reverse();
-        // =====================================================================
-        // >> AKHIR PERBAIKAN <<
-        // =====================================================================
-
+        });
+    
         // 3. Hitung total untuk ringkasan dan pie chart
         $totalPropertyRevenueFiltered = $fullDateRangeData->sum(function($day) {
             return ($day->offline_room_income ?? 0) + ($day->online_room_income ?? 0) + ($day->ta_income ?? 0) +
-                   ($day->gov_income ?? 0) + ($day->corp_income ?? 0) + ($day->compliment_income ?? 0) +
-                   ($day->house_use_income ?? 0) + ($day->breakfast_income ?? 0) + ($day->lunch_income ?? 0) +
-                   ($day->dinner_income ?? 0) + ($day->others_income ?? 0) + ($day->mice_booking_total ?? 0);
+                    ($day->gov_income ?? 0) + ($day->corp_income ?? 0) + ($day->compliment_income ?? 0) +
+                    ($day->house_use_income ?? 0) + ($day->breakfast_income ?? 0) + ($day->lunch_income ?? 0) +
+                    ($day->dinner_income ?? 0) + ($day->others_income ?? 0) + ($day->mice_booking_total ?? 0);
         });
         
         $sourceDistribution = new \stdClass();
         foreach (array_keys($incomeCategories) as $key) {
             $sourceDistribution->{'total_' . $key} = 0;
         }
-
+    
         $sourceDistribution->total_fnb_income = $fullDateRangeData->sum(fn($day) => ($day->breakfast_income ?? 0) + ($day->lunch_income ?? 0) + ($day->dinner_income ?? 0));
         $sourceDistribution->total_mice_income = $fullDateRangeData->sum('mice_booking_total');
         $sourceDistribution->total_offline_room_income = $fullDateRangeData->sum('offline_room_income');
@@ -143,16 +138,16 @@ class PropertyController extends Controller
         $sourceDistribution->total_compliment_income = $fullDateRangeData->sum('compliment_income');
         $sourceDistribution->total_house_use_income = $fullDateRangeData->sum('house_use_income');
         $sourceDistribution->total_others_income = $fullDateRangeData->sum('others_income');
-
+    
         // 4. Data untuk tren harian
         $dailyTrend = $fullDateRangeData->map(function($day) {
             $total = ($day->offline_room_income ?? 0) + ($day->online_room_income ?? 0) + ($day->ta_income ?? 0) +
-                     ($day->gov_income ?? 0) + ($day->corp_income ?? 0) + ($day->compliment_income ?? 0) +
-                     ($day->house_use_income ?? 0) + ($day->breakfast_income ?? 0) + ($day->lunch_income ?? 0) +
-                     ($day->dinner_income ?? 0) + ($day->others_income ?? 0) + ($day->mice_booking_total ?? 0);
+                        ($day->gov_income ?? 0) + ($day->corp_income ?? 0) + ($day->compliment_income ?? 0) +
+                        ($day->house_use_income ?? 0) + ($day->breakfast_income ?? 0) + ($day->lunch_income ?? 0) +
+                        ($day->dinner_income ?? 0) + ($day->others_income ?? 0) + ($day->mice_booking_total ?? 0);
             return ['date' => $day->date, 'total_daily_income' => $total];
         })->reverse();
-
+    
         // 5. Data untuk Target Harian
         $targetMonth = $displayEndDate->copy()->startOfMonth();
         $revenueTarget = RevenueTarget::where('property_id', $property->id)->where('month_year', $targetMonth->format('Y-m-d'))->first();
@@ -160,19 +155,23 @@ class PropertyController extends Controller
         $daysInMonth = $displayEndDate->daysInMonth;
         $dailyTarget = $daysInMonth > 0 ? $monthlyTarget / $daysInMonth : 0;
         
-        $lastDayData = $fullDateRangeData->first(fn($d) => Carbon::parse($d->date)->isSameDay($displayEndDate));
-        $lastDayIncome = $lastDayData ? $dailyTrend->firstWhere('date', $lastDayData->date)['total_daily_income'] : 0;
+        $lastDayData = $fullDateRangeData->sortByDesc('date')->first();
+        $lastDayIncome = 0;
+        if ($lastDayData) {
+            $trendForLastDay = collect($dailyTrend)->firstWhere('date', $lastDayData->date);
+            $lastDayIncome = $trendForLastDay ? $trendForLastDay['total_daily_income'] : 0;
+        }
         
         $dailyTargetAchievement = $dailyTarget > 0 ? ($lastDayIncome / $dailyTarget) * 100 : 0;
         
-        // 6. Paginasi manual untuk data yang sudah digabung
-        $perPage = 15;
-        $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage('page');
-        $currentPageData = $fullDateRangeData->slice(($currentPage - 1) * $perPage, $perPage)->all();
-        $incomes = new \Illuminate\Pagination\LengthAwarePaginator($currentPageData, $fullDateRangeData->count(), $perPage, $currentPage, [
-            'path' => \Illuminate\Pagination\Paginator::resolveCurrentPath(),
-            'pageName' => 'page',
-        ]);
+        // =====================================================================
+        // >> AWAL PERUBAHAN: Blok Paginasi dihapus total <<
+        // =====================================================================
+        // 6. Ambil semua data tanpa paginasi
+        $incomes = $fullDateRangeData;
+        // =====================================================================
+        // >> AKHIR PERUBAHAN <<
+        // =====================================================================
         
         return view('admin.properties.show', compact(
             'property', 'incomes', 'dailyTrend', 'sourceDistribution', 'totalPropertyRevenueFiltered',

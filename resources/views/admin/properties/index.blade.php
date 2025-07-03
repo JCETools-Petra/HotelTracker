@@ -62,11 +62,9 @@
 
                                         @if(auth()->user()->role == 'admin')
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                                                {{-- ============================================= --}}
-                                                {{-- >> TOMBOL BARU DITAMBAHKAN DI SINI << --}}
-                                                {{-- ============================================= --}}
+                                                
+                                                <a href="{{ route('admin.properties.show', $property) }}" class="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-200">Pendapatan</a>
                                                 <a href="{{ route('admin.properties.rooms.index', $property) }}" class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-200">Ruangan</a>
-                                                {{-- ============================================= --}}
                                                 
                                                 <a href="{{ route('admin.properties.edit', $property->id) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200">Edit</a>
                                                 

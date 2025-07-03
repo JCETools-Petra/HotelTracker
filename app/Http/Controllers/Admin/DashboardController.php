@@ -87,13 +87,24 @@ class DashboardController extends Controller
         ));
     }
     
-    public function index(Request $request)
-    {
-        $propertyId = $request->input('property_id');
-        $period = $request->input('period', 'year');
-    
-        $startDate = null;
-        $endDate = null;
+    // app/Http/Controllers/Admin/DashboardController.php
+
+public function index(Request $request)
+{
+    $propertyId = $request->input('property_id');
+    $period = $request->input('period', 'year');
+
+    // =========================================================================
+    // >> AWAL PERUBAHAN: Logika untuk menangani filter bulan custom <<
+    // =========================================================================
+    // Jika start_date dan end_date ada di URL, gunakan itu sebagai filter utama.
+    if ($request->has('start_date') && $request->has('end_date')) {
+        $startDate = Carbon::parse($request->input('start_date'))->startOfDay();
+        $endDate = Carbon::parse($request->input('end_date'))->endOfDay();
+        // Set $period ke 'custom' untuk menandai bahwa ini bukan filter default.
+        $period = 'custom';
+    } else {
+        // Jika tidak ada, gunakan logika filter periode yang sudah ada.
         switch ($period) {
             case 'today':
                 $startDate = Carbon::today()->startOfDay();
@@ -104,171 +115,169 @@ class DashboardController extends Controller
                 $endDate = Carbon::now()->endOfMonth();
                 break;
             case 'year':
+            default:
                 $startDate = Carbon::now()->startOfYear();
                 $endDate = Carbon::now()->endOfYear();
                 break;
         }
-    
-        $incomeCategories = [
-            'offline_room_income' => 'Walk In', 'online_room_income' => 'OTA', 'ta_income' => 'Travel Agent',
-            'gov_income' => 'Government', 'corp_income' => 'Corporation', 'compliment_income' => 'Compliment',
-            'house_use_income' => 'House Use', 'mice_income' => 'MICE', 'breakfast_income' => 'Breakfast',
-            'lunch_income' => 'Lunch', 'dinner_income' => 'Dinner', 'others_income' => 'Lain-lain',
-        ];
-        $incomeColumns = array_keys($incomeCategories);
-    
-        $dateFilter = function ($query) use ($startDate, $endDate) {
-            if ($startDate && $endDate) {
-                $query->whereBetween('date', [$startDate, $endDate]);
-            }
-        };
-    
-        $roomCountColumns = ['offline_rooms', 'online_rooms', 'ta_rooms', 'gov_rooms', 'corp_rooms', 'compliment_rooms', 'house_use_rooms'];
-        $propertiesQuery = Property::when($propertyId, fn($q) => $q->where('id', $propertyId))->orderBy('id', 'asc');
-    
-        foreach ($incomeColumns as $column) {
-            $propertiesQuery->withSum(['dailyIncomes as total_' . $column => $dateFilter], $column);
-        }
-        foreach ($roomCountColumns as $column) {
-            $propertiesQuery->withSum(['dailyIncomes as total_' . $column => $dateFilter], $column);
-        }
-        
-        $properties = $propertiesQuery->get();
-    
-        $miceRevenues = Booking::where('status', 'Booking Pasti')
-            ->whereBetween('event_date', [$startDate, $endDate])
-            ->when($propertyId, fn($q) => $q->where('property_id', $propertyId))
-            ->select('property_id', 'mice_category_id', DB::raw('SUM(total_price) as total_mice_revenue'))
-            ->groupBy('property_id', 'mice_category_id')
-            ->with('miceCategory:id,name')
-            ->get()
-            ->groupBy('property_id');
-    
-        foreach ($properties as $property) {
-            $dailyRevenue = 0;
-            foreach ($incomeColumns as $col) {
-                $key = 'total_' . $col;
-                $dailyRevenue += $property->$key ?? 0;
-            }
-    
-            $propertyMiceRevenues = $miceRevenues->get($property->id);
-            if ($propertyMiceRevenues) {
-                $dailyRevenue += $propertyMiceRevenues->sum('total_mice_revenue');
-                $property->mice_revenue_breakdown = $propertyMiceRevenues;
-            } else {
-                $property->mice_revenue_breakdown = collect();
-            }
-            
-            $property->dailyRevenue = $dailyRevenue;
-    
-            $totalArrRevenue = 0;
-            $totalArrRoomsSold = 0;
-            $arrRevenueCategories = ['offline_room_income', 'online_room_income', 'ta_income', 'gov_income', 'corp_income'];
-            $arrRoomsCategories = ['offline_rooms', 'online_rooms', 'ta_rooms', 'gov_rooms', 'corp_rooms'];
-    
-            foreach($arrRevenueCategories as $cat) {
-                $totalArrRevenue += $property->{'total_' . $cat} ?? 0;
-            }
-            foreach($arrRoomsCategories as $cat) {
-                $totalArrRoomsSold += $property->{'total_' . $cat} ?? 0;
-            }
-            $property->averageRoomRate = ($totalArrRoomsSold > 0) ? ($totalArrRevenue / $totalArrRoomsSold) : 0;
-        }
-    
-        $dailyIncomeQuery = DailyIncome::query();
-        if ($propertyId) $dailyIncomeQuery->where('property_id', $propertyId);
-        if ($startDate && $endDate) $dailyIncomeQuery->whereBetween('date', [$startDate, $endDate]);
-    
-        $selectSums = [];
-        foreach ($incomeColumns as $column) {
-            $selectSums[] = DB::raw("SUM(IFNULL(`{$column}`, 0)) as total_{$column}");
-        }
-        $overallIncomeSource = (clone $dailyIncomeQuery)->select($selectSums)->first();
-    
-        $pieChartCategories = [];
-        $pieChartDataSource = new \stdClass();
-    
-        $totalMiceFromBookings = Booking::where('status', 'Booking Pasti')
-            ->whereBetween('event_date', [$startDate, $endDate])
-            ->when($propertyId, fn($q) => $q->where('property_id', $propertyId))
-            ->sum('total_price');
-    
-        $totalFnbIncome = 0;
-        if ($overallIncomeSource) {
-            $totalFnbIncome = ($overallIncomeSource->total_breakfast_income ?? 0) +
-                              ($overallIncomeSource->total_lunch_income ?? 0) +
-                              ($overallIncomeSource->total_dinner_income ?? 0);
-        }
-    
-        $pieChartCategories = [
-            'offline_room_income' => 'Walk In', 'online_room_income' => 'OTA', 'ta_income' => 'Travel Agent',
-            'gov_income' => 'Government', 'corp_income' => 'Corporation', 'compliment_income' => 'Compliment',
-            'house_use_income' => 'House Use', 'mice_income' => 'MICE', 'fnb_income' => 'F&B',
-            'others_income' => 'Lain-lain',
-        ];
-        
-        foreach ($pieChartCategories as $key => $label) {
-            if ($key === 'fnb_income') {
-                $pieChartDataSource->{'total_' . $key} = $totalFnbIncome;
-            } elseif ($key === 'mice_income') {
-                $pieChartDataSource->{'total_' . $key} = $totalMiceFromBookings;
-            } else {
-                $sourceKey = 'total_' . $key;
-                $pieChartDataSource->{$sourceKey} = $overallIncomeSource->{$sourceKey} ?? 0;
-            }
-        }
-        
-        $incomeSumRaw = implode(' + ', array_map(fn($col) => "IFNULL(`$col`, 0)", $incomeColumns));
-        $overallIncomeByProperty = Property::query()
-            ->when($propertyId, fn($q) => $q->where('properties.id', $propertyId))
-            ->leftJoin('daily_incomes', function ($join) use ($startDate, $endDate) {
-                $join->on('properties.id', '=', 'daily_incomes.property_id');
-                if ($startDate && $endDate) {
-                    $join->whereBetween('daily_incomes.date', [$startDate, $endDate]);
-                }
-            })
-            ->select('properties.name', 'properties.id', 'properties.chart_color', DB::raw("SUM({$incomeSumRaw}) as total_revenue"))
-            ->groupBy('properties.id', 'properties.name', 'properties.chart_color')
-            ->get();
-        
-        // Closure untuk filter tanggal MICE
-        $miceDateFilter = function ($query) use ($startDate, $endDate) {
-            if ($startDate && $endDate) {
-                $query->whereBetween('event_date', [$startDate, $endDate]);
-            }
-        };
-    
-        // =========================================================================
-        // >> PERUBAHAN DI SINI: Query untuk Laporan MICE di Dashboard <<
-        // =========================================================================
-        $recentMiceBookings = Booking::with(['property', 'miceCategory'])
-            ->where('status', 'Booking Pasti') // Hanya yang statusnya pasti
-            // Baris 'payment_status' dihapus agar semua booking pasti masuk
-            ->when($propertyId, fn($q) => $q->where('property_id', $propertyId))
-            ->where($miceDateFilter)
-            ->latest('event_date')
-            ->take(10) // Ambil 10 event terbaru
-            ->get();
-        // =========================================================================
-        // >> AKHIR PERUBAHAN <<
-        // =========================================================================
-    
-        $allPropertiesForFilter = Property::orderBy('name')->get();
-    
-        // Pastikan Anda juga mengubah variabel di view dari $completedMiceEvents menjadi $recentMiceBookings
-        return view('admin.dashboard', [
-            'properties' => $properties,
-            'allPropertiesForFilter' => $allPropertiesForFilter,
-            'propertyId' => $propertyId,
-            'period' => $period,
-            'overallIncomeSource' => $overallIncomeSource,
-            'overallIncomeByProperty' => $overallIncomeByProperty,
-            'incomeCategories' => $incomeCategories,
-            'recentMiceBookings' => $recentMiceBookings, // Menggunakan variabel & nama baru
-            'pieChartDataSource' => $pieChartDataSource,
-            'pieChartCategories' => $pieChartCategories,
-        ]);
     }
+    // =========================================================================
+    // >> AKHIR PERUBAHAN <<
+    // =========================================================================
+
+    $incomeCategories = [
+        'offline_room_income' => 'Walk In', 'online_room_income' => 'OTA', 'ta_income' => 'Travel Agent',
+        'gov_income' => 'Government', 'corp_income' => 'Corporation', 'compliment_income' => 'Compliment',
+        'house_use_income' => 'House Use', 'mice_income' => 'MICE', 'breakfast_income' => 'Breakfast',
+        'lunch_income' => 'Lunch', 'dinner_income' => 'Dinner', 'others_income' => 'Lain-lain',
+    ];
+    $incomeColumns = array_keys($incomeCategories);
+
+    $dateFilter = function ($query) use ($startDate, $endDate) {
+        if ($startDate && $endDate) {
+            $query->whereBetween('date', [$startDate, $endDate]);
+        }
+    };
+
+    $roomCountColumns = ['offline_rooms', 'online_rooms', 'ta_rooms', 'gov_rooms', 'corp_rooms', 'compliment_rooms', 'house_use_rooms'];
+    $propertiesQuery = Property::when($propertyId, fn($q) => $q->where('id', $propertyId))->orderBy('id', 'asc');
+
+    foreach ($incomeColumns as $column) {
+        $propertiesQuery->withSum(['dailyIncomes as total_' . $column => $dateFilter], $column);
+    }
+    foreach ($roomCountColumns as $column) {
+        $propertiesQuery->withSum(['dailyIncomes as total_' . $column => $dateFilter], $column);
+    }
+    
+    $properties = $propertiesQuery->get();
+
+    $miceRevenues = Booking::where('status', 'Booking Pasti')
+        ->whereBetween('event_date', [$startDate, $endDate])
+        ->when($propertyId, fn($q) => $q->where('property_id', $propertyId))
+        ->select('property_id', 'mice_category_id', DB::raw('SUM(total_price) as total_mice_revenue'))
+        ->groupBy('property_id', 'mice_category_id')
+        ->with('miceCategory:id,name')
+        ->get()
+        ->groupBy('property_id');
+
+    foreach ($properties as $property) {
+        $dailyRevenue = 0;
+        foreach ($incomeColumns as $col) {
+            $key = 'total_' . $col;
+            $dailyRevenue += $property->$key ?? 0;
+        }
+
+        $propertyMiceRevenues = $miceRevenues->get($property->id);
+        if ($propertyMiceRevenues) {
+            $dailyRevenue += $propertyMiceRevenues->sum('total_mice_revenue');
+            $property->mice_revenue_breakdown = $propertyMiceRevenues;
+        } else {
+            $property->mice_revenue_breakdown = collect();
+        }
+        
+        $property->dailyRevenue = $dailyRevenue;
+
+        $totalArrRevenue = 0;
+        $totalArrRoomsSold = 0;
+        $arrRevenueCategories = ['offline_room_income', 'online_room_income', 'ta_income', 'gov_income', 'corp_income'];
+        $arrRoomsCategories = ['offline_rooms', 'online_rooms', 'ta_rooms', 'gov_rooms', 'corp_rooms'];
+
+        foreach($arrRevenueCategories as $cat) {
+            $totalArrRevenue += $property->{'total_' . $cat} ?? 0;
+        }
+        foreach($arrRoomsCategories as $cat) {
+            $totalArrRoomsSold += $property->{'total_' . $cat} ?? 0;
+        }
+        $property->averageRoomRate = ($totalArrRoomsSold > 0) ? ($totalArrRevenue / $totalArrRoomsSold) : 0;
+    }
+
+    $dailyIncomeQuery = DailyIncome::query();
+    if ($propertyId) $dailyIncomeQuery->where('property_id', $propertyId);
+    if ($startDate && $endDate) $dailyIncomeQuery->whereBetween('date', [$startDate, $endDate]);
+
+    $selectSums = [];
+    foreach ($incomeColumns as $column) {
+        $selectSums[] = DB::raw("SUM(IFNULL(`{$column}`, 0)) as total_{$column}");
+    }
+    $overallIncomeSource = (clone $dailyIncomeQuery)->select($selectSums)->first();
+
+    $pieChartCategories = [];
+    $pieChartDataSource = new \stdClass();
+
+    $totalMiceFromBookings = Booking::where('status', 'Booking Pasti')
+        ->whereBetween('event_date', [$startDate, $endDate])
+        ->when($propertyId, fn($q) => $q->where('property_id', $propertyId))
+        ->sum('total_price');
+
+    $totalFnbIncome = 0;
+    if ($overallIncomeSource) {
+        $totalFnbIncome = ($overallIncomeSource->total_breakfast_income ?? 0) +
+                            ($overallIncomeSource->total_lunch_income ?? 0) +
+                            ($overallIncomeSource->total_dinner_income ?? 0);
+    }
+
+    $pieChartCategories = [
+        'offline_room_income' => 'Walk In', 'online_room_income' => 'OTA', 'ta_income' => 'Travel Agent',
+        'gov_income' => 'Government', 'corp_income' => 'Corporation', 'compliment_income' => 'Compliment',
+        'house_use_income' => 'House Use', 'mice_income' => 'MICE', 'fnb_income' => 'F&B',
+        'others_income' => 'Lain-lain',
+    ];
+    
+    foreach ($pieChartCategories as $key => $label) {
+        if ($key === 'fnb_income') {
+            $pieChartDataSource->{'total_' . $key} = $totalFnbIncome;
+        } elseif ($key === 'mice_income') {
+            $pieChartDataSource->{'total_' . $key} = $totalMiceFromBookings;
+        } else {
+            $sourceKey = 'total_' . $key;
+            $pieChartDataSource->{$sourceKey} = $overallIncomeSource->{$sourceKey} ?? 0;
+        }
+    }
+    
+    $incomeSumRaw = implode(' + ', array_map(fn($col) => "IFNULL(`$col`, 0)", $incomeColumns));
+    $overallIncomeByProperty = Property::query()
+        ->when($propertyId, fn($q) => $q->where('properties.id', $propertyId))
+        ->leftJoin('daily_incomes', function ($join) use ($startDate, $endDate) {
+            $join->on('properties.id', '=', 'daily_incomes.property_id');
+            if ($startDate && $endDate) {
+                $join->whereBetween('daily_incomes.date', [$startDate, $endDate]);
+            }
+        })
+        ->select('properties.name', 'properties.id', 'properties.chart_color', DB::raw("SUM({$incomeSumRaw}) as total_revenue"))
+        ->groupBy('properties.id', 'properties.name', 'properties.chart_color')
+        ->get();
+    
+    $miceDateFilter = function ($query) use ($startDate, $endDate) {
+        if ($startDate && $endDate) {
+            $query->whereBetween('event_date', [$startDate, $endDate]);
+        }
+    };
+
+    $recentMiceBookings = Booking::with(['property', 'miceCategory'])
+        ->where('status', 'Booking Pasti')
+        ->when($propertyId, fn($q) => $q->where('property_id', $propertyId))
+        ->where($miceDateFilter)
+        ->latest('event_date')
+        ->take(10)
+        ->get();
+    
+    $allPropertiesForFilter = Property::orderBy('name')->get();
+
+    return view('admin.dashboard', [
+        'properties' => $properties,
+        'allPropertiesForFilter' => $allPropertiesForFilter,
+        'propertyId' => $propertyId,
+        'period' => $period,
+        'startDate' => $startDate, // Kirim startDate ke view
+        'endDate' => $endDate,     // Kirim endDate ke view
+        'overallIncomeSource' => $overallIncomeSource,
+        'overallIncomeByProperty' => $overallIncomeByProperty,
+        'incomeCategories' => $incomeCategories,
+        'recentMiceBookings' => $recentMiceBookings,
+        'pieChartDataSource' => $pieChartDataSource,
+        'pieChartCategories' => $pieChartCategories,
+    ]);
+}
 
     public function kpiAnalysis(Request $request)
     {
@@ -521,7 +530,36 @@ class DashboardController extends Controller
     }
     public function exportPropertiesSummaryExcel(Request $request)
     {
-        return Excel::download(new AdminPropertiesSummaryExport($request), 'properties-summary-'.now()->format('Ymd').'.xlsx');
+        // Logika untuk menentukan filter tanggal (sama seperti di method index)
+        if ($request->has('start_date') && $request->has('end_date')) {
+            $startDate = Carbon::parse($request->input('start_date'))->startOfDay();
+            $endDate = Carbon::parse($request->input('end_date'))->endOfDay();
+        } else {
+            $period = $request->input('period', 'year'); // Default 'year' jika tidak ada
+            switch ($period) {
+                case 'today':
+                    $startDate = Carbon::today()->startOfDay();
+                    $endDate = Carbon::today()->endOfDay();
+                    break;
+                case 'month':
+                    $startDate = Carbon::now()->startOfMonth();
+                    $endDate = Carbon::now()->endOfMonth();
+                    break;
+                case 'year':
+                default:
+                    $startDate = Carbon::now()->startOfYear();
+                    $endDate = Carbon::now()->endOfYear();
+                    break;
+            }
+        }
+        
+        $propertyId = $request->input('property_id');
+        
+        // Siapkan nama file
+        $fileName = 'Laporan_Pendapatan_Properti_' . now()->format('d-m-Y_H-i') . '.xlsx';
+        
+        // Panggil class export yang sudah ada dengan filter yang sesuai
+        return Excel::download(new AdminPropertiesSummaryExport($startDate, $endDate, $propertyId), $fileName);
     }
 
     /**
