@@ -38,9 +38,11 @@ class IncomeController extends Controller
             'corp_rooms' => 'nullable|integer|min:0',
             'compliment_rooms' => 'nullable|integer|min:0',
             'house_use_rooms' => 'nullable|integer|min:0',
+            'mice_rooms' => 'nullable|integer|min:0',
             // Validasi Pendapatan
             'offline_room_income' => 'nullable|numeric|min:0',
             'online_room_income' => 'nullable|numeric|min:0',
+            'mice_room_income' => 'nullable|numeric|min:0',
             'ta_income' => 'nullable|numeric|min:0',
             'gov_income' => 'nullable|numeric|min:0',
             'corp_income' => 'nullable|numeric|min:0',
@@ -89,9 +91,11 @@ class IncomeController extends Controller
             'corp_rooms' => 'nullable|integer|min:0',
             'compliment_rooms' => 'nullable|integer|min:0',
             'house_use_rooms' => 'nullable|integer|min:0',
+            'mice_rooms' => 'nullable|integer|min:0',
             // Validasi Pendapatan
             'offline_room_income' => 'nullable|numeric|min:0',
             'online_room_income' => 'nullable|numeric|min:0',
+            'mice_room_income' => 'nullable|numeric|min:0',
             'ta_income' => 'nullable|numeric|min:0',
             'gov_income' => 'nullable|numeric|min:0',
             'corp_income' => 'nullable|numeric|min:0',

@@ -26,12 +26,14 @@
                         <div class="mt-4 p-4 bg-green-100 dark:bg-green-700 rounded-lg">
                             <h4 class="font-semibold">Pendapatan Hari Ini ({{ \Carbon\Carbon::today()->isoFormat('LL') }})</h4>
                             <p>MICE: Rp {{ number_format($todayIncome->mice_income ?? 0, 0, ',', '.') }}</p>
+                            <p>MICE Rooms: {{ $todayIncome->mice_rooms ?? 0 }} kamar / Rp {{ number_format($todayIncome->mice_room_income ?? 0, 0, ',', '.') }}</p>
                             <p>F&B: Rp {{ number_format($todayIncome->fnb_income ?? 0, 0, ',', '.') }}</p>
                             <p>Kamar Offline: Rp {{ number_format($todayIncome->offline_room_income ?? 0, 0, ',', '.') }}</p>
                             <p>Kamar Online: Rp {{ number_format($todayIncome->online_room_income ?? 0, 0, ',', '.') }}</p>
                             <p>Lainnya: Rp {{ number_format($todayIncome->others_income ?? 0, 0, ',', '.') }}</p>
                             <p class="font-bold mt-1">Total: Rp {{ number_format(
                                 ($todayIncome->mice_income ?? 0) +
+                                ($todayIncome->mice_room_income ?? 0) +
                                 ($todayIncome->fnb_income ?? 0) +
                                 ($todayIncome->offline_room_income ?? 0) +
                                 ($todayIncome->online_room_income ?? 0) +

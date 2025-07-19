@@ -34,6 +34,8 @@ class PropertyIncomesExport implements FromQuery, WithHeadings, WithMapping, Sho
             ->where('property_id', $this->propertyId)
             ->select( // Pilih kolom yang benar-benar dibutuhkan
                 'date',
+                'mice_rooms',
+                'mice_room_income',
                 'mice_income',
                 'fnb_income',
                 'offline_room_income',
@@ -59,6 +61,8 @@ class PropertyIncomesExport implements FromQuery, WithHeadings, WithMapping, Sho
     {
         return [
             'Tanggal',
+            'MICE (Kamar)',
+            'Pendapatan MICE Kamar (Rp)',
             'Pendapatan MICE (Rp)',
             'Pendapatan F&B (Rp)',
             'Pendapatan Kamar Offline (Rp)',
@@ -75,6 +79,7 @@ class PropertyIncomesExport implements FromQuery, WithHeadings, WithMapping, Sho
     public function map($income): array
     {
         $totalDailyIncome = $income->mice_income +
+                            $income->mice_room_income +
                             $income->fnb_income +
                             $income->offline_room_income +
                             $income->online_room_income +
@@ -82,6 +87,8 @@ class PropertyIncomesExport implements FromQuery, WithHeadings, WithMapping, Sho
 
         return [
             Carbon::parse($income->date)->isoFormat('D MMMM YYYY'),
+            $income->mice_rooms,
+            $income->mice_room_income,
             $income->mice_income,
             $income->fnb_income,
             $income->offline_room_income,

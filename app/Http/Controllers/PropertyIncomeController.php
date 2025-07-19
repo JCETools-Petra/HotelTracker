@@ -104,6 +104,8 @@ class PropertyIncomeController extends Controller
             'offline_room_income' => 'required|numeric|min:0',
             'online_rooms' => 'required|integer|min:0',
             'online_room_income' => 'required|numeric|min:0',
+            'mice_rooms' => 'required|integer|min:0',
+            'mice_room_income' => 'required|numeric|min:0',
             'ta_rooms' => 'required|integer|min:0',
             'ta_income' => 'required|numeric|min:0',
             'gov_rooms' => 'required|integer|min:0',
@@ -127,12 +129,12 @@ class PropertyIncomeController extends Controller
         $total_rooms_sold =
             $validatedData['offline_rooms'] + $validatedData['online_rooms'] + $validatedData['ta_rooms'] +
             $validatedData['gov_rooms'] + $validatedData['corp_rooms'] + $validatedData['compliment_rooms'] +
-            $validatedData['house_use_rooms'];
+            $validatedData['house_use_rooms'] + $validatedData['mice_rooms'];
 
         $total_rooms_revenue =
             $validatedData['offline_room_income'] + $validatedData['online_room_income'] + $validatedData['ta_income'] +
             $validatedData['gov_income'] + $validatedData['corp_income'] + $validatedData['compliment_income'] +
-            $validatedData['house_use_income'] + $validatedData['mice_income'];
+            $validatedData['house_use_income'] + $validatedData['mice_room_income'] + $validatedData['mice_income'];
 
         $total_fb_revenue = $validatedData['breakfast_income'] + $validatedData['lunch_income'] + $validatedData['dinner_income'];
         $total_revenue = $total_rooms_revenue + $total_fb_revenue + $validatedData['others_income'];
@@ -188,6 +190,8 @@ class PropertyIncomeController extends Controller
             'offline_room_income' => 'required|numeric|min:0',
             'online_rooms' => 'required|integer|min:0',
             'online_room_income' => 'required|numeric|min:0',
+            'mice_rooms' => 'required|integer|min:0',
+            'mice_room_income' => 'required|numeric|min:0',
             'ta_rooms' => 'required|integer|min:0',
             'ta_income' => 'required|numeric|min:0',
             'gov_rooms' => 'required|integer|min:0',
@@ -212,12 +216,12 @@ class PropertyIncomeController extends Controller
         $total_rooms_sold =
             $validatedData['offline_rooms'] + $validatedData['online_rooms'] + $validatedData['ta_rooms'] +
             $validatedData['gov_rooms'] + $validatedData['corp_rooms'] + $validatedData['compliment_rooms'] +
-            $validatedData['house_use_rooms'];
+            $validatedData['house_use_rooms'] + $validatedData['mice_rooms'];
 
         $total_rooms_revenue =
             $validatedData['offline_room_income'] + $validatedData['online_room_income'] + $validatedData['ta_income'] +
             $validatedData['gov_income'] + $validatedData['corp_income'] + $validatedData['compliment_income'] +
-            $validatedData['house_use_income'] + $validatedData['mice_income'];
+            $validatedData['house_use_income'] + $validatedData['mice_room_income'] + $validatedData['mice_income'];
 
         $total_fb_revenue = $validatedData['breakfast_income'] + $validatedData['lunch_income'] + $validatedData['dinner_income'];
         $total_revenue = $total_rooms_revenue + $total_fb_revenue + $validatedData['others_income'];

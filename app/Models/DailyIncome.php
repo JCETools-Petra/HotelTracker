@@ -23,6 +23,7 @@ class DailyIncome extends Model
         // Kolom jumlah kamar
         'offline_rooms',
         'online_rooms',
+        'mice_rooms',
         'ta_rooms',
         'gov_rooms',
         'corp_rooms',
@@ -32,6 +33,7 @@ class DailyIncome extends Model
         // Kolom pendapatan
         'offline_room_income',
         'online_room_income',
+        'mice_room_income',
         'ta_income',
         'gov_income',
         'corp_income',
