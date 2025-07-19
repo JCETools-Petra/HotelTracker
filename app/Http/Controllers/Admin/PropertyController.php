@@ -45,6 +45,7 @@ class PropertyController extends Controller
      */
     public function store(Request $request)
     {
+        $this->authorize('manage-data');
         if (auth()->user()->role !== 'admin') {
             abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
         }
@@ -190,6 +191,7 @@ class PropertyController extends Controller
 
     public function update(Request $request, Property $property)
     {
+        $this->authorize('manage-data');
         if (auth()->user()->role !== 'admin') {
             abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
         }
@@ -205,6 +207,7 @@ class PropertyController extends Controller
 
     public function destroy(Property $property)
     {
+        $this->authorize('manage-data');
         if (auth()->user()->role !== 'admin') {
             abort(403, 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.');
         }

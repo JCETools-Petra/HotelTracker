@@ -63,6 +63,7 @@ class BookingController extends Controller
              return redirect()->back()->with('error', 'Akun Anda tidak terikat ke properti manapun.');
         }
 
+        // Validasi input dari form, termasuk total_price
         $validatedData = $request->validate([
             'booking_date' => 'required|date',
             'client_name' => 'required|string|max:255',
@@ -75,15 +76,17 @@ class BookingController extends Controller
             'notes' => 'nullable|string',
             'room_id' => 'required|exists:rooms,id',
             'mice_category_id' => 'nullable|exists:mice_categories,id',
+            'total_price' => 'required|numeric|min:0', // Validasi untuk harga manual
         ]);
 
+        // Menyiapkan data untuk disimpan
         $bookingData = $validatedData;
         $bookingData['event_type'] = $request->input('event_type', 'MICE');
-        $bookingData['booking_number'] = 'BKN-' . date('Ymd') . '-' . Str::random(4);
+        $bookingData['booking_number'] = 'BKN-' . date('Ymd') . '-' . Str::upper(Str::random(4)); // Membuat nomor booking unik
         $bookingData['property_id'] = $salesUser->property_id;
-        $bookingData['total_price'] = 0;
         $bookingData['payment_status'] = 'Pending';
 
+        // Membuat record booking baru di database
         Booking::create($bookingData);
 
         return redirect()->route('sales.bookings.index')->with('success', 'Booking baru berhasil ditambahkan.');

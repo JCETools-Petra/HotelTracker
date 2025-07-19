@@ -2,7 +2,8 @@
 
 namespace App\Providers;
 
-// use Illuminate\Support\Facades\Gate;
+use App\Models\User; // <-- TAMBAHKAN INI
+use Illuminate\Support\Facades\Gate; // <-- TAMBAHKAN INI
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
 class AuthServiceProvider extends ServiceProvider
@@ -21,6 +22,18 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // ======================= AWAL BLOK YANG DIUBAH =======================
+        
+        // Gate ini akan digunakan untuk semua aksi Create, Update, Delete (CUD)
+        // Hanya user dengan peran 'admin' yang akan diizinkan.
+        Gate::define('manage-data', function (User $user) {
+            return $user->role === 'admin';
+        });
+
+        // Anda bisa juga membuat Gate yang lebih spesifik jika diperlukan
+        // Gate::define('manage-users', fn(User $user) => $user->role === 'admin');
+        // Gate::define('manage-properties', fn(User $user) => $user->role === 'admin');
+
+        // ======================= AKHIR BLOK YANG DIUBAH ======================
     }
 }

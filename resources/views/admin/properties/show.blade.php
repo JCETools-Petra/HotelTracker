@@ -8,10 +8,13 @@
                 <x-secondary-button onclick="window.history.back()">
                     {{ __('Kembali') }}
                 </x-secondary-button>
-                <a href="{{ route('admin.properties.edit', $property->id) }}"
-                   class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-500 active:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
-                    {{ __('Edit Properti') }}
-                </a>
+                {{-- Tombol Edit Properti hanya untuk Admin --}}
+                @can('manage-data')
+                    <a href="{{ route('admin.properties.edit', $property->id) }}"
+                       class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-500 active:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
+                        {{ __('Edit Properti') }}
+                    </a>
+                @endcan
             </div>
         </div>
     </x-slot>
@@ -60,7 +63,7 @@
                             @endphp
                             <a href="{{ route('admin.properties.show', ['property' => $property->id, 'start_date' => $startDate->toDateString(), 'end_date' => $endDate->toDateString()]) }}"
                                class="inline-flex items-center px-3 py-1.5 border rounded-md text-xs font-medium transition ease-in-out duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500
-                                      {{ $isActive ? 'bg-indigo-600 text-white border-transparent shadow-sm' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-500 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600' }}">
+                                    {{ $isActive ? 'bg-indigo-600 text-white border-transparent shadow-sm' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-500 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600' }}">
                                 {{ $monthName }}
                             </a>
                         @endforeach
@@ -125,9 +128,11 @@
                     <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
                         Riwayat Pendapatan Harian
                     </h3>
-                    <a href="{{ route('admin.properties.incomes.create', $property) }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md font-semibold text-xs uppercase tracking-widest hover:bg-indigo-700">
-                        + Tambah Pendapatan
-                    </a>
+                    @can('manage-data')
+                        <a href="{{ route('admin.properties.incomes.create', $property) }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md font-semibold text-xs uppercase tracking-widest hover:bg-indigo-700">
+                            + Tambah Pendapatan
+                        </a>
+                    @endcan
                 </div>
                 
                 @if($incomes->isEmpty())
@@ -152,15 +157,17 @@
                                     <tr>
                                         <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 align-top">
                                             <div>{{ \Carbon\Carbon::parse($income->date)->isoFormat('dddd, D MMM YYYY') }}</div>
-                                            @if($income->id)
-                                                <div class="mt-2">
-                                                    <a href="{{ route('admin.incomes.edit', $income->id) }}">
-                                                        <x-secondary-button type="button" class="!py-1 !px-3 !text-xs">
-                                                            {{ __('Edit') }}
-                                                        </x-secondary-button>
-                                                    </a>
-                                                </div>
-                                            @endif
+                                            @can('manage-data')
+                                                @if($income->id)
+                                                    <div class="mt-2">
+                                                        <a href="{{ route('admin.incomes.edit', $income->id) }}">
+                                                            <x-secondary-button type="button" class="!py-1 !px-3 !text-xs">
+                                                                {{ __('Edit') }}
+                                                            </x-secondary-button>
+                                                        </a>
+                                                    </div>
+                                                @endif
+                                            @endcan
                                         </td>
                                         @foreach(array_keys($incomeCategories) as $column)
                                             <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right align-top">
@@ -229,7 +236,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const sourcePieCanvas = document.getElementById('propertySourceDistributionPieChart');
     const chartLabels = Object.values(incomeCategories);
-    const chartData = sourceDistributionData ? Object.keys(incomeCategories).map(key => sourceDistributionData['total_' . $key] || 0) : [];
+    const chartData = sourceDistributionData ? Object.keys(incomeCategories).map(key => sourceDistributionData['total_' + key] || 0) : [];
     const hasDataForPie = chartData.some(value => parseFloat(value) > 0);
 
     if (sourcePieCanvas && hasDataForPie) {

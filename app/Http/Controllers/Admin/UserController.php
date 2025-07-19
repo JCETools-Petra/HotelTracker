@@ -44,6 +44,7 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
+        $this->authorize('manage-data');
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
@@ -97,11 +98,12 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user)
     {
+        $this->authorize('manage-data');
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
-            'role' => ['required', 'string'],
+            'role' => ['required', 'string', \Illuminate\Validation\Rule::in(['admin', 'owner', 'pengguna_properti', 'sales'])],
             'property_id' => ['nullable', 'required_if:role,pengguna_properti,sales', 'exists:properties,id'],
         ]);
 
@@ -111,7 +113,7 @@ class UserController extends Controller
         }
 
         // Pastikan property_id null jika peran tidak membutuhkannya
-        if ($request->role === 'admin' || $request->role === 'owner') {
+        if ($request->role === 'admin' || $request->role === 'owner') { // <-- TAMBAHKAN 'owner'
             $data['property_id'] = null;
         }
 
@@ -125,6 +127,7 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
+        $this->authorize('manage-data');
         // Jangan hapus user dengan ID 1 (biasanya super admin)
         if ($user->id === 1) {
             return redirect()->route('admin.users.index')->with('error', 'Super Admin tidak dapat dihapus.');

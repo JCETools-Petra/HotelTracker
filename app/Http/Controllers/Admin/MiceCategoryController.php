@@ -30,6 +30,7 @@ class MiceCategoryController extends Controller
      */
     public function store(Request $request)
     {
+        $this->authorize('manage-data');
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:mice_categories,name',
             'description' => 'nullable|string',

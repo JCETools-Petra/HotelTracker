@@ -19,6 +19,7 @@ class SettingController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorize('manage-data');
         // Validasi input
         $validatedData = $request->validate([
             'app_name' => 'required|string|max:255',

@@ -26,6 +26,7 @@ class IncomeController extends Controller
      */
     public function store(Request $request, Property $property)
     {
+        $this->authorize('manage-data');
         // Validasi semua field, termasuk jumlah kamar
         $validatedData = $request->validate([
             'date' => ['required', 'date', Rule::unique('daily_incomes')->where('property_id', $property->id)],
