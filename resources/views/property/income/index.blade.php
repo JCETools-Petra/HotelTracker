@@ -56,6 +56,7 @@
                                         <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Corp (Kamar/Rp)</th>
                                         <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Compliment (Kamar/Rp)</th>
                                         <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">House Use (Kamar/Rp)</th>
+                                        <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">MICE Room (Kamar/Rp)</th>
                                         <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">MICE</th>
                                         <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">F&B</th>
                                         <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Lainnya</th>
@@ -76,6 +77,7 @@
                                                        ($income->corp_income ?? 0) +
                                                        ($income->compliment_income ?? 0) +
                                                        ($income->house_use_income ?? 0) +
+                                                       ($income->mice_room_income ?? 0) +
                                                        ($income->mice_income ?? 0) +
                                                        ($income->fb_income ?? 0) + // Ini akan menjumlahkan Breakfast, Lunch, Dinner
                                                        ($income->others_income ?? 0);
@@ -91,6 +93,8 @@
                                         <td class="px-4 py-4 whitespace-nowrap text-sm text-center">{{ $income->corp_rooms ?? 0 }} / <span class="text-gray-500 dark:text-gray-300">{{ number_format($income->corp_income ?? 0, 0, ',', '.') }}</span></td>
                                         <td class="px-4 py-4 whitespace-nowrap text-sm text-center">{{ $income->compliment_rooms ?? 0 }} / <span class="text-gray-500 dark:text-gray-300">{{ number_format($income->compliment_income ?? 0, 0, ',', '.') }}</span></td>
                                         <td class="px-4 py-4 whitespace-nowrap text-sm text-center">{{ $income->house_use_rooms ?? 0 }} / <span class="text-gray-500 dark:text-gray-300">{{ number_format($income->house_use_income ?? 0, 0, ',', '.') }}</span></td>
+
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-center">{{ $income->mice_rooms ?? 0 }} / <span class="text-gray-500 dark:text-gray-300">{{ number_format($income->mice_room_income ?? 0, 0, ',', '.') }}</span></td>
 
                                         <td class="px-4 py-4 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-300">{{ number_format($income->mice_income ?? 0, 0, ',', '.') }}</td>
                                         

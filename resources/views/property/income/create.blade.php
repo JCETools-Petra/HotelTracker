@@ -93,6 +93,16 @@
                                 <x-input-label for="house_use_income" :value="__('House Use (Pendapatan)')" />
                                 <x-text-input id="house_use_income" class="block mt-1 w-full" type="number" name="house_use_income" :value="old('house_use_income', 0)" />
                             </div>
+
+                            <!-- MICE Room -->
+                            <div>
+                                <x-input-label for="mice_rooms" :value="__('MICE (Kamar)')" />
+                                <x-text-input id="mice_rooms" class="block mt-1 w-full" type="number" name="mice_rooms" :value="old('mice_rooms', 0)" />
+                            </div>
+                            <div>
+                                <x-input-label for="mice_room_income" :value="__('MICE (Pendapatan Kamar)')" />
+                                <x-text-input id="mice_room_income" class="block mt-1 w-full" type="number" name="mice_room_income" :value="old('mice_room_income', 0)" />
+                            </div>
                             
                             <!-- Other Incomes (no rooms) -->
                             <div class="col-span-full border-t pt-4"></div>
