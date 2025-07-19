@@ -15,7 +15,7 @@
         </div>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-12" x-data="{ open: false, selectedIncome: null }">
         <div class="max-w-full mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
@@ -25,7 +25,6 @@
                         </div>
                     @endif
 
-                    {{-- FORM FILTER TANGGAL --}}
                     <form method="GET" action="{{ route('property.income.index') }}" class="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg shadow">
                         <div class="flex flex-col md:flex-row md:items-end md:space-x-4 space-y-4 md:space-y-0">
                             <div class="flex-1">
@@ -48,60 +47,24 @@
                             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                 <thead class="bg-gray-50 dark:bg-gray-700">
                                     <tr>
-                                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tanggal</th>
-                                        <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Walk In (Kamar/Rp)</th>
-                                        <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">OTA (Kamar/Rp)</th>
-                                        <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">TA (Kamar/Rp)</th>
-                                        <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Gov (Kamar/Rp)</th>
-                                        <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Corp (Kamar/Rp)</th>
-                                        <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Compliment (Kamar/Rp)</th>
-                                        <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">House Use (Kamar/Rp)</th>
-                                        <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">MICE</th>
-                                        <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">F&B</th>
-                                        <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Lainnya</th>
-                                        <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total</th>
-                                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Aksi</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tanggal</th>
+                                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Pendapatan</th>
+                                        <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                     @foreach($incomes as $income)
-                                    @php
-                                        // ======================= AWAL PERUBAHAN KALKULASI =======================
-                                        // Kalkulasi total pendapatan dari semua sumber
-                                        // ($income->fb_income) akan secara otomatis memanggil accessor di model
-                                        $totalIncome = ($income->offline_room_income ?? 0) +
-                                                       ($income->online_room_income ?? 0) +
-                                                       ($income->ta_income ?? 0) +
-                                                       ($income->gov_income ?? 0) +
-                                                       ($income->corp_income ?? 0) +
-                                                       ($income->compliment_income ?? 0) +
-                                                       ($income->house_use_income ?? 0) +
-                                                       ($income->mice_income ?? 0) +
-                                                       ($income->fb_income ?? 0) + // Ini akan menjumlahkan Breakfast, Lunch, Dinner
-                                                       ($income->others_income ?? 0);
-                                        // ======================= AKHIR PERUBAHAN KALKULASI ======================
-                                    @endphp
                                     <tr>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ \Carbon\Carbon::parse($income->date)->isoFormat('D MMM YY') }}</td>
-                                        
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-center">{{ $income->offline_rooms ?? 0 }} / <span class="text-gray-500 dark:text-gray-300">{{ number_format($income->offline_room_income ?? 0, 0, ',', '.') }}</span></td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-center">{{ $income->online_rooms ?? 0 }} / <span class="text-gray-500 dark:text-gray-300">{{ number_format($income->online_room_income ?? 0, 0, ',', '.') }}</span></td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-center">{{ $income->ta_rooms ?? 0 }} / <span class="text-gray-500 dark:text-gray-300">{{ number_format($income->ta_income ?? 0, 0, ',', '.') }}</span></td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-center">{{ $income->gov_rooms ?? 0 }} / <span class="text-gray-500 dark:text-gray-300">{{ number_format($income->gov_income ?? 0, 0, ',', '.') }}</span></td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-center">{{ $income->corp_rooms ?? 0 }} / <span class="text-gray-500 dark:text-gray-300">{{ number_format($income->corp_income ?? 0, 0, ',', '.') }}</span></td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-center">{{ $income->compliment_rooms ?? 0 }} / <span class="text-gray-500 dark:text-gray-300">{{ number_format($income->compliment_income ?? 0, 0, ',', '.') }}</span></td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-center">{{ $income->house_use_rooms ?? 0 }} / <span class="text-gray-500 dark:text-gray-300">{{ number_format($income->house_use_income ?? 0, 0, ',', '.') }}</span></td>
-
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-300">{{ number_format($income->mice_income ?? 0, 0, ',', '.') }}</td>
-                                        
-                                        {{-- ======================= AWAL PERUBAHAN TAMPILAN ======================= --}}
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-300">{{ number_format($income->fb_income ?? 0, 0, ',', '.') }}</td>
-                                        {{-- ======================= AKHIR PERUBAHAN TAMPILAN ====================== --}}
-
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-300">{{ number_format($income->others_income ?? 0, 0, ',', '.') }}</td>
-                                        
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm font-semibold text-right text-gray-900 dark:text-gray-100">{{ number_format($totalIncome, 0, ',', '.') }}</td>
-                                        <td class="px-4 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                                            {{ \Carbon\Carbon::parse($income->date)->isoFormat('dddd, D MMMM YYYY') }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-mono text-gray-700 dark:text-gray-300">
+                                            Rp {{ number_format($income->total_revenue ?? 0, 0, ',', '.') }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-center space-x-2">
+                                            <button @click="open = true; selectedIncome = {{ $income->toJson() }}" class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-200">
+                                                Lihat Data
+                                            </button>
                                             <a href="{{ route('property.income.edit', $income->id) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200">Edit</a>
                                             <form method="POST" action="{{ route('property.income.destroy', $income->id) }}" class="inline-block" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data ini?');">
                                                 @csrf
@@ -122,6 +85,88 @@
                             Belum ada data pendapatan yang tercatat.
                         </p>
                     @endif
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal -->
+        <div x-show="open" 
+             x-transition:enter="ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed z-10 inset-0 overflow-y-auto" 
+             aria-labelledby="modal-title" 
+             role="dialog" 
+             aria-modal="true"
+             style="display: none;">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="open = false"></div>
+
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+                <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                    <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" id="modal-title">
+                                    Rincian Pendapatan - <span x-text="new Date(selectedIncome?.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })"></span>
+                                </h3>
+                                <div class="mt-4 text-sm text-gray-600 dark:text-gray-300">
+                                    <div class="grid grid-cols-2 gap-x-4 gap-y-2">
+                                        <!-- Room Details -->
+                                        <div class="col-span-2 font-semibold border-b pb-1 mb-1">Pendapatan Kamar</div>
+                                        <template x-for="[key, value] of Object.entries({
+                                            'Walk In': [selectedIncome?.offline_rooms, selectedIncome?.offline_room_income],
+                                            'OTA': [selectedIncome?.online_rooms, selectedIncome?.online_room_income],
+                                            'Travel Agent': [selectedIncome?.ta_rooms, selectedIncome?.ta_income],
+                                            'Government': [selectedIncome?.gov_rooms, selectedIncome?.gov_income],
+                                            'Corporation': [selectedIncome?.corp_rooms, selectedIncome?.corp_income],
+                                            'Compliment': [selectedIncome?.compliment_rooms, selectedIncome?.compliment_income],
+                                            'House Use': [selectedIncome?.house_use_rooms, selectedIncome?.house_use_income],
+                                            'Afiliasi': [selectedIncome?.afiliasi_rooms, selectedIncome?.afiliasi_income]
+                                        })">
+                                            <div class="grid grid-cols-3">
+                                                <span class="col-span-1" x-text="key"></span>
+                                                <span class="col-span-2 text-right">
+                                                    <span x-text="value[0] || 0"></span> Kamar / 
+                                                    <span class="font-mono" x-text="new Intl.NumberFormat('id-ID').format(value[1] || 0)"></span>
+                                                </span>
+                                            </div>
+                                        </template>
+
+                                        <!-- Other Incomes -->
+                                        <div class="col-span-2 font-semibold border-b pb-1 mb-1 mt-4">Pendapatan Lainnya</div>
+                                        
+                                        <div class="col-span-2 pl-4 border-l-2 border-gray-200 dark:border-gray-600">
+                                            <p class="font-medium">F&B:</p>
+                                            <div class="pl-4 text-gray-500 dark:text-gray-400">
+                                                <p>Breakfast: <span class="float-right font-mono" x-text="new Intl.NumberFormat('id-ID').format(selectedIncome?.breakfast_income || 0)"></span></p>
+                                                <p>Lunch: <span class="float-right font-mono" x-text="new Intl.NumberFormat('id-ID').format(selectedIncome?.lunch_income || 0)"></span></p>
+                                                <p>Dinner: <span class="float-right font-mono" x-text="new Intl.NumberFormat('id-ID').format(selectedIncome?.dinner_income || 0)"></span></p>
+                                                <p class="font-medium border-t border-dashed mt-1 pt-1">Total F&B: <span class="float-right font-mono" x-text="new Intl.NumberFormat('id-ID').format((parseFloat(selectedIncome?.breakfast_income) || 0) + (parseFloat(selectedIncome?.lunch_income) || 0) + (parseFloat(selectedIncome?.dinner_income) || 0))"></span></p>
+                                            </div>
+                                        </div>
+
+                                        <p>Lainnya: <span class="float-right font-mono" x-text="new Intl.NumberFormat('id-ID').format(selectedIncome?.others_income || 0)"></span></p>
+                                        
+                                        <!-- Totals -->
+                                        <div class="col-span-2 font-semibold border-b pb-1 mb-1 mt-4">Total</div>
+                                        <p>Total Kamar Terjual: <span class="float-right font-mono" x-text="selectedIncome?.total_rooms_sold || 0"></span></p>
+                                        <p>Total Pendapatan Kamar: <span class="float-right font-mono" x-text="new Intl.NumberFormat('id-ID').format(selectedIncome?.total_rooms_revenue || 0)"></span></p>
+                                        <p class="font-bold text-lg">Total Pendapatan: <span class="float-right font-mono" x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(selectedIncome?.total_revenue || 0)"></span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button @click="open = false" type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white dark:bg-gray-600 text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            Tutup
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

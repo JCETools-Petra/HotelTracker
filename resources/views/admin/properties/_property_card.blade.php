@@ -1,85 +1,99 @@
-<div class="flex flex-col justify-between h-full">
-    <div>
-        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">{{ $property->name }}</h3>
+<div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 flex flex-col">
+    <h3 class="font-bold text-lg text-gray-900 dark:text-gray-100 mb-3">{{ $property->name }}</h3>
+
+    <div class="space-y-1 text-gray-600 dark:text-gray-300 flex-grow">
+        {{-- Rincian Pendapatan Kamar --}}
+        <div class="flex justify-between text-sm">
+            <span>Walk In</span>
+            <span>Rp {{ number_format($property->total_offline_room_income ?? 0, 0, ',', '.') }}</span>
+        </div>
+        <div class="flex justify-between text-sm">
+            <span>OTA</span>
+            <span>Rp {{ number_format($property->total_online_room_income ?? 0, 0, ',', '.') }}</span>
+        </div>
+        <div class="flex justify-between text-sm">
+            <span>Travel Agent</span>
+            <span>Rp {{ number_format($property->total_ta_income ?? 0, 0, ',', '.') }}</span>
+        </div>
+        <div class="flex justify-between text-sm">
+            <span>Government</span>
+            <span>Rp {{ number_format($property->total_gov_income ?? 0, 0, ',', '.') }}</span>
+        </div>
+        <div class="flex justify-between text-sm">
+            <span>Corporation</span>
+            <span>Rp {{ number_format($property->total_corp_income ?? 0, 0, ',', '.') }}</span>
+        </div>
         
-        <div class="mt-4">
-            <table class="w-full text-sm">
-                <tbody class="text-gray-600 dark:text-gray-400">
-                    @php
-                        $totalFbIncome = ($property->total_breakfast_income ?? 0) + ($property->total_lunch_income ?? 0) + ($property->total_dinner_income ?? 0);
-                    @endphp
+        <div class="flex justify-between text-sm">
+            <span>Afiliasi</span>
+            <span>Rp {{ number_format($property->total_afiliasi_income ?? 0, 0, ',', '.') }}</span>
+        </div>
 
-                    @foreach (['offline_room_income' => 'Walk In', 'online_room_income' => 'OTA', 'ta_income' => 'Travel Agent', 'gov_income' => 'Government', 'corp_income' => 'Corporation', 'compliment_income' => 'Compliment', 'house_use_income' => 'House Use'] as $key => $label)
-                        @if (($property->{'total_' . $key} ?? 0) > 0)
-                        <tr>
-                            <td class="py-1.5 pr-4">{{ $label }}</td>
-                            <td class="py-1.5 text-right font-medium text-gray-700 dark:text-gray-300">
-                                Rp {{ number_format($property->{'total_' . $key}, 0, ',', '.') }}
-                            </td>
-                        </tr>
-                        @endif
+        {{-- Rincian Pendapatan F&B --}}
+        <div class="pt-2">
+            <p class="font-semibold text-sm text-gray-700 dark:text-gray-200">Pendapatan F&B</p>
+            <div class="pl-2">
+                <div class="flex justify-between text-sm">
+                    <span>Breakfast</span>
+                    <span>Rp {{ number_format($property->total_breakfast_income ?? 0, 0, ',', '.') }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span>Lunch</span>
+                    <span>Rp {{ number_format($property->total_lunch_income ?? 0, 0, ',', '.') }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span>Dinner</span>
+                    <span>Rp {{ number_format($property->total_dinner_income ?? 0, 0, ',', '.') }}</span>
+                </div>
+            </div>
+        </div>
+
+        {{-- Rincian Pendapatan Lainnya --}}
+        @if(isset($property->mice_revenue_breakdown) && $property->mice_revenue_breakdown->isNotEmpty())
+            <div class="pt-2">
+                <p class="font-semibold text-sm text-gray-700 dark:text-gray-200">Pendapatan MICE (Luar Sales)</p>
+                <div class="pl-2">
+                    @foreach($property->mice_revenue_breakdown as $breakdown)
+                        <div class="flex justify-between text-sm">
+                            <span>{{ $breakdown->miceCategory->name ?? 'Lainnya' }}</span>
+                            <span>Rp {{ number_format($breakdown->total_mice_revenue ?? 0, 0, ',', '.') }}</span>
+                        </div>
                     @endforeach
+                </div>
+            </div>
+        @endif
 
-                    @if ($totalFbIncome > 0)
-                    <tr class="border-t border-dashed border-gray-300 dark:border-gray-600">
-                        <td class="pt-3 pb-1 pr-4 font-semibold text-gray-500 dark:text-gray-400" colspan="2">Pendapatan F&B</td>
-                    </tr>
-                    @foreach (['breakfast_income' => 'Breakfast', 'lunch_income' => 'Lunch', 'dinner_income' => 'Dinner'] as $key => $label)
-                        @if (($property->{'total_' . $key} ?? 0) > 0)
-                        <tr>
-                            <td class="py-1.5 pr-4 pl-4">{{ $label }}</td>
-                            <td class="py-1.5 text-right font-medium text-gray-700 dark:text-gray-300">
-                                Rp {{ number_format($property->{'total_' . $key}, 0, ',', '.') }}
-                            </td>
-                        </tr>
-                        @endif
-                    @endforeach
-                    @endif
-
-                    @if(isset($property->mice_revenue_breakdown) && $property->mice_revenue_breakdown->isNotEmpty())
-                        <tr class="border-t border-dashed border-gray-300 dark:border-gray-600">
-                            <td class="pt-3 pb-1 pr-4 font-semibold text-gray-500 dark:text-gray-400" colspan="2">Pendapatan MICE (dari Sales)</td>
-                        </tr>
-                        @foreach($property->mice_revenue_breakdown as $mice)
-                            <tr>
-                                <td class="py-1.5 pr-4 pl-4">{{ $mice->miceCategory->name ?? 'Lainnya' }}</td>
-                                <td class="py-1.5 text-right font-medium text-gray-700 dark:text-gray-300">
-                                    Rp {{ number_format($mice->total_mice_revenue, 0, ',', '.') }}
-                                </td>
-                            </tr>
-                        @endforeach
-                    @endif
-
-                    @if (($property->total_others_income ?? 0) > 0)
-                        <tr class="border-t border-dashed border-gray-300 dark:border-gray-600">
-                            <td class="pt-3 pb-1 pr-4 font-semibold text-gray-500 dark:text-gray-400">Lainnya</td>
-                            <td class="pt-3 pb-1 text-right font-medium text-gray-700 dark:text-gray-300">
-                                Rp {{ number_format($property->total_others_income, 0, ',', '.') }}
-                            </td>
-                        </tr>
-                    @endif
-                </tbody>
-                <tfoot class="text-gray-800 dark:text-gray-200">
-                    <tr class="border-t-2 border-gray-300 dark:border-gray-700">
-                        <td class="pt-3 pr-4 font-semibold">{{ $revenueTitle ?? 'Total Revenue' }}</td>
-                        <td class="pt-3 text-right text-base font-bold">
-                            Rp {{ number_format($property->dailyRevenue ?? 0, 0, ',', '.') }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="pt-1.5 pr-4 font-semibold">Average Room Rate</td>
-                        <td class="pt-1.5 text-right text-base font-bold">
-                            Rp {{ number_format($property->averageRoomRate ?? 0, 0, ',', '.') }}
-                        </td>
-                    </tr>
-                </tfoot>
-            </table>
+        <div class="flex justify-between text-sm pt-2">
+            <span>Lainnya</span>
+            <span>Rp {{ number_format($property->total_others_income ?? 0, 0, ',', '.') }}</span>
         </div>
     </div>
 
-    <div class="mt-5">
-        <a href="{{ route('admin.properties.show', $property->id) }}" 
-           class="inline-block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 text-sm font-semibold">
+    {{-- Total dan Rata-rata --}}
+    <div class="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
+        <div class="flex justify-between font-bold text-base">
+            <span>Yearly Revenue</span>
+            <span>Rp {{ number_format($property->dailyRevenue ?? 0, 0, ',', '.') }}</span>
+        </div>
+        <div class="flex justify-between font-semibold">
+            <span>Average Room Rate</span>
+            <span>Rp {{ number_format($property->averageRoomRate ?? 0, 0, ',', '.') }}</span>
+        </div>
+        
+        {{-- ======================= AWAL PERUBAHAN ======================= --}}
+        @php
+            $averageRoomRate = $property->averageRoomRate ?? 0;
+            $arrAfterTax = $averageRoomRate - ($averageRoomRate * 0.21);
+        @endphp
+        <div class="flex justify-between items-center font-semibold text-blue-600 dark:text-blue-400">
+            <span class="pr-2">Net ARR (Setelah Pajak & Servis)</span>
+            <span class="whitespace-nowrap flex-shrink-0">Rp {{ number_format($arrAfterTax, 0, ',', '.') }}</span>
+        </div>
+        {{-- ======================= AKHIR PERUBAHAN ======================= --}}
+    </div>
+
+    <div class="mt-4">
+        <a href="{{ route('admin.properties.show', $property->id) }}" class="block w-full text-center px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 font-semibold">
             Lihat Detail
         </a>
     </div>

@@ -11,19 +11,16 @@
                 <div class="p-6 text-gray-900 dark:text-gray-100">
                     <form method="POST" action="{{ route('property.income.store', $property->id) }}">
                         @csrf
-                        <!-- Tanggal -->
                         <div class="mb-6">
                             <x-input-label for="date" :value="__('Tanggal')" />
                             <x-text-input id="date" class="block mt-1 w-full md:w-1/2" type="date" name="date" :value="old('date', $date)" required autofocus />
                             <x-input-error :messages="$errors->get('date')" class="mt-2" />
                         </div>
 
-                        <!-- Income Categories -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                            
                             <div class="col-span-1 border-t pt-4"><h3 class="font-semibold text-lg">Kamar</h3></div>
                             <div class="col-span-1 border-t pt-4"><h3 class="font-semibold text-lg">Pendapatan (Rp)</h3></div>
-
+                            
                             <!-- Walk In Guest -->
                             <div>
                                 <x-input-label for="offline_rooms" :value="__('Walk In Guest (Kamar)')" />
@@ -93,26 +90,30 @@
                                 <x-input-label for="house_use_income" :value="__('House Use (Pendapatan)')" />
                                 <x-text-input id="house_use_income" class="block mt-1 w-full" type="number" name="house_use_income" :value="old('house_use_income', 0)" />
                             </div>
-                            
-                            <!-- Other Incomes (no rooms) -->
-                            <div class="col-span-full border-t pt-4"></div>
-                            
+
+                            <!-- Afiliasi -->
                             <div>
-                                <x-input-label for="mice_income" :value="__('MICE (Pendapatan)')" />
-                                <x-text-input id="mice_income" class="block mt-1 w-full" type="number" name="mice_income" :value="old('mice_income', 0)" />
+                                <x-input-label for="afiliasi_rooms" :value="__('Afiliasi (Kamar)')" />
+                                <x-text-input id="afiliasi_rooms" class="block mt-1 w-full" type="number" name="afiliasi_rooms" :value="old('afiliasi_rooms', 0)" />
+                            </div>
+                            <div>
+                                <x-input-label for="afiliasi_room_income" :value="__('Afiliasi (Pendapatan)')" />
+                                <x-text-input id="afiliasi_room_income" class="block mt-1 w-full" type="number" name="afiliasi_room_income" :value="old('afiliasi_room_income', 0)" />
                             </div>
                             
-                            <div class="col-span-1">
+                            <div class="col-span-full border-t pt-4"></div>
+                            
+                            <div class="md:col-start-2">
                                 <x-input-label for="breakfast_income" :value="__('Breakfast (Pendapatan)')" />
                                 <x-text-input id="breakfast_income" class="block mt-1 w-full" type="number" name="breakfast_income" :value="old('breakfast_income', 0)" />
                             </div>
 
-                            <div class="col-span-1 md:col-start-2">
+                            <div class="md:col-start-2">
                                 <x-input-label for="lunch_income" :value="__('Lunch (Pendapatan)')" />
                                 <x-text-input id="lunch_income" class="block mt-1 w-full" type="number" name="lunch_income" :value="old('lunch_income', 0)" />
                             </div>
 
-                            <div class="col-span-1 md:col-start-2">
+                            <div class="md:col-start-2">
                                 <x-input-label for="dinner_income" :value="__('Dinner (Pendapatan)')" />
                                 <x-text-input id="dinner_income" class="block mt-1 w-full" type="number" name="dinner_income" :value="old('dinner_income', 0)" />
                             </div>
