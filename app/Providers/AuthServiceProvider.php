@@ -14,7 +14,7 @@ class AuthServiceProvider extends ServiceProvider
      * @var array<class-string, class-string>
      */
     protected $policies = [
-        DailyIncome::class => DailyIncomePolicy::class, // Pastikan baris ini ada
+        //
     ];
 
     /**

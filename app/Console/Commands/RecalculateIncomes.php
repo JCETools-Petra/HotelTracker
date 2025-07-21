@@ -38,7 +38,8 @@ class RecalculateIncomes extends Command
         }
 
         foreach ($allIncomes as $income) {
-            // Recalculate all totals from scratch
+            // ======================= AWAL PERBAIKAN KALKULASI =======================
+            // Menghitung ulang semua total, sekarang dengan menyertakan Afiliasi.
             $total_rooms_sold =
                 ($income->offline_rooms ?? 0) +
                 ($income->online_rooms ?? 0) +
@@ -47,7 +48,8 @@ class RecalculateIncomes extends Command
                 ($income->corp_rooms ?? 0) +
                 ($income->compliment_rooms ?? 0) +
                 ($income->house_use_rooms ?? 0) +
-                ($income->mice_rooms ?? 0);
+                ($income->mice_rooms ?? 0) +
+                ($income->afiliasi_rooms ?? 0); // <-- DATA AFILIASI DITAMBAHKAN
 
             $total_rooms_revenue =
                 ($income->offline_room_income ?? 0) +
@@ -57,13 +59,15 @@ class RecalculateIncomes extends Command
                 ($income->corp_income ?? 0) +
                 ($income->compliment_income ?? 0) +
                 ($income->house_use_income ?? 0) +
-                ($income->mice_room_income ?? 0);
+                ($income->mice_room_income ?? 0) +
+                ($income->afiliasi_room_income ?? 0); // <-- DATA AFILIASI DITAMBAHKAN
 
             $total_fb_revenue =
                 ($income->breakfast_income ?? 0) +
                 ($income->lunch_income ?? 0) +
                 ($income->dinner_income ?? 0);
 
+            // Perhitungan total_revenue sekarang sudah benar karena komponen di atas sudah akurat.
             $total_revenue =
                 $total_rooms_revenue +
                 $total_fb_revenue +
@@ -73,8 +77,9 @@ class RecalculateIncomes extends Command
             $property = $income->property;
             $arr = ($total_rooms_sold > 0) ? ($total_rooms_revenue / $total_rooms_sold) : 0;
             $occupancy = ($property && $property->total_rooms > 0) ? ($total_rooms_sold / $property->total_rooms) * 100 : 0;
+            // ======================= AKHIR PERBAIKAN KALKULASI =======================
 
-            // Update the record with all new calculated values without checking the old total
+            // Memperbarui record dengan nilai kalkulasi yang baru.
             $income->total_rooms_sold = $total_rooms_sold;
             $income->total_rooms_revenue = $total_rooms_revenue;
             $income->total_fb_revenue = $total_fb_revenue;
@@ -82,7 +87,6 @@ class RecalculateIncomes extends Command
             $income->arr = $arr;
             $income->occupancy = $occupancy;
 
-            // Use quiet saving to avoid firing events if any are attached
             $income->saveQuietly();
             
             $progressBar->advance();

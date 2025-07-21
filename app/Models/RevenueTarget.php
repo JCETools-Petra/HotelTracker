@@ -1,51 +1,75 @@
 <?php
 
-namespace App\Models;
+namespace App\Models; // Pastikan tidak ada baris kosong di atas ini setelah <?php
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
+use Carbon\Carbon; // Untuk casting dan mutator tanggal jika diperlukan
 
 class RevenueTarget extends Model
 {
     use HasFactory;
 
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'revenue_targets';
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'property_id',
         'month_year',
         'target_amount',
     ];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
-        'month_year' => 'date',
+        'month_year' => 'date:Y-m-d', // Casting ke objek Carbon saat diakses, format Y-m-d
+        'target_amount' => 'decimal:2', // Casting ke float dengan 2 angka desimal
     ];
 
+    /**
+     * Get the property that owns the revenue target.
+     */
     public function property()
     {
         return $this->belongsTo(Property::class);
     }
 
     /**
-     * Menghitung target pendapatan harian berdasarkan bulan yang diberikan.
+     * Scope a query to only include targets for a specific month and year.
      *
-     * @param int $propertyId
-     * @param Carbon $date
-     * @return float
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  int $year
+     * @param  int $month
+     * @return \Illuminate\Database\Eloquent\Builder
      */
-    public static function getTargetForDate(int $propertyId, Carbon $date): float
+    public function scopeForMonthYear($query, $year, $month)
     {
-        $targetMonth = $date->copy()->startOfMonth();
-        $revenueTarget = self::where('property_id', $propertyId)
-                             ->where('month_year', $targetMonth->format('Y-m-d'))
-                             ->first();
+        // Membuat tanggal awal dan akhir bulan dari tahun dan bulan yang diberikan
+        // $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        // Meskipun kita menyimpan 'YYYY-MM-01', query whereMonth dan whereYear lebih aman
+        return $query->whereYear('month_year', $year)
+                     ->whereMonth('month_year', $month);
+    }
 
-        if (!$revenueTarget) {
-            return 0;
-        }
-
-        $monthlyTarget = $revenueTarget->target_amount;
-        $daysInMonth = $date->daysInMonth;
-
-        return $daysInMonth > 0 ? $monthlyTarget / $daysInMonth : 0;
+    /**
+     * Mutator untuk memastikan month_year selalu disimpan sebagai tanggal pertama bulan.
+     * Ini akan dieksekusi setiap kali Anda mencoba set atribut 'month_year'.
+     */
+    public function setMonthYearAttribute($value)
+    {
+        // Mengubah input (misalnya '2025-05' atau '2025-05-15') menjadi '2025-05-01'
+        $this->attributes['month_year'] = Carbon::parse($value)->startOfMonth()->toDateString();
     }
 }
