@@ -77,7 +77,7 @@ class PropertyController extends Controller
             'house_use_income' => 'House Use', 'mice_income' => 'MICE', 'fnb_income' => 'F&B', 'others_income' => 'Lainnya',
         ];
     
-        // Kolom asli di DB daily_incomes
+        // Kolom asli di DB daily_incomes (setelah mice_income dihapus)
         $dbDailyIncomeColumns = [
             'offline_room_income', 'online_room_income', 'ta_income', 'gov_income', 'corp_income', 'compliment_income',
             'house_use_income', 'breakfast_income', 'lunch_income', 'dinner_income', 'others_income'
@@ -110,6 +110,7 @@ class PropertyController extends Controller
                 $dayData->{$column} = $income->{$column} ?? 0;
             }
             
+            // Ambil data MICE dari booking, bukan dari daily_incomes
             $dayData->mice_booking_total = $mice->total_mice ?? 0;
             $dayData->mice_income = $dayData->mice_booking_total;
     
@@ -119,9 +120,9 @@ class PropertyController extends Controller
         // 3. Hitung total untuk ringkasan dan pie chart
         $totalPropertyRevenueFiltered = $fullDateRangeData->sum(function($day) {
             return ($day->offline_room_income ?? 0) + ($day->online_room_income ?? 0) + ($day->ta_income ?? 0) +
-                    ($day->gov_income ?? 0) + ($day->corp_income ?? 0) + ($day->compliment_income ?? 0) +
-                    ($day->house_use_income ?? 0) + ($day->breakfast_income ?? 0) + ($day->lunch_income ?? 0) +
-                    ($day->dinner_income ?? 0) + ($day->others_income ?? 0) + ($day->mice_booking_total ?? 0);
+                   ($day->gov_income ?? 0) + ($day->corp_income ?? 0) + ($day->compliment_income ?? 0) +
+                   ($day->house_use_income ?? 0) + ($day->breakfast_income ?? 0) + ($day->lunch_income ?? 0) +
+                   ($day->dinner_income ?? 0) + ($day->others_income ?? 0) + ($day->mice_booking_total ?? 0);
         });
         
         $sourceDistribution = new \stdClass();
@@ -143,9 +144,9 @@ class PropertyController extends Controller
         // 4. Data untuk tren harian
         $dailyTrend = $fullDateRangeData->map(function($day) {
             $total = ($day->offline_room_income ?? 0) + ($day->online_room_income ?? 0) + ($day->ta_income ?? 0) +
-                        ($day->gov_income ?? 0) + ($day->corp_income ?? 0) + ($day->compliment_income ?? 0) +
-                        ($day->house_use_income ?? 0) + ($day->breakfast_income ?? 0) + ($day->lunch_income ?? 0) +
-                        ($day->dinner_income ?? 0) + ($day->others_income ?? 0) + ($day->mice_booking_total ?? 0);
+                     ($day->gov_income ?? 0) + ($day->corp_income ?? 0) + ($day->compliment_income ?? 0) +
+                     ($day->house_use_income ?? 0) + ($day->breakfast_income ?? 0) + ($day->lunch_income ?? 0) +
+                     ($day->dinner_income ?? 0) + ($day->others_income ?? 0) + ($day->mice_booking_total ?? 0);
             return ['date' => $day->date, 'total_daily_income' => $total];
         })->reverse();
     
@@ -165,14 +166,8 @@ class PropertyController extends Controller
         
         $dailyTargetAchievement = $dailyTarget > 0 ? ($lastDayIncome / $dailyTarget) * 100 : 0;
         
-        // =====================================================================
-        // >> AWAL PERUBAHAN: Blok Paginasi dihapus total <<
-        // =====================================================================
         // 6. Ambil semua data tanpa paginasi
         $incomes = $fullDateRangeData;
-        // =====================================================================
-        // >> AKHIR PERUBAHAN <<
-        // =====================================================================
         
         return view('admin.properties.show', compact(
             'property', 'incomes', 'dailyTrend', 'sourceDistribution', 'totalPropertyRevenueFiltered',
@@ -232,9 +227,6 @@ class PropertyController extends Controller
     /**
      * Menampilkan hasil perbandingan properti.
      */
-    /**
-     * Menampilkan hasil perbandingan properti.
-     */
     public function showComparisonResults(Request $request)
     {
         $validated = $request->validate([
@@ -264,10 +256,10 @@ class PropertyController extends Controller
         $categoryLabels = array_values($incomeCategories);
         $categoryKeysForDisplay = array_keys($incomeCategories);
 
-        // Kolom asli dari database
+        // Kolom asli dari database (setelah mice_income dihapus)
         $dbCategoryColumns = [
             'offline_room_income', 'online_room_income', 'ta_income', 'gov_income', 'corp_income',
-            'compliment_income', 'house_use_income', 'mice_income',
+            'compliment_income', 'house_use_income',
             'breakfast_income', 'lunch_income', 'dinner_income',
             'others_income'
         ];
@@ -276,21 +268,18 @@ class PropertyController extends Controller
         $totalRevenueRaw = implode(' + ', array_map(fn($col) => "IFNULL(`$col`, 0)", $dbCategoryColumns));
         $selectedPropertiesModels = Property::whereIn('id', $propertyIds)->get();
 
-        // =====================================================================
-        // >> AWAL PERBAIKAN 1: Mengambil data booking untuk setiap properti <<
-        // =====================================================================
         foreach ($selectedPropertiesModels as $property) {
-            // 1. Ambil data agregat dari DailyIncome (seperti sebelumnya)
+            // 1. Ambil data agregat dari DailyIncome (tanpa MICE)
             $incomeDetails = DailyIncome::where('property_id', $property->id)
                 ->whereBetween('date', [$startDate, $endDate])
                 ->select(DB::raw("SUM({$totalRevenueRaw}) as total_revenue, " . implode(', ', array_map(fn($col) => "SUM(IFNULL(`{$col}`, 0)) as `{$col}`", $dbCategoryColumns))))
                 ->first();
             
-            // 2. [BARU] Ambil total pendapatan MICE dari tabel Booking
+            // 2. Ambil total pendapatan MICE dari tabel Booking
             $miceRevenueFromBooking = Booking::where('property_id', $property->id)
-                ->where('status', 'Booking Pasti') // Pastikan status sesuai
+                ->where('status', 'Booking Pasti')
                 ->whereBetween('event_date', [$startDate, $endDate])
-                ->sum('total_price'); // Ganti 'total_price' jika nama kolom berbeda
+                ->sum('total_price');
 
             $dataPoint = ['name' => $property->name];
             
@@ -306,21 +295,17 @@ class PropertyController extends Controller
             $dataPoint['fnb_income'] = $totalFnb;
             $dataPoint['others_income'] = $incomeDetails->others_income ?? 0;
             
-            // 4. [MODIFIKASI] Gabungkan MICE dari DailyIncome dan Booking
-            $miceFromDailyIncome = $incomeDetails->mice_income ?? 0;
-            $dataPoint['mice_income'] = $miceFromDailyIncome + $miceRevenueFromBooking;
+            // 4. Masukkan pendapatan MICE hanya dari Booking
+            $dataPoint['mice_income'] = $miceRevenueFromBooking;
             
-            // 5. [MODIFIKASI] Kalkulasi ulang total pendapatan
+            // 5. Kalkulasi ulang total pendapatan
             $totalFromDailyIncome = $incomeDetails->total_revenue ?? 0;
             $dataPoint['total_revenue'] = $totalFromDailyIncome + $miceRevenueFromBooking;
             
             $comparisonData[] = $dataPoint;
         }
-        // =====================================================================
-        // >> AKHIR PERBAIKAN 1 <<
-        // =====================================================================
 
-        // Data untuk Grouped Bar Chart (Tidak perlu diubah, karena sudah membaca dari $comparisonData)
+        // Data untuk Grouped Bar Chart
         $datasetsForGroupedBar = [];
         $colors = ['rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)', 'rgba(255, 206, 86, 0.7)', 'rgba(75, 192, 192, 0.7)', 'rgba(153, 102, 255, 0.7)', 'rgba(255, 159, 64, 0.7)'];
         foreach ($selectedPropertiesModels as $index => $property) {
@@ -339,18 +324,15 @@ class PropertyController extends Controller
         $dateLabels = collect($period)->map(fn($date) => $date->isoFormat('D MMM'));
         $datasetsForTrend = [];
         
-        // =====================================================================
-        // >> AWAL PERBAIKAN 2: Mengambil data booking untuk grafik tren <<
-        // =====================================================================
         foreach ($selectedPropertiesModels as $index => $property) {
-            // 1. Ambil tren pendapatan harian dari DailyIncome (seperti sebelumnya)
+            // Ambil tren pendapatan harian dari DailyIncome
             $dailyIncomes = DailyIncome::where('property_id', $property->id)
                 ->whereBetween('date', [$startDate, $endDate])
                 ->select('date', DB::raw("SUM({$totalRevenueRaw}) as daily_total_revenue"))
                 ->groupBy('date')->orderBy('date', 'asc')->get()
                 ->keyBy(fn($item) => Carbon::parse($item->date)->isoFormat('D MMM'));
             
-            // 2. [BARU] Ambil tren pendapatan MICE harian dari Booking
+            // Ambil tren pendapatan MICE harian dari Booking
             $dailyMiceFromBookings = Booking::where('property_id', $property->id)
                 ->where('status', 'Booking Pasti')
                 ->whereBetween('event_date', [$startDate, $endDate])
@@ -359,7 +341,7 @@ class PropertyController extends Controller
                 ->get()
                 ->keyBy(fn($item) => Carbon::parse($item->date)->isoFormat('D MMM'));
             
-            // 3. [MODIFIKASI] Gabungkan kedua sumber data untuk mendapatkan tren total
+            // Gabungkan kedua sumber data untuk mendapatkan tren total
             $trendDataPoints = $dateLabels->map(function($label) use ($dailyIncomes, $dailyMiceFromBookings) {
                 $incomeTotal = $dailyIncomes->get($label)->daily_total_revenue ?? 0;
                 $miceTotal = $dailyMiceFromBookings->get($label)->daily_mice_revenue ?? 0;
@@ -374,9 +356,6 @@ class PropertyController extends Controller
                 'tension' => 0.1
             ];
         }
-        // =====================================================================
-        // >> AKHIR PERBAIKAN 2 <<
-        // =====================================================================
         $trendChartData = ['labels' => $dateLabels, 'datasets' => $datasetsForTrend];
 
         return view('admin.properties.compare_results', [

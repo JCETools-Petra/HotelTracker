@@ -18,30 +18,18 @@ use App\Exports\AdminPropertiesSummaryExport;
 
 class DashboardController extends Controller
 {
-    /**
-     * Menampilkan dashboard admin dengan data ringkasan, KPI, dan chart yang telah difilter.
-     * NOTE: Logika utama tampaknya berada di metode index(). Metode __invoke() ini mungkin tidak digunakan.
-     */
     public function __invoke(Request $request)
     {
-        // Logika di sini tampaknya duplikat dari metode index().
-        // Merekomendasikan untuk mengarahkan rute ke metode index() untuk konsistensi.
         return $this->index($request);
     }
     
     public function salesAnalytics()
     {
-        // ======================================================
-        // Mengambil semua data yang berhubungan dengan event
-        // ======================================================
-
-        // 1. Data untuk kartu statistik
         $totalEventRevenue = Booking::where('status', 'Booking Pasti')->sum('total_price');
         $totalBookings = Booking::count();
         $totalConfirmedBookings = Booking::where('status', 'Booking Pasti')->count();
         $totalActivePackages = PricePackage::where('is_active', true)->count();
 
-        // 2. Data untuk Grafik Pie Status Booking
         $bookingStatusData = Booking::select('status', DB::raw('count(*) as count'))
             ->groupBy('status')
             ->pluck('count', 'status');
@@ -51,7 +39,6 @@ class DashboardController extends Controller
             'data' => $bookingStatusData->values(),
         ];
         
-        // 3. Data untuk Grafik Batang Pendapatan Event 12 Bulan Terakhir
         $revenueData = Booking::select(
                 DB::raw('YEAR(event_date) as year, MONTH(event_date) as month'),
                 DB::raw('sum(total_price) as total')
@@ -87,8 +74,6 @@ class DashboardController extends Controller
         ));
     }
     
-    // app/Http/Controllers/Admin/DashboardController.php
-
     public function index(Request $request)
     {
         $propertyId = $request->input('property_id');
@@ -116,11 +101,11 @@ class DashboardController extends Controller
             }
         }
     
-        // ✅ PERBAIKAN BAGIAN 1: Hapus 'mice_income' dari daftar perhitungan awal.
+        // Daftar kategori pendapatan dari daily_incomes (tanpa MICE)
         $incomeCategories = [
             'offline_room_income' => 'Walk In', 'online_room_income' => 'OTA', 'ta_income' => 'Travel Agent',
             'gov_income' => 'Government', 'corp_income' => 'Corporation', 'compliment_income' => 'Compliment',
-            'house_use_income' => 'House Use', // 'mice_income' DIHAPUS DARI SINI
+            'house_use_income' => 'House Use',
             'breakfast_income' => 'Breakfast', 'lunch_income' => 'Lunch', 'dinner_income' => 'Dinner', 
             'others_income' => 'Lain-lain',
         ];
@@ -151,27 +136,24 @@ class DashboardController extends Controller
             ->get()
             ->groupBy('property_id');
     
-        // ✅ PERBAIKAN BAGIAN 2: Logika kalkulasi yang sudah diperbaiki
         foreach ($properties as $property) {
-            // Hitung total dari daily_incomes (yang sudah tidak termasuk MICE)
+            // Hitung total dari daily_incomes (tanpa MICE)
             $dailyRevenue = collect($incomeColumns)->reduce(function ($carry, $col) use ($property) {
                 return $carry + ($property->{'total_' . $col} ?? 0);
             }, 0);
     
-            // Ambil pendapatan MICE dari data booking
+            // Tambahkan pendapatan MICE dari data booking
             $propertyMiceRevenues = $miceRevenues->get($property->id);
             if ($propertyMiceRevenues) {
-                // Tambahkan pendapatan MICE dari booking ke total
                 $dailyRevenue += $propertyMiceRevenues->sum('total_mice_revenue');
                 $property->mice_revenue_breakdown = $propertyMiceRevenues;
             } else {
                 $property->mice_revenue_breakdown = collect();
             }
             
-            // Simpan total pendapatan yang sudah benar
             $property->dailyRevenue = $dailyRevenue;
     
-            // Perhitungan ARR tidak berubah dan sudah benar
+            // Perhitungan ARR
             $totalArrRevenue = 0;
             $totalArrRoomsSold = 0;
             $arrRevenueCategories = ['offline_room_income', 'online_room_income', 'ta_income', 'gov_income', 'corp_income'];
@@ -182,7 +164,7 @@ class DashboardController extends Controller
             $property->averageRoomRate = ($totalArrRoomsSold > 0) ? ($totalArrRevenue / $totalArrRoomsSold) : 0;
         }
     
-        // Sisa kode untuk kalkulasi data Pie Chart dan Bar Chart
+        // Sisa kode untuk Pie Chart dan Bar Chart
         $dailyIncomeQuery = DailyIncome::query()->whereBetween('date', [$startDate, $endDate]);
         if ($propertyId) $dailyIncomeQuery->where('property_id', $propertyId);
 
@@ -198,7 +180,7 @@ class DashboardController extends Controller
                           ($overallIncomeSource->total_lunch_income ?? 0) + 
                           ($overallIncomeSource->total_dinner_income ?? 0);
 
-        // Kategori untuk Pie Chart (MICE dipertahankan untuk label)
+        // Kategori Pie Chart (MICE ditambahkan dari booking)
         $pieChartCategories = [
             'offline_room_income' => 'Walk In', 'online_room_income' => 'OTA', 'ta_income' => 'Travel Agent',
             'gov_income' => 'Government', 'corp_income' => 'Corporation',
@@ -225,7 +207,6 @@ class DashboardController extends Controller
             
         $allPropertiesForFilter = Property::orderBy('name')->get();
     
-        // ✅ PERBAIKAN BAGIAN 3: Memastikan Bar Chart juga menggunakan kalkulasi yang benar
         $incomeSumRawForDaily = implode(' + ', array_map(fn($col) => "IFNULL(`$col`, 0)", $incomeColumns));
         $overallIncomeFromDaily = Property::query()
             ->when($propertyId, fn($q) => $q->where('properties.id', $propertyId))
