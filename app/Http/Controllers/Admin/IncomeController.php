@@ -24,13 +24,15 @@ class IncomeController extends Controller
     /**
      * Menyimpan data pendapatan baru ke database.
      */
+    // app/Http/Controllers/Admin/IncomeController.php
+
     public function store(Request $request, Property $property)
     {
         $this->authorize('manage-data');
-        // Validasi semua field, termasuk jumlah kamar
+
+        // TAMBAHKAN VALIDASI UNTUK AFILIASI
         $validatedData = $request->validate([
             'date' => ['required', 'date', Rule::unique('daily_incomes')->where('property_id', $property->id)],
-            // Validasi Jumlah Kamar
             'offline_rooms' => 'nullable|integer|min:0',
             'online_rooms' => 'nullable|integer|min:0',
             'ta_rooms' => 'nullable|integer|min:0',
@@ -38,7 +40,8 @@ class IncomeController extends Controller
             'corp_rooms' => 'nullable|integer|min:0',
             'compliment_rooms' => 'nullable|integer|min:0',
             'house_use_rooms' => 'nullable|integer|min:0',
-            // Validasi Pendapatan
+            'afiliasi_rooms' => 'nullable|integer|min:0', // <-- TAMBAHKAN INI
+
             'offline_room_income' => 'nullable|numeric|min:0',
             'online_room_income' => 'nullable|numeric|min:0',
             'ta_income' => 'nullable|numeric|min:0',
@@ -46,19 +49,31 @@ class IncomeController extends Controller
             'corp_income' => 'nullable|numeric|min:0',
             'compliment_income' => 'nullable|numeric|min:0',
             'house_use_income' => 'nullable|numeric|min:0',
-            'mice_income' => 'nullable|numeric|min:0', // MICE sekarang bisa diinput manual oleh admin
+            'afiliasi_room_income' => 'nullable|numeric|min:0', // <-- TAMBAHKAN INI
+
+            'mice_income' => 'nullable|numeric|min:0', 
             'breakfast_income' => 'nullable|numeric|min:0',
             'lunch_income' => 'nullable|numeric|min:0',
             'dinner_income' => 'nullable|numeric|min:0',
             'others_income' => 'nullable|numeric|min:0',
         ]);
 
+        // Hapus 'mice_income' dari array agar tidak coba disimpan
+        $miceIncomeFromForm = $validatedData['mice_income'] ?? 0;
+        unset($validatedData['mice_income']);
+
+        // Tambahkan property_id dan user_id
         $validatedData['property_id'] = $property->id;
         $validatedData['user_id'] = auth()->id();
 
-        DailyIncome::create($validatedData);
+        // Buat record baru (sudah termasuk afiliasi)
+        $income = DailyIncome::create($validatedData);
 
-        return redirect()->route('admin.properties.show', $property)->with('success', 'Data pendapatan untuk tanggal ' . $request->date . ' berhasil ditambahkan.');
+        // Hitung ulang total setelah data disimpan
+        $income->recalculateTotals($miceIncomeFromForm);
+        $income->save();
+
+        return redirect()->route('admin.properties.show', $property)->with('success', 'Data pendapatan berhasil ditambahkan.');
     }
 
     /**
@@ -78,35 +93,74 @@ class IncomeController extends Controller
      */
     public function update(Request $request, DailyIncome $income)
     {
-        // Validasi semua field, termasuk jumlah kamar
+        // 1. Validasi semua input, termasuk MICE yang hanya ada di form Admin
         $validatedData = $request->validate([
             'date' => ['required', 'date', Rule::unique('daily_incomes')->where('property_id', $income->property_id)->ignore($income->id)],
-             // Validasi Jumlah Kamar
             'offline_rooms' => 'nullable|integer|min:0',
-            'online_rooms' => 'nullable|integer|min:0',
-            'ta_rooms' => 'nullable|integer|min:0',
-            'gov_rooms' => 'nullable|integer|min:0',
-            'corp_rooms' => 'nullable|integer|min:0',
-            'compliment_rooms' => 'nullable|integer|min:0',
-            'house_use_rooms' => 'nullable|integer|min:0',
-            // Validasi Pendapatan
             'offline_room_income' => 'nullable|numeric|min:0',
+            'online_rooms' => 'nullable|integer|min:0',
             'online_room_income' => 'nullable|numeric|min:0',
+            'ta_rooms' => 'nullable|integer|min:0',
             'ta_income' => 'nullable|numeric|min:0',
+            'gov_rooms' => 'nullable|integer|min:0',
             'gov_income' => 'nullable|numeric|min:0',
+            'corp_rooms' => 'nullable|integer|min:0',
             'corp_income' => 'nullable|numeric|min:0',
+            'compliment_rooms' => 'nullable|integer|min:0',
             'compliment_income' => 'nullable|numeric|min:0',
+            'house_use_rooms' => 'nullable|integer|min:0',
             'house_use_income' => 'nullable|numeric|min:0',
-            'mice_income' => 'nullable|numeric|min:0',
+            'afiliasi_rooms' => 'nullable|integer|min:0',
+            'afiliasi_room_income' => 'nullable|numeric|min:0',
+            'mice_income' => 'nullable|numeric|min:0', // Admin bisa input MICE
             'breakfast_income' => 'nullable|numeric|min:0',
             'lunch_income' => 'nullable|numeric|min:0',
             'dinner_income' => 'nullable|numeric|min:0',
             'others_income' => 'nullable|numeric|min:0',
         ]);
 
-        $income->update($validatedData);
+        // ======================= AWAL PERUBAHAN =======================
 
-        return redirect()->route('admin.properties.show', $income->property_id)->with('success', 'Data pendapatan untuk tanggal ' . $request->date . ' berhasil diperbarui.');
+        // Ambil nilai MICE dari form untuk kalkulasi, tapi jangan disimpan
+        $miceIncomeFromForm = $validatedData['mice_income'] ?? 0;
+        // Hapus 'mice_income' dari array agar tidak coba disimpan ke database
+        unset($validatedData['mice_income']);
+
+        // ======================= AKHIR PERUBAHAN =======================
+
+        // 2. Kalkulasi ulang total
+        $property = $income->property;
+        $total_rooms_sold =
+            ($validatedData['offline_rooms'] ?? 0) + ($validatedData['online_rooms'] ?? 0) + ($validatedData['ta_rooms'] ?? 0) +
+            ($validatedData['gov_rooms'] ?? 0) + ($validatedData['corp_rooms'] ?? 0) + ($validatedData['compliment_rooms'] ?? 0) +
+            ($validatedData['house_use_rooms'] ?? 0) + ($validatedData['afiliasi_rooms'] ?? 0);
+
+        $total_rooms_revenue =
+            ($validatedData['offline_room_income'] ?? 0) + ($validatedData['online_room_income'] ?? 0) + ($validatedData['ta_income'] ?? 0) +
+            ($validatedData['gov_income'] ?? 0) + ($validatedData['corp_income'] ?? 0) + ($validatedData['compliment_income'] ?? 0) +
+            ($validatedData['house_use_income'] ?? 0) + ($validatedData['afiliasi_room_income'] ?? 0);
+
+        $total_fb_revenue = ($validatedData['breakfast_income'] ?? 0) + ($validatedData['lunch_income'] ?? 0) + ($validatedData['dinner_income'] ?? 0);
+        
+        // Gunakan nilai MICE dari form dalam perhitungan total revenue
+        $total_revenue = $total_rooms_revenue + $total_fb_revenue + $miceIncomeFromForm + ($validatedData['others_income'] ?? 0);
+        
+        $arr = ($total_rooms_sold > 0) ? ($total_rooms_revenue / $total_rooms_sold) : 0;
+        $occupancy = ($property->total_rooms > 0) ? ($total_rooms_sold / $property->total_rooms) * 100 : 0;
+
+        // Data yang akan diupdate ke tabel daily_incomes (sudah tanpa mice_income)
+        $updateData = array_merge($validatedData, [
+            'total_rooms_sold' => $total_rooms_sold,
+            'total_rooms_revenue' => $total_rooms_revenue,
+            'total_fb_revenue' => $total_fb_revenue,
+            'total_revenue' => $total_revenue,
+            'arr' => $arr,
+            'occupancy' => $occupancy,
+        ]);
+
+        $income->update($updateData);
+
+        return redirect()->route('admin.properties.show', $income->property_id)->with('success', 'Data pendapatan berhasil diperbarui.');
     }
 
     /**

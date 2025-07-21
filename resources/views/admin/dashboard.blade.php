@@ -2,7 +2,6 @@
     @php
         $chartColors = ['#e6194B', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#42d4f4', '#f032e6', '#bfef45', '#808000', '#000075', '#a9a9a9'];
         
-        // Logika judul dinamis yang aman
         $revenueTitle = 'Ringkasan Pendapatan';
         if ($period === 'today') {
             $revenueTitle = 'Daily Revenue';
@@ -32,7 +31,6 @@
             
             <div class="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
                 <form action="{{ route('admin.dashboard') }}" method="GET" id="filter-form" class="space-y-4">
-                    {{-- Input tersembunyi yang akan selalu dikirim --}}
                     <input type="hidden" name="property_id" id="property_id_hidden">
                     <input type="hidden" name="start_date" id="start_date_hidden">
                     <input type="hidden" name="end_date" id="end_date_hidden">
@@ -99,23 +97,86 @@
                 </form>
             </div>
             
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
-                 <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{{ $revenueTitle }}</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div class="p-4 border dark:border-gray-700 rounded-lg"><h4 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">Distribusi Sumber Pendapatan</h4><div id="pieChartContainer" class="flex flex-col md:flex-row items-center gap-4" style="min-height: 300px;"><div class="w-full md:w-1/2"><canvas id="overallSourcePieChart"></canvas></div><div class="w-full md:w-1/2 space-y-1" id="pieChartLegend"></div></div></div>
-                    <div class="p-4 border dark:border-gray-700 rounded-lg"><h4 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">Total Pendapatan per Properti</h4><div id="barChartContainer" style="height: 300px;"><canvas id="overallIncomeByPropertyBarChart"></canvas></div></div>
+            <div class="mb-6 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900 dark:text-gray-100">
+                    <h3 class="font-semibold text-lg text-gray-600 dark:text-gray-300">Total Pendapatan (Periode Terfilter)</h3>
+                    <p class="text-4xl font-bold text-green-600 dark:text-green-400 mt-2">
+                        Rp {{ number_format($totalOverallRevenue ?? 0, 0, ',', '.') }}
+                    </p>
                 </div>
-                <div class="flex flex-wrap justify-between items-center mt-8 mb-4"><h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Detail Properti</h3>@if(!$properties->isEmpty())<div class="flex space-x-2"><a href="{{ route('admin.dashboard.export.excel', request()->query()) }}" class="inline-flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest">Export Excel</a><a href="{{ route('admin.dashboard.export.csv', request()->query()) }}" class="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest">Export CSV</a></div>@endif</div>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{{ $revenueTitle }}</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="p-4 border dark:border-gray-700 rounded-lg">
+                        <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">Distribusi Sumber Pendapatan</h4>
+                        <div id="pieChartContainer" class="flex flex-col md:flex-row items-center gap-4" style="min-height: 300px;">
+                            <div class="w-full md:w-1/2"><canvas id="overallSourcePieChart"></canvas></div>
+                            <div class="w-full md:w-1/2 space-y-1" id="pieChartLegend"></div>
+                        </div>
+                    </div>
+                    <div class="p-4 border dark:border-gray-700 rounded-lg">
+                        <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">Total Pendapatan per Properti</h4>
+                        <div id="barChartContainer" style="height: 300px;"><canvas id="overallIncomeByPropertyBarChart"></canvas></div>
+                    </div>
+                </div>
+                
+                <div class="flex flex-wrap justify-between items-center mt-8 mb-4">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Detail Properti</h3>
+                    @if(!$properties->isEmpty())
+                    <div class="flex space-x-2">
+                        <a href="{{ route('admin.dashboard.export.excel', request()->query()) }}" class="inline-flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest">Export Excel</a>
+                        <a href="{{ route('admin.dashboard.export.csv', request()->query()) }}" class="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest">Export CSV</a>
+                    </div>
+                    @endif
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     @forelse($properties as $property)
                         <div class="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-lg shadow-sm">
                             @include('admin.properties._property_card', ['property' => $property, 'incomeCategories' => $incomeCategories, 'revenueTitle' => $revenueTitle])
                         </div>
                     @empty
-                        <div class="col-span-full text-center py-8"><p class="text-gray-600 dark:text-gray-400">Tidak ada data properti yang ditemukan.</p></div>
+                        <div class="col-span-full text-center py-8">
+                            <p class="text-gray-600 dark:text-gray-400">Tidak ada data properti yang ditemukan.</p>
+                        </div>
                     @endforelse
                 </div>
-                <div class="mt-8"><h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Laporan Event MICE</h3><div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg"><div class="p-0"><table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700"><thead class="bg-gray-50 dark:bg-gray-700/50"><tr><th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nama Pemesan</th><th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Hotel</th><th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Kategori</th><th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tanggal</th><th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nilai</th></tr></thead><tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">@forelse ($recentMiceBookings as $event)<tr><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{{ $event->client_name }}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $event->property->name ?? 'N/A' }}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">{{ $event->miceCategory->name ?? 'N/A' }}</span></td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ \Carbon\Carbon::parse($event->event_date)->format('d M Y') }}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-200 text-right">Rp {{ number_format($event->total_price, 0, ',', '.') }}</td></tr>@empty<tr><td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Tidak ada data event MICE pada periode ini.</td></tr>@endforelse</tbody></table></div></div></div>
+
+                <div class="mt-8">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Laporan Event MICE</h3>
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="p-0">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700/50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nama Pemesan</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Hotel</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Kategori</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tanggal</th>
+                                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nilai</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    @forelse ($recentMiceBookings as $event)
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{{ $event->client_name }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $event->property->name ?? 'N/A' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">{{ $event->miceCategory->name ?? 'N/A' }}</span></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ \Carbon\Carbon::parse($event->event_date)->format('d M Y') }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-200 text-right">Rp {{ number_format($event->total_price, 0, ',', '.') }}</td>
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Tidak ada data event MICE pada periode ini.</td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -208,7 +269,6 @@
                 populateDays();
                 toggleDaySelect();
                 
-                // --- JAVASCRIPT UNTUK CHART (TIDAK BERUBAH) ---
                 const isDarkMode = document.documentElement.classList.contains('dark');
                 Chart.defaults.color = isDarkMode ? '#e5e7eb' : '#6b7280';
                 Chart.defaults.borderColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';

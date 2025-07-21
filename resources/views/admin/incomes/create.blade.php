@@ -84,7 +84,16 @@
                                 <x-input-label for="house_use_income" :value="__('House Use (Pendapatan)')" />
                                 <x-text-input id="house_use_income" class="block mt-1 w-full" type="number" name="house_use_income" :value="old('house_use_income', 0)" />
                             </div>
-                            
+                            <div>
+                                <x-input-label for="afiliasi_rooms" :value="__('Afiliasi (Kamar)')" />
+                                <x-text-input id="afiliasi_rooms" class="block mt-1 w-full" type="number" name="afiliasi_rooms" :value="old('afiliasi_rooms', 0)" />
+                                <x-input-error :messages="$errors->get('afiliasi_rooms')" class="mt-2" />
+                            </div>
+                            <div>
+                                <x-input-label for="afiliasi_room_income" :value="__('Afiliasi (Pendapatan)')" />
+                                <x-text-input id="afiliasi_room_income" class="block mt-1 w-full" type="number" name="afiliasi_room_income" :value="old('afiliasi_room_income', 0)" />
+                                <x-input-error :messages="$errors->get('afiliasi_room_income')" class="mt-2" />
+                            </div>
                             <div class="col-span-full border-t pt-4"></div>
                             
                             <div class="col-span-1 md:col-start-2">

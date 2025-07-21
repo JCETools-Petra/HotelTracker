@@ -6,50 +6,86 @@
             <table class="w-full text-sm">
                 <tbody class="text-gray-600 dark:text-gray-400">
                     @php
-                        $totalFbIncome = ($property->total_breakfast_income ?? 0) + ($property->total_lunch_income ?? 0) + ($property->total_dinner_income ?? 0);
+                        // Kalkulasi Total per Grup
+                        $roomCategories = ['offline_room_income', 'online_room_income', 'ta_income', 'gov_income', 'corp_income', 'compliment_income', 'house_use_income', 'afiliasi_room_income'];
+                        $fnbCategories = ['breakfast_income', 'lunch_income', 'dinner_income'];
+
+                        $totalRoomRevenue = collect($roomCategories)->sum(fn($key) => $property->{'total_' . $key} ?? 0);
+                        $totalFnbRevenue = collect($fnbCategories)->sum(fn($key) => $property->{'total_' . $key} ?? 0);
+                        $totalMiceRevenue = $property->mice_revenue_breakdown->sum('total_mice_revenue') ?? 0;
+                        
+                        $grandTotal = $property->dailyRevenue ?? 0;
+
+                        // Helper function untuk menghitung persentase
+                        $getPercentage = fn($value, $total) => ($total > 0) ? '(' . number_format(($value / $total) * 100, 1, ',', '.') . '%)' : '';
                     @endphp
 
-                    @foreach (['offline_room_income' => 'Walk In', 'online_room_income' => 'OTA', 'ta_income' => 'Travel Agent', 'gov_income' => 'Government', 'corp_income' => 'Corporation', 'compliment_income' => 'Compliment', 'house_use_income' => 'House Use'] as $key => $label)
-                        @if (($property->{'total_' . $key} ?? 0) > 0)
+                    {{-- PENDAPATAN KAMAR --}}
+                    <tr>
+                        <td class="pt-3 pb-1 pr-4 font-semibold text-gray-500 dark:text-gray-400" colspan="2">
+                            Pendapatan Kamar <span class="font-normal text-gray-400">{{ $getPercentage($totalRoomRevenue, $grandTotal) }}</span>
+                        </td>
+                    </tr>
+                    @foreach (['offline_room_income' => 'Walk In', 'online_room_income' => 'OTA', 'ta_income' => 'Travel Agent', 'gov_income' => 'Government', 'corp_income' => 'Corporation', 'compliment_income' => 'Compliment', 'house_use_income' => 'House Use', 'afiliasi_room_income' => 'Afiliasi'] as $key => $label)
+                        @php $value = $property->{'total_' . $key} ?? 0; @endphp
+                        @if ($value > 0)
                         <tr>
-                            <td class="py-1.5 pr-4">{{ $label }}</td>
+                            <td class="py-1.5 pr-4 pl-4">{{ $label }}</td>
                             <td class="py-1.5 text-right font-medium text-gray-700 dark:text-gray-300">
-                                Rp {{ number_format($property->{'total_' . $key}, 0, ',', '.') }}
+                                <div class="flex flex-col items-end">
+                                    <span>Rp {{ number_format($value, 0, ',', '.') }}</span>
+                                    <span class="text-xs text-gray-400">{{ $getPercentage($value, $totalRoomRevenue) }}</span>
+                                </div>
                             </td>
                         </tr>
                         @endif
                     @endforeach
 
-                    @if ($totalFbIncome > 0)
+                    {{-- PENDAPATAN F&B --}}
+                    @if ($totalFnbRevenue > 0)
                     <tr class="border-t border-dashed border-gray-300 dark:border-gray-600">
-                        <td class="pt-3 pb-1 pr-4 font-semibold text-gray-500 dark:text-gray-400" colspan="2">Pendapatan F&B</td>
+                        <td class="pt-3 pb-1 pr-4 font-semibold text-gray-500 dark:text-gray-400" colspan="2">
+                            Pendapatan F&B <span class="font-normal text-gray-400">{{ $getPercentage($totalFnbRevenue, $grandTotal) }}</span>
+                        </td>
                     </tr>
                     @foreach (['breakfast_income' => 'Breakfast', 'lunch_income' => 'Lunch', 'dinner_income' => 'Dinner'] as $key => $label)
-                        @if (($property->{'total_' . $key} ?? 0) > 0)
+                        @php $value = $property->{'total_' . $key} ?? 0; @endphp
+                        @if ($value > 0)
                         <tr>
                             <td class="py-1.5 pr-4 pl-4">{{ $label }}</td>
                             <td class="py-1.5 text-right font-medium text-gray-700 dark:text-gray-300">
-                                Rp {{ number_format($property->{'total_' . $key}, 0, ',', '.') }}
+                                <div class="flex flex-col items-end">
+                                    <span>Rp {{ number_format($value, 0, ',', '.') }}</span>
+                                    <span class="text-xs text-gray-400">{{ $getPercentage($value, $totalFnbRevenue) }}</span>
+                                </div>
                             </td>
                         </tr>
                         @endif
                     @endforeach
                     @endif
 
-                    @if(isset($property->mice_revenue_breakdown) && $property->mice_revenue_breakdown->isNotEmpty())
+                    {{-- PENDAPATAN MICE --}}
+                    @if($totalMiceRevenue > 0)
                         <tr class="border-t border-dashed border-gray-300 dark:border-gray-600">
-                            <td class="pt-3 pb-1 pr-4 font-semibold text-gray-500 dark:text-gray-400" colspan="2">Pendapatan MICE (dari Sales)</td>
+                             <td class="pt-3 pb-1 pr-4 font-semibold text-gray-500 dark:text-gray-400" colspan="2">
+                                Pendapatan MICE <span class="font-normal text-gray-400">{{ $getPercentage($totalMiceRevenue, $grandTotal) }}</span>
+                            </td>
                         </tr>
                         @foreach($property->mice_revenue_breakdown as $mice)
+                            @php $value = $mice->total_mice_revenue; @endphp
                             <tr>
                                 <td class="py-1.5 pr-4 pl-4">{{ $mice->miceCategory->name ?? 'Lainnya' }}</td>
                                 <td class="py-1.5 text-right font-medium text-gray-700 dark:text-gray-300">
-                                    Rp {{ number_format($mice->total_mice_revenue, 0, ',', '.') }}
+                                    <div class="flex flex-col items-end">
+                                        <span>Rp {{ number_format($value, 0, ',', '.') }}</span>
+                                        <span class="text-xs text-gray-400">{{ $getPercentage($value, $totalMiceRevenue) }}</span>
+                                    </div>
                                 </td>
                             </tr>
                         @endforeach
                     @endif
 
+                    {{-- PENDAPATAN LAINNYA --}}
                     @if (($property->total_others_income ?? 0) > 0)
                         <tr class="border-t border-dashed border-gray-300 dark:border-gray-600">
                             <td class="pt-3 pb-1 pr-4 font-semibold text-gray-500 dark:text-gray-400">Lainnya</td>

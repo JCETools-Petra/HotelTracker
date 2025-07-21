@@ -76,9 +76,10 @@ class DashboardController extends Controller
     
     public function index(Request $request)
     {
+        // 1. Pengaturan Filter Tanggal
         $propertyId = $request->input('property_id');
         $period = $request->input('period', 'year');
-    
+
         if ($request->has('start_date') && $request->has('end_date') && $request->start_date && $request->end_date) {
             $startDate = Carbon::parse($request->input('start_date'))->startOfDay();
             $endDate = Carbon::parse($request->input('end_date'))->endOfDay();
@@ -100,33 +101,30 @@ class DashboardController extends Controller
                     break;
             }
         }
-    
-        // Daftar kategori pendapatan dari daily_incomes (tanpa MICE)
+
+        // 2. Definisi Kategori Pendapatan
         $incomeCategories = [
             'offline_room_income' => 'Walk In', 'online_room_income' => 'OTA', 'ta_income' => 'Travel Agent',
             'gov_income' => 'Government', 'corp_income' => 'Corporation', 'compliment_income' => 'Compliment',
-            'house_use_income' => 'House Use',
-            'breakfast_income' => 'Breakfast', 'lunch_income' => 'Lunch', 'dinner_income' => 'Dinner', 
+            'house_use_income' => 'House Use', 'afiliasi_room_income' => 'Afiliasi',
+            'breakfast_income' => 'Breakfast', 'lunch_income' => 'Lunch', 'dinner_income' => 'Dinner',
             'others_income' => 'Lain-lain',
         ];
         $incomeColumns = array_keys($incomeCategories);
-    
+        $roomCountColumns = ['offline_rooms', 'online_rooms', 'ta_rooms', 'gov_rooms', 'corp_rooms', 'compliment_rooms', 'house_use_rooms', 'afiliasi_rooms'];
         $dateFilter = fn($query) => $query->whereBetween('date', [$startDate, $endDate]);
-    
-        $roomCountColumns = ['offline_rooms', 'online_rooms', 'ta_rooms', 'gov_rooms', 'corp_rooms', 'compliment_rooms', 'house_use_rooms'];
-        
+
+        // 3. Mengambil Data Properti dengan Semua Kalkulasi (Satu Kali Query Utama)
         $propertiesQuery = Property::when($propertyId, fn($q) => $q->where('id', $propertyId))->orderBy('id', 'asc');
-    
+        
         foreach ($incomeColumns as $column) {
             $propertiesQuery->withSum(['dailyIncomes as total_' . $column => $dateFilter], $column);
         }
         foreach ($roomCountColumns as $column) {
             $propertiesQuery->withSum(['dailyIncomes as total_' . $column => $dateFilter], $column);
         }
-        
         $properties = $propertiesQuery->get();
-    
-        // Ambil data MICE HANYA dari tabel bookings
+
         $miceRevenues = Booking::where('status', 'Booking Pasti')
             ->whereBetween('event_date', [$startDate, $endDate])
             ->when($propertyId, fn($q) => $q->where('property_id', $propertyId))
@@ -135,67 +133,49 @@ class DashboardController extends Controller
             ->with('miceCategory:id,name')
             ->get()
             ->groupBy('property_id');
-    
+            
+        $totalOverallRevenue = 0;
+
         foreach ($properties as $property) {
-            // Hitung total dari daily_incomes (tanpa MICE)
-            $dailyRevenue = collect($incomeColumns)->reduce(function ($carry, $col) use ($property) {
-                return $carry + ($property->{'total_' . $col} ?? 0);
-            }, 0);
-    
-            // Tambahkan pendapatan MICE dari data booking
+            $dailyRevenue = collect($incomeColumns)->reduce(fn($carry, $col) => $carry + ($property->{'total_' . $col} ?? 0), 0);
+            
             $propertyMiceRevenues = $miceRevenues->get($property->id);
             if ($propertyMiceRevenues) {
-                $dailyRevenue += $propertyMiceRevenues->sum('total_mice_revenue');
+                $miceTotalForProperty = $propertyMiceRevenues->sum('total_mice_revenue');
+                $dailyRevenue += $miceTotalForProperty;
                 $property->mice_revenue_breakdown = $propertyMiceRevenues;
             } else {
                 $property->mice_revenue_breakdown = collect();
             }
             
             $property->dailyRevenue = $dailyRevenue;
-    
-            // Perhitungan ARR
+            $totalOverallRevenue += $dailyRevenue;
+
             $totalArrRevenue = 0;
             $totalArrRoomsSold = 0;
             $arrRevenueCategories = ['offline_room_income', 'online_room_income', 'ta_income', 'gov_income', 'corp_income'];
             $arrRoomsCategories = ['offline_rooms', 'online_rooms', 'ta_rooms', 'gov_rooms', 'corp_rooms'];
-    
             foreach($arrRevenueCategories as $cat) { $totalArrRevenue += $property->{'total_' . $cat} ?? 0; }
             foreach($arrRoomsCategories as $cat) { $totalArrRoomsSold += $property->{'total_' . $cat} ?? 0; }
             $property->averageRoomRate = ($totalArrRoomsSold > 0) ? ($totalArrRevenue / $totalArrRoomsSold) : 0;
         }
-    
-        // Sisa kode untuk Pie Chart dan Bar Chart
-        $dailyIncomeQuery = DailyIncome::query()->whereBetween('date', [$startDate, $endDate]);
-        if ($propertyId) $dailyIncomeQuery->where('property_id', $propertyId);
 
-        $selectSums = [];
-        foreach ($incomeColumns as $column) {
-            $selectSums[] = DB::raw("SUM(IFNULL(`{$column}`, 0)) as total_{$column}");
-        }
-        $overallIncomeSource = (clone $dailyIncomeQuery)->select($selectSums)->first();
-
-        $totalMiceFromBookings = $miceRevenues->flatten()->sum('total_mice_revenue');
-
-        $totalFnbIncome = ($overallIncomeSource->total_breakfast_income ?? 0) + 
-                          ($overallIncomeSource->total_lunch_income ?? 0) + 
-                          ($overallIncomeSource->total_dinner_income ?? 0);
-
-        // Kategori Pie Chart (MICE ditambahkan dari booking)
+        // 4. Menyiapkan Data untuk Chart
         $pieChartCategories = [
             'offline_room_income' => 'Walk In', 'online_room_income' => 'OTA', 'ta_income' => 'Travel Agent',
-            'gov_income' => 'Government', 'corp_income' => 'Corporation',
+            'gov_income' => 'Government', 'corp_income' => 'Corporation', 'afiliasi_room_income' => 'Afiliasi',
             'mice_income' => 'MICE', 'fnb_income' => 'F&B', 'others_income' => 'Lain-lain',
         ];
-
+        
         $pieChartDataSource = new \stdClass();
-        foreach ($pieChartCategories as $key => $label) {
-            if ($key === 'fnb_income') {
-                $pieChartDataSource->{'total_' . $key} = $totalFnbIncome;
-            } elseif ($key === 'mice_income') {
-                $pieChartDataSource->{'total_' . $key} = $totalMiceFromBookings;
-            } else if (isset($overallIncomeSource)) {
-                $sourceKey = 'total_' . $key;
-                $pieChartDataSource->{$sourceKey} = $overallIncomeSource->{$sourceKey} ?? 0;
+        foreach($pieChartCategories as $key => $label) {
+            $totalKey = 'total_' . $key;
+            if($key === 'mice_income') {
+                $pieChartDataSource->$totalKey = $miceRevenues->flatten()->sum('total_mice_revenue');
+            } else if($key === 'fnb_income') {
+                $pieChartDataSource->$totalKey = $properties->sum('total_breakfast_income') + $properties->sum('total_lunch_income') + $properties->sum('total_dinner_income');
+            } else {
+                $pieChartDataSource->$totalKey = $properties->sum($totalKey);
             }
         }
         
@@ -204,36 +184,29 @@ class DashboardController extends Controller
             ->whereBetween('event_date', [$startDate, $endDate])
             ->when($propertyId, fn($q) => $q->where('property_id', $propertyId))
             ->latest('event_date')->take(10)->get();
-            
+                
         $allPropertiesForFilter = Property::orderBy('name')->get();
-    
-        $incomeSumRawForDaily = implode(' + ', array_map(fn($col) => "IFNULL(`$col`, 0)", $incomeColumns));
-        $overallIncomeFromDaily = Property::query()
-            ->when($propertyId, fn($q) => $q->where('properties.id', $propertyId))
-            ->leftJoin('daily_incomes', fn($j) => $j->on('properties.id', '=', 'daily_incomes.property_id')->whereBetween('daily_incomes.date', [$startDate, $endDate]))
-            ->select('properties.id', 'properties.name', 'properties.chart_color', DB::raw("SUM({$incomeSumRawForDaily}) as total_revenue_from_daily"))
-            ->groupBy('properties.id', 'properties.name', 'properties.chart_color')->get()->keyBy('id');
         
-        $overallIncomeFromMice = collect($miceRevenues)->map(fn($revs, $propId) => ['property_id' => $propId, 'total_revenue_from_mice' => $revs->sum('total_mice_revenue')])->keyBy('property_id');
-        
-        $overallIncomeByProperty = Property::when($propertyId, fn($q) => $q->where('id', $propertyId))->get()->map(function ($property) use ($overallIncomeFromDaily, $overallIncomeFromMice) {
-            $dailyTotal = $overallIncomeFromDaily->get($property->id)->total_revenue_from_daily ?? 0;
-            $miceTotal = $overallIncomeFromMice->get($property->id)['total_revenue_from_mice'] ?? 0;
-            $property->total_revenue = $dailyTotal + $miceTotal;
-            return $property;
+        $overallIncomeByProperty = $properties->map(function ($property) {
+            return (object)[
+                'name' => $property->name,
+                'total_revenue' => $property->dailyRevenue,
+                'chart_color' => $property->chart_color,
+            ];
         });
 
+        // 5. Mengirim Data ke View
         return view('admin.dashboard', [
             'properties' => $properties,
+            'totalOverallRevenue' => $totalOverallRevenue,
             'allPropertiesForFilter' => $allPropertiesForFilter,
             'propertyId' => $propertyId, 'period' => $period,
             'startDate' => $startDate, 'endDate' => $endDate,
-            'overallIncomeSource' => $overallIncomeSource,
-            'overallIncomeByProperty' => $overallIncomeByProperty,
             'incomeCategories' => $incomeCategories,
             'recentMiceBookings' => $recentMiceBookings,
             'pieChartDataSource' => $pieChartDataSource,
             'pieChartCategories' => $pieChartCategories,
+            'overallIncomeByProperty' => $overallIncomeByProperty,
         ]);
     }
 
@@ -242,137 +215,133 @@ class DashboardController extends Controller
         // --- 1. SETUP FILTER & DEFINISI KATEGORI ---
         $filterStartDate = $request->input('start_date') ? Carbon::parse($request->input('start_date'))->startOfDay() : Carbon::now()->subDays(29)->startOfDay();
         $filterEndDate = $request->input('end_date') ? Carbon::parse($request->input('end_date'))->endOfDay() : Carbon::now()->endOfDay();
-
+    
         if ($filterStartDate->gt($filterEndDate)) {
             $filterStartDate = Carbon::now()->subDays(29)->startOfDay();
             $filterEndDate = Carbon::now()->endOfDay();
         }
-
+    
+        // PERBAIKAN 1: Hitung total hari sebagai integer
+        $totalDaysInPeriod = (int) $filterStartDate->diffInDays($filterEndDate) + 1;
+    
         $propertyMomFilterId = $request->input('property_mom_filter_id');
         $allPropertiesForFilter = Property::orderBy('name')->get();
-
-        // KATEGORI PENDAPATAN (F&B DIGABUNGKAN)
-        $categories = [
-            'offline_room_income' => 'Walk In',
-            'online_room_income' => 'OTA',
-            'ta_income' => 'Travel Agent',
-            'gov_income' => 'Government',
-            'corp_income' => 'Corporation',
-            'compliment_income' => 'Compliment',
-            'house_use_income' => 'House Use',
-            'mice_income' => 'MICE',
-            'total_fb_revenue' => 'F&B',
-            'others_income' => 'Lain-lain',
+    
+        $dailyIncomeColumns = [
+            'offline_room_income', 'online_room_income', 'ta_income', 'gov_income', 'corp_income', 'compliment_income',
+            'house_use_income', 'afiliasi_room_income', 'breakfast_income', 'lunch_income', 'dinner_income', 'others_income'
         ];
-        $categoryColumns = array_keys($categories);
-        $categoryLabels = array_values($categories);
-        $categoryColors = ['#e6194B', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#42d4f4', '#f032e6', '#bfef45', '#808000', '#000075', '#a9a9a9'];
-        $incomeSumRaw = implode(' + ', array_map(fn($col) => "IFNULL(`$col`, 0)", $categoryColumns));
-
-        // --- Inisialisasi variabel ---
-        $trendKontribusiData = ['labels' => [], 'datasets' => []];
-        $multiMonthCategoryGrowth = [];
-        $targetAnalysis = ['details' => []];
-        $dataCompliance = ['days_without_entry' => []];
-
+        $dailyIncomeSumRaw = implode(' + ', array_map(fn($col) => "IFNULL(`$col`, 0)", $dailyIncomeColumns));
+    
+        $categories = [
+            'offline_room_income' => 'Walk In', 'online_room_income' => 'OTA', 'ta_income' => 'Travel Agent',
+            'gov_income' => 'Government', 'corp_income' => 'Corporation', 'compliment_income' => 'Compliment',
+            'house_use_income' => 'House Use', 'afiliasi_room_income' => 'Afiliasi',
+            'mice_income' => 'MICE', 'fnb_income' => 'F&B', 'others_income' => 'Lain-lain',
+        ];
+    
         // --- Bagian 1: Data untuk KPI Ringkasan Keseluruhan ---
         $overallIncomeQuery = DailyIncome::query()->whereBetween('date', [$filterStartDate, $filterEndDate]);
-        $totalOverallRevenue = (clone $overallIncomeQuery)->sum(DB::raw($incomeSumRaw));
+        $totalFromDailyIncomes = (clone $overallIncomeQuery)->sum(DB::raw($dailyIncomeSumRaw));
+        $totalMiceRevenue = Booking::where('status', 'Booking Pasti')->whereBetween('event_date', [$filterStartDate, $filterEndDate])->sum('total_price');
+        $totalOverallRevenue = $totalFromDailyIncomes + $totalMiceRevenue;
         $uniqueDaysWithIncome = (clone $overallIncomeQuery)->select(DB::raw('COUNT(DISTINCT date) as count'))->first()->count;
         $averageDailyOverallRevenue = ($uniqueDaysWithIncome > 0) ? $totalOverallRevenue / $uniqueDaysWithIncome : 0;
         $activePropertiesCount = Property::count();
         $activePropertyUsersCount = User::where('role', 'pengguna_properti')->whereNull('deleted_at')->count();
         $averageRevenuePerProperty = ($activePropertiesCount > 0) ? $totalOverallRevenue / $activePropertiesCount : 0;
-
-        $selectOverallSums = [];
-        foreach ($categoryColumns as $column) {
-            $selectOverallSums[] = DB::raw("SUM(IFNULL(`{$column}`, 0)) as total_{$column}");
-        }
-        $overallIncomeSource = (clone $overallIncomeQuery)->select($selectOverallSums)->first();
-
+        
+        $overallIncomeSource = (clone $overallIncomeQuery)
+            ->selectRaw("SUM(IFNULL(offline_room_income, 0)) as total_offline_room_income, SUM(IFNULL(online_room_income, 0)) as total_online_room_income, SUM(IFNULL(ta_income, 0)) as total_ta_income, SUM(IFNULL(gov_income, 0)) as total_gov_income, SUM(IFNULL(corp_income, 0)) as total_corp_income, SUM(IFNULL(compliment_income, 0)) as total_compliment_income, SUM(IFNULL(house_use_income, 0)) as total_house_use_income, SUM(IFNULL(afiliasi_room_income, 0)) as total_afiliasi_room_income, SUM(IFNULL(breakfast_income, 0) + IFNULL(lunch_income, 0) + IFNULL(dinner_income, 0)) as total_fnb_income, SUM(IFNULL(others_income, 0)) as total_others_income")
+            ->first();
+        $overallIncomeSource->total_mice_income = $totalMiceRevenue;
+        
         $overallIncomeByProperty = Property::query()
-            ->leftJoin('daily_incomes as di', function($join) use ($filterStartDate, $filterEndDate) {
-                $join->on('properties.id', '=', 'di.property_id')->whereBetween('di.date', [$filterStartDate, $filterEndDate]);
-            })
-            ->select('properties.name', 'properties.id', DB::raw("SUM({$incomeSumRaw}) as total_revenue"))
-            ->groupBy('properties.id', 'properties.name')->orderBy('properties.id', 'asc')->get();
-
-        // --- Bagian 2: Data untuk Analisis Kinerja per Kategori Pendapatan ---
-        $monthlyCategoryIncomeQueryBase = DailyIncome::query()->whereBetween('date', [$filterStartDate, $filterEndDate]);
+            ->leftJoin('daily_incomes as di', fn($j) => $j->on('properties.id', '=', 'di.property_id')->whereBetween('di.date', [$filterStartDate, $filterEndDate]))
+            ->leftJoin('bookings as b', fn($j) => $j->on('properties.id', '=', 'b.property_id')->where('b.status', 'Booking Pasti')->whereBetween('b.event_date', [$filterStartDate, $filterEndDate]))
+            ->select('properties.name', 'properties.id', 'properties.chart_color', DB::raw("SUM({$dailyIncomeSumRaw}) + SUM(IFNULL(b.total_price, 0)) as total_revenue"))
+            ->groupBy('properties.id', 'properties.name', 'properties.chart_color')->orderBy('properties.id', 'asc')->get();
+    
+        // --- Bagian 2: Data untuk Analisis Detail per Kategori ---
+        $useDailyView = $totalDaysInPeriod <= 62;
+        // PERBAIKAN 2: Ubah format tanggal untuk chart harian
+        $periodFormat = $useDailyView ? 'D MMM' : 'MMMM YYYY'; 
+        $dateFormat = $useDailyView ? '%Y-%m-%d' : '%Y-%m';
+        $periodIteratorUnit = $useDailyView ? '1 day' : '1 month';
+    
+        $categoryQueryBase = DailyIncome::query()->whereBetween('date', [$filterStartDate, $filterEndDate]);
         if ($propertyMomFilterId && $propertyMomFilterId != 'all') {
-            $monthlyCategoryIncomeQueryBase->where('property_id', $propertyMomFilterId);
+            $categoryQueryBase->where('property_id', $propertyMomFilterId);
         }
-
-        $selectMonthlySums = [DB::raw("DATE_FORMAT(date, '%Y-%m') as month_year_formatted")];
-        foreach ($categoryColumns as $column) {
-            $selectMonthlySums[] = DB::raw("SUM(IFNULL(`{$column}`, 0)) as total_{$column}_monthly");
+        
+        $selectCategorySums = [DB::raw("DATE_FORMAT(date, '{$dateFormat}') as period_key")];
+        foreach ($dailyIncomeColumns as $column) {
+            $selectCategorySums[] = DB::raw("SUM(IFNULL(`{$column}`, 0)) as total_{$column}");
         }
-        $monthlyCategoryIncome = (clone $monthlyCategoryIncomeQueryBase)->select($selectMonthlySums)->groupBy('month_year_formatted')->orderBy('month_year_formatted', 'asc')->get();
-
-        if(!$monthlyCategoryIncome->isEmpty()){
-            $trendKontribusiData['labels'] = $monthlyCategoryIncome->pluck('month_year_formatted')->map(fn($d) => Carbon::parse($d.'-01')->isoFormat('MMM YY'))->all();
-            foreach ($categoryColumns as $key => $column) {
-                $trendKontribusiData['datasets'][] = [
-                    'label' => $categoryLabels[$key],
-                    'data' => $monthlyCategoryIncome->pluck('total_'.$column.'_monthly')->all(),
-                    'borderColor' => $categoryColors[$key % count($categoryColors)], 'backgroundColor' => $categoryColors[$key % count($categoryColors)],
-                    'fill' => false, 'tension' => 0.1
-                ];
-            }
+        $categoryIncome = (clone $categoryQueryBase)->select($selectCategorySums)->groupBy('period_key')->orderBy('period_key', 'asc')->get()->keyBy('period_key');
+    
+        $miceIncomeGrouped = Booking::query()->where('status', 'Booking Pasti')->whereBetween('event_date', [$filterStartDate, $filterEndDate])
+            ->when($propertyMomFilterId && $propertyMomFilterId != 'all', fn($q) => $q->where('property_id', $propertyMomFilterId))
+            ->select(DB::raw("DATE_FORMAT(event_date, '{$dateFormat}') as period_key"), DB::raw('SUM(total_price) as total_mice_income'))
+            ->groupBy('period_key')->get()->keyBy('period_key');
+    
+        $periodIterator = CarbonPeriod::create($filterStartDate, $periodIteratorUnit, $filterEndDate);
+        $trendKontribusiData = ['labels' => [], 'datasets' => []];
+        $categoryDatasets = [];
+        foreach ($categories as $key => $label) {
+            $categoryDatasets[$key] = [];
         }
-
-        $period = CarbonPeriod::create($filterStartDate->copy()->startOfMonth(), '1 month', $filterEndDate->copy()->endOfMonth());
-        $allMonthlyTotals = (clone $monthlyCategoryIncomeQueryBase)->select($selectMonthlySums)->groupBy('month_year_formatted')->get()->keyBy('month_year_formatted');
-
-        foreach ($period as $currentMonthCarbon) {
-            $currentMonthKey = $currentMonthCarbon->format('Y-m');
-            $previousMonthKey = $currentMonthCarbon->copy()->subMonthNoOverflow()->format('Y-m');
-            $currentMonthTotals = $allMonthlyTotals->get($currentMonthKey);
-            $previousMonthTotals = $allMonthlyTotals->get($previousMonthKey);
-
-            $growthForCurrentMonth = [];
-            foreach ($categoryColumns as $catKey => $column) {
-                $currentValue = $currentMonthTotals->{'total_'.$column.'_monthly'} ?? 0;
-                $previousValue = $previousMonthTotals->{'total_'.$column.'_monthly'} ?? 0;
-                $growthDisplay = "N/A";
-
-                if ($previousMonthTotals === null && $currentMonthTotals !== null) {
-                    $growthDisplay = ($currentValue > 0) ? "Baru" : "0.00%";
-                } elseif ($previousMonthTotals !== null) {
-                    if ($previousValue > 0) {
-                        $growthNumeric = (($currentValue - $previousValue) / $previousValue) * 100;
-                        $growthDisplay = sprintf("%+.2f%%", $growthNumeric);
-                    } elseif ($currentValue > 0) {
-                        $growthDisplay = "Baru";
-                    } else {
-                        $growthDisplay = "0.00%";
-                    }
+        
+        foreach ($periodIterator as $date) {
+            $key = $date->format($useDailyView ? 'Y-m-d' : 'Y-m');
+            $trendKontribusiData['labels'][] = $date->isoFormat($periodFormat);
+            
+            $dailyData = $categoryIncome->get($key);
+            $miceData = $miceIncomeGrouped->get($key);
+    
+            foreach ($categories as $catKey => $label) {
+                $value = 0;
+                if ($catKey === 'mice_income') {
+                    $value = $miceData->total_mice_income ?? 0;
+                } else if ($catKey === 'fnb_income') {
+                    $value = ($dailyData->total_breakfast_income ?? 0) + ($dailyData->total_lunch_income ?? 0) + ($dailyData->total_dinner_income ?? 0);
+                } else if($dailyData) {
+                    $value = $dailyData->{'total_'.$catKey} ?? 0;
                 }
-
-                $growthForCurrentMonth[] = [
-                    'category' => $categoryLabels[$catKey],
-                    'growth' => $growthDisplay,
-                    'current_value' => $currentValue,
-                    'previous_value' => $previousValue
-                ];
-            }
-
-            if ($currentMonthTotals) {
-                $multiMonthCategoryGrowth[$currentMonthCarbon->isoFormat('MMMMfindIndex')] = $growthForCurrentMonth;
+                $categoryDatasets[$catKey][] = $value;
             }
         }
-
+        
+        $categoryColors = ['#e6194B', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#42d4f4', '#f032e6', '#bfef45', '#808000'];
+        $colorIndex = 0;
+        foreach ($categories as $key => $label) {
+            if (collect($categoryDatasets[$key])->sum() > 0) {
+                $trendKontribusiData['datasets'][] = [
+                    'label' => $label, 'data' => $categoryDatasets[$key],
+                    'borderColor' => $categoryColors[$colorIndex % count($categoryColors)],
+                    'backgroundColor' => $categoryColors[$colorIndex % count($categoryColors)],
+                    'fill' => false, 'tension' => 0.1,
+                ];
+                $colorIndex++;
+            }
+        }
+        
+        $multiMonthCategoryGrowth = [];
+    
         // --- Bagian 3 & 4 (Target dan Kepatuhan) ---
         $allPropertiesForTargetAnalysis = Property::get();
         $propertyTargetAchievements = [];
         $totalAchievementSum = 0;
         $propertiesWithTargetsCount = 0;
         $propertiesAchievedTargetCount = 0;
-
+    
         foreach ($allPropertiesForTargetAnalysis as $property) {
             $targetsInPeriod = RevenueTarget::where('property_id', $property->id)->whereBetween('month_year', [$filterStartDate->copy()->startOfMonth()->toDateString(), $filterEndDate->copy()->endOfMonth()->toDateString()])->get();
             $totalTargetAmountForPeriod = $targetsInPeriod->sum('target_amount');
-            $totalActualRevenueForPeriod = DailyIncome::where('property_id', $property->id)->whereBetween('date', [$filterStartDate, $filterEndDate])->sum(DB::raw($incomeSumRaw));
+            
+            $totalActualRevenueForPeriod = DailyIncome::where('property_id', $property->id)->whereBetween('date', [$filterStartDate, $filterEndDate])->sum(DB::raw($dailyIncomeSumRaw));
+            $totalActualRevenueForPeriod += Booking::where('property_id', $property->id)->where('status', 'Booking Pasti')->whereBetween('event_date', [$filterStartDate, $filterEndDate])->sum('total_price');
+    
             $achievementPercentage = 0;
             $hasValidTarget = $totalTargetAmountForPeriod > 0;
             if ($hasValidTarget) {
@@ -384,106 +353,20 @@ class DashboardController extends Controller
             $propertyTargetAchievements[] = ['id' => $property->id, 'name' => $property->name, 'total_target' => $totalTargetAmountForPeriod, 'total_actual' => $totalActualRevenueForPeriod, 'achievement_percentage' => $hasValidTarget ? round($achievementPercentage, 2) : null, 'has_valid_target' => $hasValidTarget];
         }
         $averageOverallAchievement = ($propertiesWithTargetsCount > 0) ? round($totalAchievementSum / $propertiesWithTargetsCount, 2) : null;
-        $percentagePropertiesAchieved = ($propertiesWithTargetsCount > 0) ? round(($propertiesAchievedTargetCount / $propertiesWithTargetsCount) * 100, 2) : 0;
+        $percentagePropertiesAchieved = ($propertiesWithTargetsCount > 0) ? round(($propertiesWithTargetsCount / $propertiesWithTargetsCount) * 100, 2) : 0;
         $sortableAchievements = array_filter($propertyTargetAchievements, fn($item) => $item['has_valid_target']);
         usort($sortableAchievements, fn($a, $b) => $b['achievement_percentage'] <=> $a['achievement_percentage']);
         $topPropertyTarget = !empty($sortableAchievements) ? $sortableAchievements[0] : null;
         $bottomPropertyTarget = !empty($sortableAchievements) ? end($sortableAchievements) : null;
         $targetAnalysis = ['properties_achieved_count' => $propertiesAchievedTargetCount, 'properties_achieved_percentage' => $percentagePropertiesAchieved, 'average_achievement_percentage' => $averageOverallAchievement, 'top_property_target' => $topPropertyTarget, 'bottom_property_target' => $bottomPropertyTarget, 'details' => $propertyTargetAchievements];
-
-        $periodForCompliance = CarbonPeriod::create($filterStartDate, '1 day', $filterEndDate);
-        $allPropertiesForCompliance = Property::orderBy('name')->get();
-        $totalDaysInPeriod = $periodForCompliance->count();
-
-        foreach ($allPropertiesForCompliance as $property) {
-            $datesWithIncome = DailyIncome::where('property_id', $property->id)->whereBetween('date', [$filterStartDate, $filterEndDate])->pluck('date')->map(fn($date) => Carbon::parse($date)->toDateString())->toArray();
-            $daysWithoutEntryCount = 0;
-            foreach (clone $periodForCompliance as $dateInPeriod) {
-                if (!in_array($dateInPeriod->toDateString(), $datesWithIncome)) $daysWithoutEntryCount++;
-            }
-            $dataCompliance['days_without_entry'][] = ['property_name' => $property->name, 'days' => $daysWithoutEntryCount, 'total_days_in_period' => $totalDaysInPeriod, 'compliance_percentage' => $totalDaysInPeriod > 0 ? round((($totalDaysInPeriod - $daysWithoutEntryCount) / $totalDaysInPeriod) * 100, 2) : 0];
-        }
-
-        // --- Bagian 5: Data untuk Analisis Pencapaian Harian vs Target (Tabel Rincian) ---
-        $dailyActualsQuery = DailyIncome::query()->whereBetween('date', [$filterStartDate, $filterEndDate]);
-        if ($propertyMomFilterId && $propertyMomFilterId != 'all') {
-            $dailyActualsQuery->where('property_id', $propertyMomFilterId);
-        }
-        $dailyActuals = $dailyActualsQuery
-            ->select(DB::raw('DATE(date) as day'), DB::raw("SUM({$incomeSumRaw}) as total_income"))
-            ->groupBy('day')->get()->keyBy('day');
-
-        $monthlyTargetsQuery = RevenueTarget::query()->whereBetween('month_year', [$filterStartDate->copy()->startOfMonth(), $filterEndDate->copy()->endOfMonth()]);
-        if ($propertyMomFilterId && $propertyMomFilterId != 'all') {
-            $monthlyTargetsQuery->where('property_id', $propertyMomFilterId);
-        }
-        $monthlyTargets = $monthlyTargetsQuery
-            ->select('month_year', DB::raw('SUM(target_amount) as monthly_target'))
-            ->groupBy('month_year')->get()->keyBy(fn($item) => Carbon::parse($item->month_year)->format('Y-m'));
-
-        $dailyPerformanceData = [];
-        foreach (clone $periodForCompliance as $date) {
-            $dateString = $date->toDateString();
-            $monthKey = $date->format('Y-m');
-            $monthlyTargetData = $monthlyTargets->get($monthKey);
-            $monthlyTargetAmount = $monthlyTargetData ? $monthlyTargetData->monthly_target : 0;
-            $daysInMonth = $date->daysInMonth;
-            $dailyTarget = ($daysInMonth > 0) ? $monthlyTargetAmount / $daysInMonth : 0;
-            $actualIncome = $dailyActuals->get($dateString) ? $dailyActuals->get($dateString)->total_income : 0;
-            $achievementPercentage = ($dailyTarget > 0) ? ($actualIncome / $dailyTarget) * 100 : 0;
-            $dailyPerformanceData[] = [
-                'date' => $date,
-                'actual_income' => $actualIncome,
-                'daily_target' => $dailyTarget,
-                'achievement_percentage' => $achievementPercentage,
-            ];
-        }
-        $dailyPerformanceData = array_reverse($dailyPerformanceData);
-
-        // --- Bagian 6: Data untuk Pacing Target Bulanan ---
-        $pacingMonth = $filterEndDate->copy();
-        $pacingMonthStart = $pacingMonth->copy()->startOfMonth();
-        $daysInPacingMonth = $pacingMonth->daysInMonth;
-        $daysPassedInPacingMonth = $pacingMonth->day;
-
-        $pacingMonthlyTargetQuery = RevenueTarget::query()
-            ->whereYear('month_year', $pacingMonth->year)
-            ->whereMonth('month_year', $pacingMonth->month);
-        if ($propertyMomFilterId && $propertyMomFilterId != 'all') {
-            $pacingMonthlyTargetQuery->where('property_id', $propertyMomFilterId);
-        }
-        $totalMonthlyTarget = $pacingMonthlyTargetQuery->sum('target_amount');
-
-        $monthToDateActualQuery = DailyIncome::query()->whereBetween('date', [$pacingMonthStart, $filterEndDate]);
-        if ($propertyMomFilterId && $propertyMomFilterId != 'all') {
-            $monthToDateActualQuery->where('property_id', $propertyMomFilterId);
-        }
-        $monthToDateActual = $monthToDateActualQuery->sum(DB::raw($incomeSumRaw));
-
-        $dailyTargetForPacing = ($daysInPacingMonth > 0) ? $totalMonthlyTarget / $daysInPacingMonth : 0;
-        $pacingTarget = $dailyTargetForPacing * $daysPassedInPacingMonth;
-        $totalRemainingTarget = $totalMonthlyTarget - $monthToDateActual;
-        $variance = $monthToDateActual - $pacingTarget;
-        $monthlyAchievementPercentage = ($totalMonthlyTarget > 0) ? ($monthToDateActual / $totalMonthlyTarget) * 100 : 0;
-
-        $monthlyPacingData = [
-            'monthName' => $pacingMonth->isoFormat('MMMMfindIndex'),
-            'totalMonthlyTarget' => $totalMonthlyTarget,
-            'monthToDateActual' => $monthToDateActual,
-            'totalRemainingTarget' => $totalRemainingTarget,
-            'pacingTarget' => $pacingTarget,
-            'variance' => $variance,
-            'dailyTarget' => $dailyTargetForPacing,
-            'achievementPercentage' => $monthlyAchievementPercentage
-        ];
-
+    
+        // PERBAIKAN 3: Tambahkan $useDailyView ke compact()
         return view('admin.kpi_analysis', compact(
             'overallIncomeSource', 'overallIncomeByProperty', 'totalOverallRevenue',
             'averageDailyOverallRevenue', 'activePropertiesCount', 'activePropertyUsersCount',
-            'averageRevenuePerProperty', 'trendKontribusiData', 'multiMonthCategoryGrowth',
-            'targetAnalysis', 'dataCompliance', 'filterStartDate', 'filterEndDate',
-            'totalDaysInPeriod', 'allPropertiesForFilter', 'propertyMomFilterId', 'categories',
-            'dailyPerformanceData', 'monthlyPacingData'
+            'averageRevenuePerProperty', 'targetAnalysis', 'filterStartDate', 'filterEndDate',
+            'allPropertiesForFilter', 'propertyMomFilterId', 'categories', 'totalDaysInPeriod',
+            'trendKontribusiData', 'multiMonthCategoryGrowth', 'useDailyView'
         ));
     }
     public function exportPropertiesSummaryExcel(Request $request)

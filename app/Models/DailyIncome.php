@@ -14,7 +14,6 @@ class DailyIncome extends Model
      *
      * @var array<int, string>
      */
-    // ======================= AWAL BLOK YANG DIUBAH =======================
     protected $fillable = [
         'property_id',
         'user_id',
@@ -28,6 +27,7 @@ class DailyIncome extends Model
         'corp_rooms',
         'compliment_rooms',
         'house_use_rooms',
+        'afiliasi_rooms', // <-- TAMBAHKAN INI
 
         // Kolom pendapatan
         'offline_room_income',
@@ -37,14 +37,13 @@ class DailyIncome extends Model
         'corp_income',
         'compliment_income',
         'house_use_income',
+        'afiliasi_room_income', // <-- TAMBAHKAN INI
         'mice_income',
-        // 'fnb_income' dihapus dan diganti dengan 3 di bawah ini
         'breakfast_income',
         'lunch_income',
         'dinner_income',
         'others_income',
     ];
-    // ======================= AKHIR BLOK YANG DIUBAH ======================
 
     /**
      * The attributes that should be cast.
@@ -55,16 +54,13 @@ class DailyIncome extends Model
         'date' => 'date',
     ];
 
-    // ======================= BLOK BARU DITAMBAHKAN =======================
     /**
      * Accessor untuk menghitung total F&B secara otomatis.
-     * Ini memastikan kode lama yang mungkin masih memanggil ->fnb_income tetap berfungsi.
      */
     public function getFbIncomeAttribute(): float
     {
         return $this->breakfast_income + $this->lunch_income + $this->dinner_income;
     }
-    // ====================================================================
 
     /**
      * Mendapatkan properti yang memiliki pendapatan ini.
