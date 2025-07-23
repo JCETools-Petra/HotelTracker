@@ -87,15 +87,19 @@ class PropertyIncomeController extends Controller
         ]);
     }
 
+    // app/Http/Controllers/PropertyIncomeController.php
+
     public function store(Request $request)
     {
         $user = Auth::user();
         $property = $user->property;
-        if (!$property) { abort(403); }
+        if (!$property) {
+            abort(403);
+        }
     
         // 1. Validasi semua input dari form
         $validatedData = $request->validate([
-            'date' => 'required|date|unique:daily_incomes,date,NULL,id,property_id,'.$property->id,
+            'date' => 'required|date|unique:daily_incomes,date,NULL,id,property_id,' . $property->id,
             'offline_rooms' => 'required|integer|min:0',
             'offline_room_income' => 'required|numeric|min:0',
             'online_rooms' => 'required|integer|min:0',
@@ -122,22 +126,22 @@ class PropertyIncomeController extends Controller
     
         // ======================= AWAL PERBAIKAN KALKULASI =======================
     
-        // 2. Kalkulasi semua nilai total dengan benar
+        // 2. Kalkulasi semua nilai total dengan memastikan tipe data adalah numerik
         $total_rooms_sold =
-            ($validatedData['offline_rooms'] ?? 0) + ($validatedData['online_rooms'] ?? 0) + ($validatedData['ta_rooms'] ?? 0) +
-            ($validatedData['gov_rooms'] ?? 0) + ($validatedData['corp_rooms'] ?? 0) + ($validatedData['compliment_rooms'] ?? 0) +
-            ($validatedData['house_use_rooms'] ?? 0) + ($validatedData['afiliasi_rooms'] ?? 0);
+            (int)$validatedData['offline_rooms'] + (int)$validatedData['online_rooms'] + (int)$validatedData['ta_rooms'] +
+            (int)$validatedData['gov_rooms'] + (int)$validatedData['corp_rooms'] + (int)$validatedData['compliment_rooms'] +
+            (int)$validatedData['house_use_rooms'] + (int)$validatedData['afiliasi_rooms'];
     
         $total_rooms_revenue =
-            ($validatedData['offline_room_income'] ?? 0) + ($validatedData['online_room_income'] ?? 0) + ($validatedData['ta_income'] ?? 0) +
-            ($validatedData['gov_income'] ?? 0) + ($validatedData['corp_income'] ?? 0) + ($validatedData['compliment_income'] ?? 0) +
-            ($validatedData['house_use_income'] ?? 0) + ($validatedData['afiliasi_room_income'] ?? 0);
+            (float)$validatedData['offline_room_income'] + (float)$validatedData['online_room_income'] + (float)$validatedData['ta_income'] +
+            (float)$validatedData['gov_income'] + (float)$validatedData['corp_income'] + (float)$validatedData['compliment_income'] +
+            (float)$validatedData['house_use_income'] + (float)$validatedData['afiliasi_room_income'];
     
-        $total_fb_revenue = ($validatedData['breakfast_income'] ?? 0) + ($validatedData['lunch_income'] ?? 0) + ($validatedData['dinner_income'] ?? 0);
-        
+        $total_fb_revenue = (float)$validatedData['breakfast_income'] + (float)$validatedData['lunch_income'] + (float)$validatedData['dinner_income'];
+    
         // Ini adalah baris kunci: menjumlahkan SEMUA komponen pendapatan
-        $total_revenue = $total_rooms_revenue + $total_fb_revenue + ($validatedData['others_income'] ?? 0);
-        
+        $total_revenue = $total_rooms_revenue + $total_fb_revenue + (float)$validatedData['others_income'];
+    
         $arr = ($total_rooms_sold > 0) ? ($total_rooms_revenue / $total_rooms_sold) : 0;
         $occupancy = ($property->total_rooms > 0) ? ($total_rooms_sold / $property->total_rooms) * 100 : 0;
     
@@ -152,11 +156,11 @@ class PropertyIncomeController extends Controller
             'arr' => $arr,
             'occupancy' => $occupancy,
         ]);
-        
+    
         // ======================= AKHIR PERBAIKAN KALKULASI =======================
     
         DailyIncome::create($incomeData);
-        
+    
         return redirect()->route('property.income.index')->with('success', 'Pendapatan harian berhasil dicatat.');
     }
 
@@ -170,14 +174,16 @@ class PropertyIncomeController extends Controller
         return view('property.income.edit', compact('dailyIncome', 'property'));
     }
     
+    // app/Http/Controllers/PropertyIncomeController.php
+
     public function update(Request $request, DailyIncome $dailyIncome)
     {
         $user = Auth::user();
         if ($user->role !== 'admin' && $user->property_id != $dailyIncome->property_id) {
             abort(403, 'Akses tidak diizinkan untuk memperbarui data ini.');
         }
-
-        // Validasi input TANPA mice_income
+    
+        // Validasi input
         $validatedData = $request->validate([
             'date' => 'required|date|unique:daily_incomes,date,' . $dailyIncome->id . ',id,property_id,' . $dailyIncome->property_id,
             'offline_rooms' => 'required|integer|min:0', 'offline_room_income' => 'required|numeric|min:0',
@@ -188,7 +194,6 @@ class PropertyIncomeController extends Controller
             'compliment_rooms' => 'required|integer|min:0', 'compliment_income' => 'required|numeric|min:0',
             'house_use_rooms' => 'required|integer|min:0', 'house_use_income' => 'required|numeric|min:0',
             'afiliasi_rooms' => 'required|integer|min:0', 'afiliasi_room_income' => 'required|numeric|min:0',
-            // 'mice_income' DIHAPUS DARI SINI
             'breakfast_income' => 'required|numeric|min:0',
             'lunch_income' => 'required|numeric|min:0',
             'dinner_income' => 'required|numeric|min:0',
@@ -196,27 +201,29 @@ class PropertyIncomeController extends Controller
         ], [
             'date.unique' => 'Pendapatan untuk tanggal ini sudah ada.',
         ]);
-
-        // Kalkulasi ulang TANPA mice_income
+    
+        // ======================= AWAL PERBAIKAN KALKULASI =======================
+    
+        // Kalkulasi ulang dengan memastikan tipe data numerik
         $property = $dailyIncome->property;
         $total_rooms_sold =
-            $validatedData['offline_rooms'] + $validatedData['online_rooms'] + $validatedData['ta_rooms'] +
-            $validatedData['gov_rooms'] + $validatedData['corp_rooms'] + $validatedData['compliment_rooms'] +
-            $validatedData['house_use_rooms'] + $validatedData['afiliasi_rooms'];
-
+            (int)$validatedData['offline_rooms'] + (int)$validatedData['online_rooms'] + (int)$validatedData['ta_rooms'] +
+            (int)$validatedData['gov_rooms'] + (int)$validatedData['corp_rooms'] + (int)$validatedData['compliment_rooms'] +
+            (int)$validatedData['house_use_rooms'] + (int)$validatedData['afiliasi_rooms'];
+    
         $total_rooms_revenue =
-            $validatedData['offline_room_income'] + $validatedData['online_room_income'] + $validatedData['ta_income'] +
-            $validatedData['gov_income'] + $validatedData['corp_income'] + $validatedData['compliment_income'] +
-            $validatedData['house_use_income'] + $validatedData['afiliasi_room_income'];
-
-        $total_fb_revenue = $validatedData['breakfast_income'] + $validatedData['lunch_income'] + $validatedData['dinner_income'];
+            (float)$validatedData['offline_room_income'] + (float)$validatedData['online_room_income'] + (float)$validatedData['ta_income'] +
+            (float)$validatedData['gov_income'] + (float)$validatedData['corp_income'] + (float)$validatedData['compliment_income'] +
+            (float)$validatedData['house_use_income'] + (float)$validatedData['afiliasi_room_income'];
+    
+        $total_fb_revenue = (float)$validatedData['breakfast_income'] + (float)$validatedData['lunch_income'] + (float)$validatedData['dinner_income'];
         
-        // Total revenue TANPA mice_income
-        $total_revenue = $total_rooms_revenue + $total_fb_revenue + $validatedData['others_income'];
-        
+        // Total revenue kalkulasi
+        $total_revenue = $total_rooms_revenue + $total_fb_revenue + (float)$validatedData['others_income'];
+    
         $arr = ($total_rooms_sold > 0) ? ($total_rooms_revenue / $total_rooms_sold) : 0;
         $occupancy = ($property->total_rooms > 0) ? ($total_rooms_sold / $property->total_rooms) * 100 : 0;
-
+    
         $updateData = array_merge($validatedData, [
             'total_rooms_sold' => $total_rooms_sold,
             'total_rooms_revenue' => $total_rooms_revenue,
@@ -226,12 +233,14 @@ class PropertyIncomeController extends Controller
             'occupancy' => $occupancy,
         ]);
         
+        // ======================= AKHIR PERBAIKAN KALKULASI =======================
+    
         $dailyIncome->update($updateData);
-
+    
         if ($user->role === 'admin') {
             return redirect()->route('admin.properties.show', $dailyIncome->property_id)->with('success', 'Data pendapatan berhasil diperbarui.');
         }
-
+    
         return redirect()->route('property.income.index')->with('success', 'Data pendapatan berhasil diperbarui.');
     }
 

@@ -27,7 +27,7 @@ class DailyIncome extends Model
         'corp_rooms',
         'compliment_rooms',
         'house_use_rooms',
-        'afiliasi_rooms', // <-- TAMBAHKAN INI
+        'afiliasi_rooms',
 
         // Kolom pendapatan
         'offline_room_income',
@@ -37,12 +37,21 @@ class DailyIncome extends Model
         'corp_income',
         'compliment_income',
         'house_use_income',
-        'afiliasi_room_income', // <-- TAMBAHKAN INI
-        'mice_income',
+        'afiliasi_room_income',
         'breakfast_income',
         'lunch_income',
         'dinner_income',
         'others_income',
+
+        // ======================= AWAL PERBAIKAN =======================
+        // Daftarkan semua kolom kalkulasi agar bisa disimpan ke database
+        'total_rooms_sold',
+        'total_rooms_revenue',
+        'total_fb_revenue',
+        'total_revenue',
+        'arr',
+        'occupancy',
+        // ======================= AKHIR PERBAIKAN =======================
     ];
 
     /**
