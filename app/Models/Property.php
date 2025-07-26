@@ -12,28 +12,52 @@ class Property extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name',
-        'chart_color'
-    ];
+    'name',
+    'chart_color',
+    'address',
+    'bar_1', // <-- TAMBAHKAN
+    'bar_2', // <-- TAMBAHKAN
+    'bar_3', // <-- TAMBAHKAN
+    'bar_4', // <-- TAMBAHKAN
+    'bar_5', // <-- TAMBAHKAN
+];
 
-    // Relasi: Satu Property dikelola oleh satu User (dalam skenario Anda)
-    // Jika bisa banyak user, gunakan hasMany(User::class)
-    public function manager(): HasOne // Atau BelongsTo jika foreign key ada di properties
+    // =======================================================
+    // !! RELASI YANG HILANG ADA DI SINI !!
+    // =======================================================
+    /**
+     * Setiap properti memiliki satu aturan harga.
+     */
+    public function pricingRule(): HasOne
+    {
+        return $this->hasOne(PricingRule::class);
+    }
+    // =======================================================
+
+
+    // == RELASI LAMA ANDA (TETAP DIPERTAHANKAN) ==
+    public function manager(): HasOne
     {
         return $this->hasOne(User::class);
     }
 
-    // Relasi: Satu Property memiliki banyak DailyIncome
     public function dailyIncomes(): HasMany
     {
         return $this->hasMany(DailyIncome::class);
     }
+
     public function rooms()
     {
         return $this->hasMany(Room::class);
     }
+
     public function incomes()
-{
-    return $this->hasMany(Income::class);
-}
+    {
+        return $this->hasMany(Income::class);
+    }
+    public function roomTypes(): HasMany
+    {
+        // Satu Properti bisa punya banyak Tipe Kamar
+        return $this->hasMany(RoomType::class);
+    }
 }

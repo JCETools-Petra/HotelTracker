@@ -75,6 +75,11 @@
                                                     @method('DELETE')
                                                     <button type="submit" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200">Hapus</button>
                                                 </form>
+
+                                                {{-- !! PERUBAHAN ADA DI BARIS INI !! --}}
+                                                <a href="{{ route('admin.pricing-rules.index', $property->id) }}" class="text-cyan-600 hover:text-cyan-900 dark:text-cyan-400 dark:hover:text-cyan-200 ml-4 font-bold">
+                                                    Atur Harga
+                                                </a>
                                             </td>
                                         @endcan
                                     </tr>

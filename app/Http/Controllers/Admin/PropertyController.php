@@ -6,7 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Property;
 use App\Models\DailyIncome;
 use App\Models\RevenueTarget;
-use App\Models\Booking; // Pastikan model Booking di-import
+use App\Models\Booking;
+use App\Models\DailyOccupancy; // <-- Ditambahkan
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -16,6 +17,11 @@ use Illuminate\Support\Str;
 
 class PropertyController extends Controller
 {
+    public function __construct()
+    {
+        // Otorisasi bisa ditambahkan di sini jika perlu
+    }
+
     /**
      * Menampilkan daftar semua properti.
      */
@@ -62,15 +68,21 @@ class PropertyController extends Controller
     /**
      * Menampilkan detail sebuah properti.
      */
-    // Ganti seluruh method show() di app/Http/Controllers/Admin/PropertyController.php
-
-    // Ganti seluruh method show() di app/Http/Controllers/Admin/PropertyController.php
-
     public function show(Property $property, Request $request)
     {
+        // Logika baru untuk mengambil data okupansi berdasarkan tanggal
+        $selectedDate = $request->query('date', today()->toDateString());
+        $occupancy = DailyOccupancy::firstOrCreate(
+            [
+                'property_id' => $property->id,
+                'date' => $selectedDate,
+            ],
+            ['occupied_rooms' => 0]
+        );
+
+        // Logika lama Anda untuk pendapatan
         $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date'))->startOfDay() : null;
         $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date'))->endOfDay() : null;
-
         $displayStartDate = $startDate ?: Carbon::now()->startOfMonth();
         $displayEndDate = $endDate ?: Carbon::now()->endOfMonth();
 
@@ -83,21 +95,19 @@ class PropertyController extends Controller
 
         $dbDailyIncomeColumns = [
             'offline_room_income', 'online_room_income', 'ta_income', 'gov_income', 'corp_income', 'compliment_income',
-            'house_use_income', 'afiliasi_room_income',
-            'breakfast_income', 'lunch_income', 'dinner_income', 'others_income',
-            'offline_rooms', 'online_rooms', 'ta_rooms', 'gov_rooms', 'corp_rooms', 'compliment_rooms', 'house_use_rooms',
-            'afiliasi_rooms'
+            'house_use_income', 'afiliasi_room_income', 'breakfast_income', 'lunch_income', 'dinner_income', 'others_income',
+            'offline_rooms', 'online_rooms', 'ta_rooms', 'gov_rooms', 'corp_rooms', 'compliment_rooms', 'house_use_rooms', 'afiliasi_rooms'
         ];
         
         $dailyIncomesData = DailyIncome::where('property_id', $property->id)
-                                        ->whereBetween('date', [$displayStartDate, $displayEndDate])
-                                        ->get()->keyBy(fn($item) => Carbon::parse($item->date)->toDateString());
+            ->whereBetween('date', [$displayStartDate, $displayEndDate])
+            ->get()->keyBy(fn($item) => Carbon::parse($item->date)->toDateString());
 
         $dailyMiceFromBookings = Booking::where('property_id', $property->id)
-                                        ->where('status', 'Booking Pasti')
-                                        ->whereBetween('event_date', [$displayStartDate, $displayEndDate])
-                                        ->select(DB::raw('DATE(event_date) as date'), DB::raw('SUM(total_price) as total_mice'))
-                                        ->groupBy('date')->get()->keyBy(fn($item) => Carbon::parse($item->date)->toDateString());
+            ->where('status', 'Booking Pasti')
+            ->whereBetween('event_date', [$displayStartDate, $displayEndDate])
+            ->select(DB::raw('DATE(event_date) as date'), DB::raw('SUM(total_price) as total_mice'))
+            ->groupBy('date')->get()->keyBy(fn($item) => Carbon::parse($item->date)->toDateString());
 
         $period = CarbonPeriod::create($displayStartDate, $displayEndDate);
         
@@ -105,27 +115,23 @@ class PropertyController extends Controller
             $dateString = $date->toDateString();
             $income = $dailyIncomesData->get($dateString);
             $mice = $dailyMiceFromBookings->get($dateString);
-
             $dayData = new \stdClass();
             $dayData->date = $date->toDateTimeString();
             $dayData->id = $income->id ?? null;
-
             foreach ($dbDailyIncomeColumns as $column) {
                 $dayData->{$column} = $income->{$column} ?? 0;
             }
-            
             $dayData->mice_booking_total = $mice->total_mice ?? 0;
             $dayData->mice_income = $dayData->mice_booking_total;
-
             return $dayData;
         });
 
         $totalPropertyRevenueFiltered = $fullDateRangeData->sum(function($day) {
             return ($day->offline_room_income ?? 0) + ($day->online_room_income ?? 0) + ($day->ta_income ?? 0) +
-                    ($day->gov_income ?? 0) + ($day->corp_income ?? 0) + ($day->compliment_income ?? 0) +
-                    ($day->house_use_income ?? 0) + ($day->afiliasi_room_income ?? 0) +
-                    ($day->breakfast_income ?? 0) + ($day->lunch_income ?? 0) + ($day->dinner_income ?? 0) +
-                    ($day->others_income ?? 0) + ($day->mice_booking_total ?? 0);
+                   ($day->gov_income ?? 0) + ($day->corp_income ?? 0) + ($day->compliment_income ?? 0) +
+                   ($day->house_use_income ?? 0) + ($day->afiliasi_room_income ?? 0) +
+                   ($day->breakfast_income ?? 0) + ($day->lunch_income ?? 0) + ($day->dinner_income ?? 0) +
+                   ($day->others_income ?? 0) + ($day->mice_booking_total ?? 0);
         });
         
         $sourceDistribution = new \stdClass();
@@ -145,13 +151,12 @@ class PropertyController extends Controller
         $sourceDistribution->total_afiliasi_room_income = $fullDateRangeData->sum('afiliasi_room_income');
         $sourceDistribution->total_others_income = $fullDateRangeData->sum('others_income');
         
-        // PERBAIKAN DI SINI: hapus ->reverse()
         $dailyTrend = $fullDateRangeData->map(function($day) {
             $total = ($day->offline_room_income ?? 0) + ($day->online_room_income ?? 0) + ($day->ta_income ?? 0) +
-                        ($day->gov_income ?? 0) + ($day->corp_income ?? 0) + ($day->compliment_income ?? 0) +
-                        ($day->house_use_income ?? 0) + ($day->afiliasi_room_income ?? 0) +
-                        ($day->breakfast_income ?? 0) + ($day->lunch_income ?? 0) + ($day->dinner_income ?? 0) +
-                        ($day->others_income ?? 0) + ($day->mice_booking_total ?? 0);
+                     ($day->gov_income ?? 0) + ($day->corp_income ?? 0) + ($day->compliment_income ?? 0) +
+                     ($day->house_use_income ?? 0) + ($day->afiliasi_room_income ?? 0) +
+                     ($day->breakfast_income ?? 0) + ($day->lunch_income ?? 0) + ($day->dinner_income ?? 0) +
+                     ($day->others_income ?? 0) + ($day->mice_booking_total ?? 0);
             return ['date' => $day->date, 'total_daily_income' => $total];
         });
         
@@ -175,8 +180,31 @@ class PropertyController extends Controller
         return view('admin.properties.show', compact(
             'property', 'incomes', 'dailyTrend', 'sourceDistribution', 'totalPropertyRevenueFiltered',
             'startDate', 'endDate', 'displayStartDate', 'displayEndDate', 'incomeCategories',
-            'dailyTarget', 'lastDayIncome', 'dailyTargetAchievement'
+            'dailyTarget', 'lastDayIncome', 'dailyTargetAchievement',
+            'occupancy', 'selectedDate' // <-- Variabel baru ditambahkan
         ));
+    }
+
+    /**
+     * Method baru untuk update okupansi oleh Admin.
+     */
+    public function updateOccupancy(Request $request, Property $property)
+    {
+        $validated = $request->validate([
+            'date' => 'required|date',
+            'occupied_rooms' => 'required|integer|min:0',
+        ]);
+
+        DailyOccupancy::updateOrCreate(
+            [
+                'property_id' => $property->id,
+                'date' => $validated['date'],
+            ],
+            ['occupied_rooms' => $validated['occupied_rooms']]
+        );
+
+        return redirect()->route('admin.properties.show', ['property' => $property->id, 'date' => $validated['date']])
+                         ->with('success', 'Okupansi berhasil diperbarui.');
     }
     
     public function edit(Property $property)
@@ -227,44 +255,31 @@ class PropertyController extends Controller
         return view('admin.properties.compare_form', compact('properties'));
     }
     
-    /**
-     * Menampilkan hasil perbandingan properti.
-     */
     public function showComparisonResults(Request $request)
     {
         $validated = $request->validate([
-            'properties_ids'      => 'required|array|min:2',
-            'properties_ids.*'    => 'integer|exists:properties,id',
-            'start_date'          => 'required|date',
-            'end_date'            => 'required|date|after_or_equal:start_date',
+            'properties_ids'     => 'required|array|min:2',
+            'properties_ids.*'   => 'integer|exists:properties,id',
+            'start_date'         => 'required|date',
+            'end_date'           => 'required|date|after_or_equal:start_date',
         ]);
 
         $propertyIds = $validated['properties_ids'];
         $startDate = Carbon::parse($validated['start_date'])->startOfDay();
         $endDate = Carbon::parse($validated['end_date'])->endOfDay();
 
-        // Kategori untuk ditampilkan
         $incomeCategories = [
-            'offline_room_income' => 'Walk In Guest',
-            'online_room_income'  => 'OTA',
-            'ta_income'           => 'TA/Travel Agent',
-            'gov_income'          => 'Gov/Government',
-            'corp_income'         => 'Corp/Corporation',
-            'compliment_income'   => 'Compliment',
-            'house_use_income'    => 'House Use',
-            'mice_income'         => 'MICE',
-            'fnb_income'          => 'F&B',
+            'offline_room_income' => 'Walk In Guest', 'online_room_income'  => 'OTA', 'ta_income'           => 'TA/Travel Agent',
+            'gov_income'          => 'Gov/Government', 'corp_income'       => 'Corp/Corporation', 'compliment_income'   => 'Compliment',
+            'house_use_income'    => 'House Use', 'mice_income'         => 'MICE', 'fnb_income'          => 'F&B',
             'others_income'       => 'Lainnya',
         ];
         $categoryLabels = array_values($incomeCategories);
         $categoryKeysForDisplay = array_keys($incomeCategories);
 
-        // Kolom asli dari database (setelah mice_income dihapus)
         $dbCategoryColumns = [
             'offline_room_income', 'online_room_income', 'ta_income', 'gov_income', 'corp_income',
-            'compliment_income', 'house_use_income',
-            'breakfast_income', 'lunch_income', 'dinner_income',
-            'others_income'
+            'compliment_income', 'house_use_income', 'breakfast_income', 'lunch_income', 'dinner_income', 'others_income'
         ];
         
         $comparisonData = [];
@@ -272,13 +287,11 @@ class PropertyController extends Controller
         $selectedPropertiesModels = Property::whereIn('id', $propertyIds)->get();
 
         foreach ($selectedPropertiesModels as $property) {
-            // 1. Ambil data agregat dari DailyIncome (tanpa MICE)
             $incomeDetails = DailyIncome::where('property_id', $property->id)
                 ->whereBetween('date', [$startDate, $endDate])
                 ->select(DB::raw("SUM({$totalRevenueRaw}) as total_revenue, " . implode(', ', array_map(fn($col) => "SUM(IFNULL(`{$col}`, 0)) as `{$col}`", $dbCategoryColumns))))
                 ->first();
             
-            // 2. Ambil total pendapatan MICE dari tabel Booking
             $miceRevenueFromBooking = Booking::where('property_id', $property->id)
                 ->where('status', 'Booking Pasti')
                 ->whereBetween('event_date', [$startDate, $endDate])
@@ -286,7 +299,6 @@ class PropertyController extends Controller
 
             $dataPoint = ['name' => $property->name];
             
-            // 3. Proses data untuk tampilan, gabungkan F&B
             $totalFnb = ($incomeDetails->breakfast_income ?? 0) + ($incomeDetails->lunch_income ?? 0) + ($incomeDetails->dinner_income ?? 0);
             $dataPoint['offline_room_income'] = $incomeDetails->offline_room_income ?? 0;
             $dataPoint['online_room_income'] = $incomeDetails->online_room_income ?? 0;
@@ -298,17 +310,14 @@ class PropertyController extends Controller
             $dataPoint['fnb_income'] = $totalFnb;
             $dataPoint['others_income'] = $incomeDetails->others_income ?? 0;
             
-            // 4. Masukkan pendapatan MICE hanya dari Booking
             $dataPoint['mice_income'] = $miceRevenueFromBooking;
             
-            // 5. Kalkulasi ulang total pendapatan
             $totalFromDailyIncome = $incomeDetails->total_revenue ?? 0;
             $dataPoint['total_revenue'] = $totalFromDailyIncome + $miceRevenueFromBooking;
             
             $comparisonData[] = $dataPoint;
         }
 
-        // Data untuk Grouped Bar Chart
         $datasetsForGroupedBar = [];
         $colors = ['rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)', 'rgba(255, 206, 86, 0.7)', 'rgba(75, 192, 192, 0.7)', 'rgba(153, 102, 255, 0.7)', 'rgba(255, 159, 64, 0.7)'];
         foreach ($selectedPropertiesModels as $index => $property) {
@@ -328,14 +337,12 @@ class PropertyController extends Controller
         $datasetsForTrend = [];
         
         foreach ($selectedPropertiesModels as $index => $property) {
-            // Ambil tren pendapatan harian dari DailyIncome
             $dailyIncomes = DailyIncome::where('property_id', $property->id)
                 ->whereBetween('date', [$startDate, $endDate])
                 ->select('date', DB::raw("SUM({$totalRevenueRaw}) as daily_total_revenue"))
                 ->groupBy('date')->orderBy('date', 'asc')->get()
                 ->keyBy(fn($item) => Carbon::parse($item->date)->isoFormat('D MMM'));
             
-            // Ambil tren pendapatan MICE harian dari Booking
             $dailyMiceFromBookings = Booking::where('property_id', $property->id)
                 ->where('status', 'Booking Pasti')
                 ->whereBetween('event_date', [$startDate, $endDate])
@@ -344,7 +351,6 @@ class PropertyController extends Controller
                 ->get()
                 ->keyBy(fn($item) => Carbon::parse($item->date)->isoFormat('D MMM'));
             
-            // Gabungkan kedua sumber data untuk mendapatkan tren total
             $trendDataPoints = $dateLabels->map(function($label) use ($dailyIncomes, $dailyMiceFromBookings) {
                 $incomeTotal = $dailyIncomes->get($label)->daily_total_revenue ?? 0;
                 $miceTotal = $dailyMiceFromBookings->get($label)->daily_mice_revenue ?? 0;

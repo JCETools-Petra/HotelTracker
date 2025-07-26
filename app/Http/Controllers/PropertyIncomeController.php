@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+// ===== BAGIAN USE STATEMENT (PASTIKAN SEMUA INI ADA) =====
 use App\Models\DailyIncome;
 use App\Models\Property;
 use Illuminate\Http\Request;
@@ -10,10 +11,18 @@ use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\PropertyIncomesExport;
 use Illuminate\Support\Str;
+use App\Services\ReservationPriceService; // <-- Perbaikan error ada di sini
+use App\Models\DailyOccupancy;            // <-- Tambahan untuk okupansi
+use App\Models\Reservation;              // <-- Tambahan untuk reservasi OTA
 
 class PropertyIncomeController extends Controller
 {
-    // ... (metode dashboard dan index tidak berubah)
+    protected $priceService;
+
+    public function __construct(ReservationPriceService $priceService)
+    {
+        $this->priceService = $priceService;
+    }
 
     /**
      * Menampilkan dashboard untuk pengguna properti.
@@ -23,15 +32,82 @@ class PropertyIncomeController extends Controller
         $user = Auth::user();
         $property = $user->property;
 
-        if (!$property) {
-            return redirect('/')->with('error', 'Anda tidak terkait dengan properti manapun atau properti tidak ditemukan.');
-        }
+        $occupancyToday = DailyOccupancy::firstOrCreate(
+            [
+                'property_id' => $property->id,
+                'date' => today()->toDateString(),
+            ],
+            ['occupied_rooms' => 0]
+        );
 
-        $todayIncome = DailyIncome::where('property_id', $property->id)
-            ->whereDate('date', Carbon::today())
-            ->first();
+        // ## AWAL PERUBAHAN ##
+        // Ambil data harga dinamis saat ini untuk semua tipe kamar
+        $currentPrices = $this->priceService->getCurrentPricesForProperty($property->id, today()->toDateString());
+        // ## AKHIR PERUBAHAN ##
 
-        return view('property.dashboard', compact('property', 'todayIncome'));
+        // Kirim variabel baru ke view
+        return view('property.dashboard', compact('property', 'occupancyToday', 'currentPrices'));
+    }
+
+    /**
+     * Method baru untuk update jumlah kamar terisi.
+     */
+    public function updateOccupancy(Request $request)
+    {
+        $user = Auth::user();
+        $property = $user->property;
+
+        $request->validate([
+            'occupied_rooms' => 'required|integer|min:0',
+        ]);
+
+        DailyOccupancy::updateOrCreate(
+            [
+                'property_id' => $property->id,
+                'date' => today()->toDateString(),
+            ],
+            ['occupied_rooms' => $request->occupied_rooms]
+        );
+
+        return redirect()->route('property.dashboard')->with('success', 'Jumlah kamar terisi berhasil diperbarui.');
+    }
+
+    /**
+     * Method baru untuk menampilkan form reservasi OTA.
+     */
+    public function createOtaReservation()
+    {
+        $user = Auth::user();
+        $property = $user->property;
+        $sources = ['Traveloka', 'Booking.com', 'Agoda', 'Tiket.com'];
+
+        return view('property.reservations.create', compact('property', 'sources'));
+    }
+
+    /**
+     * Method baru untuk menyimpan reservasi OTA.
+     */
+    public function storeOtaReservation(Request $request)
+    {
+        $user = Auth::user();
+        $property = $user->property;
+
+        $validated = $request->validate([
+            'source' => 'required|string',
+            'guest_name' => 'required|string|max:255',
+            'checkin_date' => 'required|date',
+            'checkout_date' => 'required|date|after_or_equal:checkin_date',
+        ]);
+
+        $finalPrice = $this->priceService->getCurrentPricesForProperty($property->id, $validated['checkin_date'])
+                        ->firstWhere('name', $request->room_type_name)['price_ota'] ?? 0; // Sesuaikan jika ada pilihan tipe kamar
+
+        Reservation::create($validated + [
+            'final_price' => $finalPrice,
+            'property_id' => $property->id
+        ]);
+
+        return redirect()->route('property.reservations.create')->with('success', 'Reservasi OTA berhasil ditambahkan.');
     }
 
     /**
@@ -87,8 +163,9 @@ class PropertyIncomeController extends Controller
         ]);
     }
 
-    // app/Http/Controllers/PropertyIncomeController.php
-
+    /**
+     * Menyimpan data pendapatan harian.
+     */
     public function store(Request $request)
     {
         $user = Auth::user();
@@ -97,7 +174,6 @@ class PropertyIncomeController extends Controller
             abort(403);
         }
     
-        // 1. Validasi semua input dari form
         $validatedData = $request->validate([
             'date' => 'required|date|unique:daily_incomes,date,NULL,id,property_id,' . $property->id,
             'offline_rooms' => 'required|integer|min:0',
@@ -124,9 +200,6 @@ class PropertyIncomeController extends Controller
             'date.unique' => 'Pendapatan untuk tanggal ini sudah pernah dicatat.',
         ]);
     
-        // ======================= AWAL PERBAIKAN KALKULASI =======================
-    
-        // 2. Kalkulasi semua nilai total dengan memastikan tipe data adalah numerik
         $total_rooms_sold =
             (int)$validatedData['offline_rooms'] + (int)$validatedData['online_rooms'] + (int)$validatedData['ta_rooms'] +
             (int)$validatedData['gov_rooms'] + (int)$validatedData['corp_rooms'] + (int)$validatedData['compliment_rooms'] +
@@ -139,13 +212,11 @@ class PropertyIncomeController extends Controller
     
         $total_fb_revenue = (float)$validatedData['breakfast_income'] + (float)$validatedData['lunch_income'] + (float)$validatedData['dinner_income'];
     
-        // Ini adalah baris kunci: menjumlahkan SEMUA komponen pendapatan
         $total_revenue = $total_rooms_revenue + $total_fb_revenue + (float)$validatedData['others_income'];
     
         $arr = ($total_rooms_sold > 0) ? ($total_rooms_revenue / $total_rooms_sold) : 0;
         $occupancy = ($property->total_rooms > 0) ? ($total_rooms_sold / $property->total_rooms) * 100 : 0;
     
-        // 3. Siapkan data untuk disimpan
         $incomeData = array_merge($validatedData, [
             'property_id' => $property->id,
             'user_id' => $user->id,
@@ -157,13 +228,14 @@ class PropertyIncomeController extends Controller
             'occupancy' => $occupancy,
         ]);
     
-        // ======================= AKHIR PERBAIKAN KALKULASI =======================
-    
         DailyIncome::create($incomeData);
     
         return redirect()->route('property.income.index')->with('success', 'Pendapatan harian berhasil dicatat.');
     }
 
+    /**
+     * Menampilkan form edit pendapatan harian.
+     */
     public function edit(DailyIncome $dailyIncome)
     {
         $user = Auth::user();
@@ -174,8 +246,9 @@ class PropertyIncomeController extends Controller
         return view('property.income.edit', compact('dailyIncome', 'property'));
     }
     
-    // app/Http/Controllers/PropertyIncomeController.php
-
+    /**
+     * Memperbarui data pendapatan harian.
+     */
     public function update(Request $request, DailyIncome $dailyIncome)
     {
         $user = Auth::user();
@@ -183,7 +256,6 @@ class PropertyIncomeController extends Controller
             abort(403, 'Akses tidak diizinkan untuk memperbarui data ini.');
         }
     
-        // Validasi input
         $validatedData = $request->validate([
             'date' => 'required|date|unique:daily_incomes,date,' . $dailyIncome->id . ',id,property_id,' . $dailyIncome->property_id,
             'offline_rooms' => 'required|integer|min:0', 'offline_room_income' => 'required|numeric|min:0',
@@ -202,9 +274,6 @@ class PropertyIncomeController extends Controller
             'date.unique' => 'Pendapatan untuk tanggal ini sudah ada.',
         ]);
     
-        // ======================= AWAL PERBAIKAN KALKULASI =======================
-    
-        // Kalkulasi ulang dengan memastikan tipe data numerik
         $property = $dailyIncome->property;
         $total_rooms_sold =
             (int)$validatedData['offline_rooms'] + (int)$validatedData['online_rooms'] + (int)$validatedData['ta_rooms'] +
@@ -218,7 +287,6 @@ class PropertyIncomeController extends Controller
     
         $total_fb_revenue = (float)$validatedData['breakfast_income'] + (float)$validatedData['lunch_income'] + (float)$validatedData['dinner_income'];
         
-        // Total revenue kalkulasi
         $total_revenue = $total_rooms_revenue + $total_fb_revenue + (float)$validatedData['others_income'];
     
         $arr = ($total_rooms_sold > 0) ? ($total_rooms_revenue / $total_rooms_sold) : 0;
@@ -233,8 +301,6 @@ class PropertyIncomeController extends Controller
             'occupancy' => $occupancy,
         ]);
         
-        // ======================= AKHIR PERBAIKAN KALKULASI =======================
-    
         $dailyIncome->update($updateData);
     
         if ($user->role === 'admin') {
@@ -244,9 +310,8 @@ class PropertyIncomeController extends Controller
         return redirect()->route('property.income.index')->with('success', 'Data pendapatan berhasil diperbarui.');
     }
 
-    // ... (metode destroy dan export tidak berubah)
     /**
-     * Menghapus data pendapatan harian dari database.
+     * Menghapus data pendapatan harian.
      */
     public function destroy(DailyIncome $dailyIncome)
     {

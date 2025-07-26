@@ -21,6 +21,34 @@
     <div x-data="{ showDetailModal: false, selectedIncome: null }" class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900 dark:text-gray-100">
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Atur Okupansi Harian</h3>
+
+                    @if(session('success'))
+                        <div class="mb-4 font-medium text-sm text-green-600 bg-green-100 dark:bg-green-900 dark:text-green-300 p-3 rounded-md border border-green-300 dark:border-green-700">
+                            {{ session('success') }}
+                        </div>
+                    @endif
+
+                    <form action="{{ route('admin.properties.occupancy.update', $property->id) }}" method="POST" id="occupancyForm">
+                        @csrf
+                        <div class="flex flex-wrap items-end gap-4">
+                            <div>
+                                <x-input-label for="date_selector" :value="__('Pilih Tanggal')" />
+                                <x-text-input type="date" id="date_selector" name="date" :value="$selectedDate" class="block mt-1 w-full" />
+                            </div>
+
+                            <div>
+                                <x-input-label for="occupied_rooms" :value="__('Jumlah Kamar Terisi')" />
+                                <x-text-input type="number" name="occupied_rooms" :value="$occupancy->occupied_rooms" class="block mt-1 w-full" />
+                            </div>
+
+                            <x-primary-button type="submit">{{ __('Simpan') }}</x-primary-button>
+                        </div>
+                    </form>
+                </div>
+            </div>
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6">
                 <form method="GET" action="{{ route('admin.properties.show', $property->id) }}">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
@@ -68,7 +96,7 @@
                     <div class="p-4 border dark:border-gray-700 rounded-lg">
                         <h4 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-3">Distribusi Sumber Pendapatan</h4>
                         <div style="height: 350px;">
-                             <canvas id="propertySourceDistributionPieChart"></canvas>
+                            <canvas id="propertySourceDistributionPieChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -190,10 +218,17 @@
     @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // ======================= AWAL PERUBAHAN =======================
-        // Mengubah 'livewire:load' menjadi 'DOMContentLoaded'
+        // Script untuk me-refresh halaman saat tanggal okupansi diganti
+        document.getElementById('date_selector').addEventListener('change', function() {
+            let currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set('date', this.value);
+            // Hapus parameter filter lama agar tidak tumpang tindih
+            currentUrl.searchParams.delete('start_date');
+            currentUrl.searchParams.delete('end_date');
+            window.location.href = currentUrl.toString();
+        });
+
         document.addEventListener('DOMContentLoaded', function () {
-        // ======================= AKHIR PERUBAHAN =======================
             const dailyTrendData = @json($dailyTrend);
             const sourceDistributionData = @json($sourceDistribution);
             const incomeCategories = @json($incomeCategories);
