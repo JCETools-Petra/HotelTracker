@@ -3,13 +3,16 @@
 namespace App\Http\Controllers\Ecommerce;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\LogActivity;
 use App\Services\ReservationPriceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\DailyOccupancy; // <-- TAMBAHKAN INI
+use App\Models\DailyOccupancy;
 
 class DashboardController extends Controller
 {
+    use LogActivity;
+
     protected $priceService;
 
     public function __construct(ReservationPriceService $priceService)
@@ -17,7 +20,7 @@ class DashboardController extends Controller
         $this->priceService = $priceService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
         $property = $user->property;
@@ -25,20 +28,17 @@ class DashboardController extends Controller
         if (!$property) {
             abort(403, 'Akun Anda tidak terikat pada properti manapun.');
         }
-
-        // ## AWAL PERUBAHAN ##
-        // Ambil data okupansi hari ini
+        
         $occupancyToday = DailyOccupancy::where('property_id', $property->id)
                                         ->where('date', today()->toDateString())
                                         ->first();
-
-        // Siapkan variabelnya, default 0 jika belum diinput
+        
         $currentOccupancy = $occupancyToday ? $occupancyToday->occupied_rooms : 0;
-        // ## AKHIR PERUBAHAN ##
-
         $currentPrices = $this->priceService->getCurrentPricesForProperty($property->id, today()->toDateString());
 
-        // Kirim variabel baru ke view
+        // Log the activity
+        $this->logActivity('Melihat dashboard harga OTA.', $request);
+
         return view('ecommerce.dashboard', compact('property', 'currentPrices', 'currentOccupancy'));
     }
 }

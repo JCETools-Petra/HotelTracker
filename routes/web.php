@@ -126,6 +126,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::delete('/destroy-room-type/{roomType}', [PricingRuleController::class, 'destroyRoomType'])->name('room-type.destroy');
             Route::put('/update-property-bars', [PricingRuleController::class, 'updatePropertyBars'])->name('property-bars.update');
             });
+            Route::post('properties/{property}/occupancy', [AdminPropertyController::class, 'updateOccupancy'])->name('properties.occupancy.update');
+        
             // === AKHIR BLOK YANG DIPERBAIKI ===
         });
     

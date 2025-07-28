@@ -85,8 +85,8 @@
             const propertySelectContainer = document.getElementById('property-select-container');
             const propertySelect = document.getElementById('property_id');
             
-            // Peran mana saja yang membutuhkan properti
-            const rolesRequiringProperty = ['pengguna_properti', 'sales'];
+            // !! PERUBAHAN ADA DI BARIS INI !!
+            const rolesRequiringProperty = ['pengguna_properti', 'sales', 'online_ecommerce'];
 
             if (rolesRequiringProperty.includes(role)) {
                 propertySelectContainer.style.display = 'block';

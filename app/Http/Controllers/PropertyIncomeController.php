@@ -5,18 +5,21 @@ namespace App\Http\Controllers;
 // ===== BAGIAN USE STATEMENT (PASTIKAN SEMUA INI ADA) =====
 use App\Models\DailyIncome;
 use App\Models\Property;
+use App\Http\Traits\LogActivity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\PropertyIncomesExport;
 use Illuminate\Support\Str;
-use App\Services\ReservationPriceService; // <-- Perbaikan error ada di sini
-use App\Models\DailyOccupancy;            // <-- Tambahan untuk okupansi
-use App\Models\Reservation;              // <-- Tambahan untuk reservasi OTA
+use App\Services\ReservationPriceService;
+use App\Models\DailyOccupancy;
+use App\Models\Reservation;
 
 class PropertyIncomeController extends Controller
 {
+    use LogActivity; // <-- 1. Gunakan Trait di sini
+
     protected $priceService;
 
     public function __construct(ReservationPriceService $priceService)
@@ -24,9 +27,6 @@ class PropertyIncomeController extends Controller
         $this->priceService = $priceService;
     }
 
-    /**
-     * Menampilkan dashboard untuk pengguna properti.
-     */
     public function dashboard()
     {
         $user = Auth::user();
@@ -49,15 +49,12 @@ class PropertyIncomeController extends Controller
         return view('property.dashboard', compact('property', 'occupancyToday', 'currentPrices'));
     }
 
-    /**
-     * Method baru untuk update jumlah kamar terisi.
-     */
     public function updateOccupancy(Request $request)
     {
         $user = Auth::user();
         $property = $user->property;
 
-        $request->validate([
+        $validated = $request->validate([
             'occupied_rooms' => 'required|integer|min:0',
         ]);
 
@@ -66,15 +63,15 @@ class PropertyIncomeController extends Controller
                 'property_id' => $property->id,
                 'date' => today()->toDateString(),
             ],
-            ['occupied_rooms' => $request->occupied_rooms]
+            ['occupied_rooms' => $validated['occupied_rooms']]
         );
+
+        // Tambahkan Log
+        $this->logActivity('Memperbarui jumlah okupansi harian menjadi ' . $validated['occupied_rooms'] . ' kamar.', $request);
 
         return redirect()->route('property.dashboard')->with('success', 'Jumlah kamar terisi berhasil diperbarui.');
     }
 
-    /**
-     * Method baru untuk menampilkan form reservasi OTA.
-     */
     public function createOtaReservation()
     {
         $user = Auth::user();
@@ -84,9 +81,6 @@ class PropertyIncomeController extends Controller
         return view('property.reservations.create', compact('property', 'sources'));
     }
 
-    /**
-     * Method baru untuk menyimpan reservasi OTA.
-     */
     public function storeOtaReservation(Request $request)
     {
         $user = Auth::user();
@@ -100,19 +94,19 @@ class PropertyIncomeController extends Controller
         ]);
 
         $finalPrice = $this->priceService->getCurrentPricesForProperty($property->id, $validated['checkin_date'])
-                        ->firstWhere('name', $request->room_type_name)['price_ota'] ?? 0; // Sesuaikan jika ada pilihan tipe kamar
+                                ->firstWhere('name', $request->room_type_name)['price_ota'] ?? 0; // Sesuaikan jika ada pilihan tipe kamar
 
         Reservation::create($validated + [
             'final_price' => $finalPrice,
             'property_id' => $property->id
         ]);
 
+        // Tambahkan Log
+        $this->logActivity('Menambahkan reservasi OTA baru untuk tamu: ' . $validated['guest_name'], $request);
+
         return redirect()->route('property.reservations.create')->with('success', 'Reservasi OTA berhasil ditambahkan.');
     }
 
-    /**
-     * Menampilkan daftar riwayat pendapatan harian.
-     */
     public function index(Request $request)
     {
         $user = Auth::user();
@@ -145,9 +139,6 @@ class PropertyIncomeController extends Controller
         return view('property.income.index', compact('incomes', 'property', 'startDate', 'endDate'));
     }
 
-    /**
-     * Menampilkan form untuk membuat data pendapatan harian baru.
-     */
     public function create()
     {
         $user = Auth::user();
@@ -163,9 +154,6 @@ class PropertyIncomeController extends Controller
         ]);
     }
 
-    /**
-     * Menyimpan data pendapatan harian.
-     */
     public function store(Request $request)
     {
         $user = Auth::user();
@@ -230,12 +218,13 @@ class PropertyIncomeController extends Controller
     
         DailyIncome::create($incomeData);
     
+        // Tambahkan Log
+        $formattedDate = Carbon::parse($incomeData['date'])->isoFormat('D MMMM YYYY');
+        $this->logActivity('Mencatat pendapatan harian baru untuk tanggal ' . $formattedDate, $request);
+
         return redirect()->route('property.income.index')->with('success', 'Pendapatan harian berhasil dicatat.');
     }
 
-    /**
-     * Menampilkan form edit pendapatan harian.
-     */
     public function edit(DailyIncome $dailyIncome)
     {
         $user = Auth::user();
@@ -246,9 +235,6 @@ class PropertyIncomeController extends Controller
         return view('property.income.edit', compact('dailyIncome', 'property'));
     }
     
-    /**
-     * Memperbarui data pendapatan harian.
-     */
     public function update(Request $request, DailyIncome $dailyIncome)
     {
         $user = Auth::user();
@@ -275,20 +261,10 @@ class PropertyIncomeController extends Controller
         ]);
     
         $property = $dailyIncome->property;
-        $total_rooms_sold =
-            (int)$validatedData['offline_rooms'] + (int)$validatedData['online_rooms'] + (int)$validatedData['ta_rooms'] +
-            (int)$validatedData['gov_rooms'] + (int)$validatedData['corp_rooms'] + (int)$validatedData['compliment_rooms'] +
-            (int)$validatedData['house_use_rooms'] + (int)$validatedData['afiliasi_rooms'];
-    
-        $total_rooms_revenue =
-            (float)$validatedData['offline_room_income'] + (float)$validatedData['online_room_income'] + (float)$validatedData['ta_income'] +
-            (float)$validatedData['gov_income'] + (float)$validatedData['corp_income'] + (float)$validatedData['compliment_income'] +
-            (float)$validatedData['house_use_income'] + (float)$validatedData['afiliasi_room_income'];
-    
+        $total_rooms_sold = (int)$validatedData['offline_rooms'] + (int)$validatedData['online_rooms'] + (int)$validatedData['ta_rooms'] + (int)$validatedData['gov_rooms'] + (int)$validatedData['corp_rooms'] + (int)$validatedData['compliment_rooms'] + (int)$validatedData['house_use_rooms'] + (int)$validatedData['afiliasi_rooms'];
+        $total_rooms_revenue = (float)$validatedData['offline_room_income'] + (float)$validatedData['online_room_income'] + (float)$validatedData['ta_income'] + (float)$validatedData['gov_income'] + (float)$validatedData['corp_income'] + (float)$validatedData['compliment_income'] + (float)$validatedData['house_use_income'] + (float)$validatedData['afiliasi_room_income'];
         $total_fb_revenue = (float)$validatedData['breakfast_income'] + (float)$validatedData['lunch_income'] + (float)$validatedData['dinner_income'];
-        
         $total_revenue = $total_rooms_revenue + $total_fb_revenue + (float)$validatedData['others_income'];
-    
         $arr = ($total_rooms_sold > 0) ? ($total_rooms_revenue / $total_rooms_sold) : 0;
         $occupancy = ($property->total_rooms > 0) ? ($total_rooms_sold / $property->total_rooms) * 100 : 0;
     
@@ -302,6 +278,10 @@ class PropertyIncomeController extends Controller
         ]);
         
         $dailyIncome->update($updateData);
+
+        // Tambahkan Log
+        $formattedDate = Carbon::parse($dailyIncome->date)->isoFormat('D MMMM YYYY');
+        $this->logActivity('Memperbarui data pendapatan harian untuk tanggal ' . $formattedDate, $request);
     
         if ($user->role === 'admin') {
             return redirect()->route('admin.properties.show', $dailyIncome->property_id)->with('success', 'Data pendapatan berhasil diperbarui.');
@@ -310,9 +290,6 @@ class PropertyIncomeController extends Controller
         return redirect()->route('property.income.index')->with('success', 'Data pendapatan berhasil diperbarui.');
     }
 
-    /**
-     * Menghapus data pendapatan harian.
-     */
     public function destroy(DailyIncome $dailyIncome)
     {
         $user = Auth::user();
@@ -327,16 +304,17 @@ class PropertyIncomeController extends Controller
         $originalDate = $dailyIncome->date;
         $dailyIncome->delete();
 
+        // Tambahkan Log
+        $formattedDate = Carbon::parse($originalDate)->isoFormat('D MMMM YYYY');
+        $this->logActivity('Menghapus data pendapatan harian untuk tanggal ' . $formattedDate, request());
+
         if ($user->role === 'admin') {
-            return back()->with('success', 'Data pendapatan untuk tanggal ' . Carbon::parse($originalDate)->isoFormat('D MMMM YYYY') . ' berhasil dihapus.');
+            return back()->with('success', 'Data pendapatan untuk tanggal ' . $formattedDate . ' berhasil dihapus.');
         }
 
-        return redirect()->route('property.income.index')->with('success', 'Data pendapatan untuk tanggal ' . Carbon::parse($originalDate)->isoFormat('D MMMM YYYY') . ' berhasil dihapus.');
+        return redirect()->route('property.income.index')->with('success', 'Data pendapatan untuk tanggal ' . $formattedDate . ' berhasil dihapus.');
     }
 
-    /**
-     * Mengekspor data pendapatan ke Excel.
-     */
     public function exportIncomesExcel(Request $request)
     {
         $user = Auth::user();
@@ -347,15 +325,11 @@ class PropertyIncomeController extends Controller
         $propertyId = $user->property_id;
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
-
         $fileName = 'laporan_pendapatan_' . Str::slug($user->property->name) . '_' . Carbon::now()->format('Ymd_His') . '.xlsx';
 
         return Excel::download(new PropertyIncomesExport($propertyId, $startDate, $endDate), $fileName);
     }
 
-    /**
-     * Mengekspor data pendapatan ke CSV.
-     */
     public function exportIncomesCsv(Request $request)
     {
         $user = Auth::user();
@@ -366,7 +340,6 @@ class PropertyIncomeController extends Controller
         $propertyId = $user->property_id;
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
-
         $fileName = 'laporan_pendapatan_' . Str::slug($user->property->name) . '_' . Carbon::now()->format('Ymd_His') . '.csv';
 
         return Excel::download(new PropertyIncomesExport($propertyId, $startDate, $endDate), $fileName, \Maatwebsite\Excel\Excel::CSV);
