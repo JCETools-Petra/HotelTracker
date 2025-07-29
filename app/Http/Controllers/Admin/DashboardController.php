@@ -112,11 +112,11 @@ class DashboardController extends Controller
         ];
         $incomeColumns = array_keys($incomeCategories);
         $roomCountColumns = ['offline_rooms', 'online_rooms', 'ta_rooms', 'gov_rooms', 'corp_rooms', 'compliment_rooms', 'house_use_rooms', 'afiliasi_rooms'];
-        $dateFilter = fn($query) => $query->whereBetween('date', [$startDate, $endDate]);
+        $dateFilter = fn ($query) => $query->whereBetween('date', [$startDate, $endDate]);
 
-        // 3. Mengambil Data Properti dengan Semua Kalkulasi (Satu Kali Query Utama)
-        $propertiesQuery = Property::when($propertyId, fn($q) => $q->where('id', $propertyId))->orderBy('id', 'asc');
-        
+        // 3. Mengambil Data Properti dengan Semua Kalkulasi
+        $propertiesQuery = Property::when($propertyId, fn ($q) => $q->where('id', $propertyId))->orderBy('id', 'asc');
+
         foreach ($incomeColumns as $column) {
             $propertiesQuery->withSum(['dailyIncomes as total_' . $column => $dateFilter], $column);
         }
@@ -127,18 +127,18 @@ class DashboardController extends Controller
 
         $miceRevenues = Booking::where('status', 'Booking Pasti')
             ->whereBetween('event_date', [$startDate, $endDate])
-            ->when($propertyId, fn($q) => $q->where('property_id', $propertyId))
+            ->when($propertyId, fn ($q) => $q->where('property_id', $propertyId))
             ->select('property_id', 'mice_category_id', DB::raw('SUM(total_price) as total_mice_revenue'))
             ->groupBy('property_id', 'mice_category_id')
             ->with('miceCategory:id,name')
             ->get()
             ->groupBy('property_id');
-            
+
         $totalOverallRevenue = 0;
 
         foreach ($properties as $property) {
-            $dailyRevenue = collect($incomeColumns)->reduce(fn($carry, $col) => $carry + ($property->{'total_' . $col} ?? 0), 0);
-            
+            $dailyRevenue = collect($incomeColumns)->reduce(fn ($carry, $col) => $carry + ($property->{'total_' . $col} ?? 0), 0);
+
             $propertyMiceRevenues = $miceRevenues->get($property->id);
             if ($propertyMiceRevenues) {
                 $miceTotalForProperty = $propertyMiceRevenues->sum('total_mice_revenue');
@@ -147,7 +147,7 @@ class DashboardController extends Controller
             } else {
                 $property->mice_revenue_breakdown = collect();
             }
-            
+
             $property->dailyRevenue = $dailyRevenue;
             $totalOverallRevenue += $dailyRevenue;
 
@@ -155,38 +155,42 @@ class DashboardController extends Controller
             $totalArrRoomsSold = 0;
             $arrRevenueCategories = ['offline_room_income', 'online_room_income', 'ta_income', 'gov_income', 'corp_income'];
             $arrRoomsCategories = ['offline_rooms', 'online_rooms', 'ta_rooms', 'gov_rooms', 'corp_rooms'];
-            foreach($arrRevenueCategories as $cat) { $totalArrRevenue += $property->{'total_' . $cat} ?? 0; }
-            foreach($arrRoomsCategories as $cat) { $totalArrRoomsSold += $property->{'total_' . $cat} ?? 0; }
+            foreach ($arrRevenueCategories as $cat) {
+                $totalArrRevenue += $property->{'total_' . $cat} ?? 0;
+            }
+            foreach ($arrRoomsCategories as $cat) {
+                $totalArrRoomsSold += $property->{'total_' . $cat} ?? 0;
+            }
             $property->averageRoomRate = ($totalArrRoomsSold > 0) ? ($totalArrRevenue / $totalArrRoomsSold) : 0;
         }
-
+        
         // 4. Menyiapkan Data untuk Chart
         $pieChartCategories = [
             'offline_room_income' => 'Walk In', 'online_room_income' => 'OTA', 'ta_income' => 'Travel Agent',
             'gov_income' => 'Government', 'corp_income' => 'Corporation', 'afiliasi_room_income' => 'Afiliasi',
             'mice_income' => 'MICE', 'fnb_income' => 'F&B', 'others_income' => 'Lain-lain',
         ];
-        
+
         $pieChartDataSource = new \stdClass();
-        foreach($pieChartCategories as $key => $label) {
+        foreach ($pieChartCategories as $key => $label) {
             $totalKey = 'total_' . $key;
-            if($key === 'mice_income') {
+            if ($key === 'mice_income') {
                 $pieChartDataSource->$totalKey = $miceRevenues->flatten()->sum('total_mice_revenue');
-            } else if($key === 'fnb_income') {
+            } else if ($key === 'fnb_income') {
                 $pieChartDataSource->$totalKey = $properties->sum('total_breakfast_income') + $properties->sum('total_lunch_income') + $properties->sum('total_dinner_income');
             } else {
                 $pieChartDataSource->$totalKey = $properties->sum($totalKey);
             }
         }
-        
+
         $recentMiceBookings = Booking::with(['property', 'miceCategory'])
             ->where('status', 'Booking Pasti')
             ->whereBetween('event_date', [$startDate, $endDate])
-            ->when($propertyId, fn($q) => $q->where('property_id', $propertyId))
+            ->when($propertyId, fn ($q) => $q->where('property_id', $propertyId))
             ->latest('event_date')->take(10)->get();
-                
+
         $allPropertiesForFilter = Property::orderBy('name')->get();
-        
+
         $overallIncomeByProperty = $properties->map(function ($property) {
             return (object)[
                 'name' => $property->name,
@@ -195,7 +199,7 @@ class DashboardController extends Controller
             ];
         });
 
-        // 5. Mengirim Data ke View
+        // 5. Mengirim Data ke View (tanpa variabel total OTA/Afiliasi)
         return view('admin.dashboard', [
             'properties' => $properties,
             'totalOverallRevenue' => $totalOverallRevenue,

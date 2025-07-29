@@ -63,12 +63,29 @@
                         @endif
                     @endforeach
                     @endif
-
+                    
+                    <tr class="border-t border-dashed border-gray-300 dark:border-gray-600">
+                        <td class="pt-3 pb-1 pr-4 font-semibold text-gray-500 dark:text-gray-400" colspan="2">
+                            Detail Kamar
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="py-1.5 pr-4 pl-4">Kamar OTA</td>
+                        <td class="py-1.5 text-right font-bold text-gray-700 dark:text-gray-300">
+                            {{ number_format($property->total_online_rooms ?? 0, 0, ',', '.') }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="py-1.5 pr-4 pl-4">Kamar Afiliasi</td>
+                        <td class="py-1.5 text-right font-bold text-gray-700 dark:text-gray-300">
+                            {{ number_format($property->total_afiliasi_rooms ?? 0, 0, ',', '.') }}
+                        </td>
+                    </tr>
                     {{-- PENDAPATAN MICE --}}
                     @if($totalMiceRevenue > 0)
                         <tr class="border-t border-dashed border-gray-300 dark:border-gray-600">
                              <td class="pt-3 pb-1 pr-4 font-semibold text-gray-500 dark:text-gray-400" colspan="2">
-                                Pendapatan MICE <span class="font-normal text-gray-400">{{ $getPercentage($totalMiceRevenue, $grandTotal) }}</span>
+                                 Pendapatan MICE <span class="font-normal text-gray-400">{{ $getPercentage($totalMiceRevenue, $grandTotal) }}</span>
                             </td>
                         </tr>
                         @foreach($property->mice_revenue_breakdown as $mice)

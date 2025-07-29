@@ -25,6 +25,7 @@ class PropertyUserLayout extends Component
      */
     public function render(): View
     {
-        return view('layouts.property_user');
+        // Pastikan baris ini mengarah ke 'layouts.app'
+        return view('layouts.app'); 
     }
 }
