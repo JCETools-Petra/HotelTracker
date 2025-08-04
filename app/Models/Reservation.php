@@ -19,10 +19,16 @@ class Reservation extends Model
         'checkin_date',
         'checkout_date',
         'number_of_rooms',
+        'user_id',
     ];
 
     public function property(): BelongsTo
     {
         return $this->belongsTo(Property::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }
