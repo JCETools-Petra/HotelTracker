@@ -82,6 +82,10 @@
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 text-gray-900 dark:text-gray-100">
                         <h4 class="text-xl font-semibold mb-4">Reservasi Saya</h4>
+<div class="mt-8">
+                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-6 text-gray-900 dark:text-gray-100">
+                        <h4 class="text-xl font-semibold mb-4">Reservasi Saya</h4>
 
                         @if(session('success'))
                             <div class="mb-4 p-2 bg-green-100 text-green-700 rounded">{{ session('success') }}</div>

@@ -158,7 +158,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('ecommerce.')
         ->group(function () {
             Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
-            Route::get('reservations/events', [EcommerceReservationController::class, 'events'])->name('reservations.events');
+ Route::get('reservations/events', [EcommerceReservationController::class, 'events'])->name('reservations.events');
             Route::resource('reservations', EcommerceReservationController::class)->except(['index', 'show']);
         });
 });
