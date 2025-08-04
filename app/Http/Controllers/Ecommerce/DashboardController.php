@@ -44,9 +44,14 @@ class DashboardController extends Controller
         $currentOccupancy += $ownReservationRooms;
         $currentPrices = $this->priceService->getCurrentPricesForProperty($property->id, today()->toDateString());
 
+        $reservations = Reservation::where('property_id', $property->id)
+            ->where('user_id', $user->id)
+            ->orderBy('checkin_date')
+            ->get();
+
         // Log the activity
         $this->logActivity('Melihat dashboard harga OTA.', $request);
 
-        return view('ecommerce.dashboard', compact('property', 'currentPrices', 'currentOccupancy'));
+        return view('ecommerce.dashboard', compact('property', 'currentPrices', 'currentOccupancy', 'reservations'));
     }
 }
