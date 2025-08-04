@@ -96,10 +96,20 @@ class PropertyIncomeController extends Controller
         $finalPrice = $this->priceService->getCurrentPricesForProperty($property->id, $validated['checkin_date'])
                                 ->firstWhere('name', $request->room_type_name)['price_ota'] ?? 0; // Sesuaikan jika ada pilihan tipe kamar
 
-        Reservation::create($validated + [
+        $reservation = Reservation::create($validated + [
             'final_price' => $finalPrice,
-            'property_id' => $property->id
+            'property_id' => $property->id,
+            'user_id' => $user->id,
         ]);
+
+        $occupancy = DailyOccupancy::firstOrCreate(
+            [
+                'property_id' => $property->id,
+                'date' => $reservation->checkin_date,
+            ],
+            ['occupied_rooms' => 0]
+        );
+        $occupancy->increment('occupied_rooms', $reservation->number_of_rooms);
 
         // Tambahkan Log
         $this->logActivity('Menambahkan reservasi OTA baru untuk tamu: ' . $validated['guest_name'], $request);
