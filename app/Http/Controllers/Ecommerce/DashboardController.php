@@ -8,6 +8,7 @@ use App\Services\ReservationPriceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\DailyOccupancy;
+use App\Models\Reservation;
 
 class DashboardController extends Controller
 {
@@ -32,13 +33,25 @@ class DashboardController extends Controller
         $occupancyToday = DailyOccupancy::where('property_id', $property->id)
                                         ->where('date', today()->toDateString())
                                         ->first();
-        
+
         $currentOccupancy = $occupancyToday ? $occupancyToday->occupied_rooms : 0;
+
+        $ownReservationRooms = Reservation::where('property_id', $property->id)
+            ->where('user_id', $user->id)
+            ->whereDate('checkin_date', today()->toDateString())
+            ->sum('number_of_rooms');
+
+        $currentOccupancy += $ownReservationRooms;
         $currentPrices = $this->priceService->getCurrentPricesForProperty($property->id, today()->toDateString());
+
+        $reservations = Reservation::where('property_id', $property->id)
+            ->where('user_id', $user->id)
+            ->orderBy('checkin_date')
+            ->get();
 
         // Log the activity
         $this->logActivity('Melihat dashboard harga OTA.', $request);
 
-        return view('ecommerce.dashboard', compact('property', 'currentPrices', 'currentOccupancy'));
+        return view('ecommerce.dashboard', compact('property', 'currentPrices', 'currentOccupancy', 'reservations'));
     }
 }
