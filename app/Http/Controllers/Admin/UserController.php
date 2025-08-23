@@ -27,13 +27,20 @@ class UserController extends Controller
     {
         $properties = Property::orderBy('name')->get();
         
+<<<<<<< HEAD
         // ## PERUBAHAN 1: Tambahkan 'online_ecommerce' ke daftar peran ##
+=======
+        // Definisikan daftar peran yang bisa dipilih
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
         $roles = [
             'admin' => 'Admin',
             'owner' => 'Owner',
             'pengguna_properti' => 'Pengguna Properti',
             'sales' => 'Sales',
+<<<<<<< HEAD
             'online_ecommerce' => 'Online Ecommerce', // <-- DITAMBAHKAN
+=======
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
         ];
 
         // Kirim variabel $roles ke view
@@ -45,15 +52,23 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
+<<<<<<< HEAD
         $this->authorize('manage-data');
 
         // ## PERUBAHAN 2: Tambahkan 'online_ecommerce' ke validasi ##
+=======
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+<<<<<<< HEAD
             'role' => ['required', 'string', \Illuminate\Validation\Rule::in(['admin', 'owner', 'pengguna_properti', 'sales', 'online_ecommerce'])],
             'property_id' => ['nullable', 'required_if:role,pengguna_properti,sales,online_ecommerce', 'exists:properties,id'],
+=======
+            'role' => ['required', 'string'],
+            'property_id' => ['nullable', 'required_if:role,pengguna_properti,sales', 'exists:properties,id'],
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
         ]);
 
         $data = $request->only('name', 'email', 'role', 'property_id');
@@ -84,13 +99,20 @@ class UserController extends Controller
     {
         $properties = Property::orderBy('name')->get();
 
+<<<<<<< HEAD
         // ## PERUBAHAN 3: Tambahkan 'online_ecommerce' ke daftar peran ##
+=======
+        // Definisikan daftar peran yang bisa dipilih
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
         $roles = [
             'admin' => 'Admin',
             'owner' => 'Owner',
             'pengguna_properti' => 'Pengguna Properti',
             'sales' => 'Sales',
+<<<<<<< HEAD
             'online_ecommerce' => 'Online Ecommerce', // <-- DITAMBAHKAN
+=======
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
         ];
 
         // Kirim variabel $roles ke view
@@ -102,15 +124,23 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user)
     {
+<<<<<<< HEAD
         $this->authorize('manage-data');
 
         // ## PERUBAHAN 4: Tambahkan 'online_ecommerce' ke validasi ##
+=======
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
+<<<<<<< HEAD
             'role' => ['required', 'string', \Illuminate\Validation\Rule::in(['admin', 'owner', 'pengguna_properti', 'sales', 'online_ecommerce'])],
             'property_id' => ['nullable', 'required_if:role,pengguna_properti,sales,online_ecommerce', 'exists:properties,id'],
+=======
+            'role' => ['required', 'string'],
+            'property_id' => ['nullable', 'required_if:role,pengguna_properti,sales', 'exists:properties,id'],
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
         ]);
 
         $data = $request->only('name', 'email', 'role', 'property_id');
@@ -133,7 +163,11 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
+<<<<<<< HEAD
         $this->authorize('manage-data');
+=======
+        // Jangan hapus user dengan ID 1 (biasanya super admin)
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
         if ($user->id === 1) {
             return redirect()->route('admin.users.index')->with('error', 'Super Admin tidak dapat dihapus.');
         }
@@ -167,4 +201,8 @@ class UserController extends Controller
         User::onlyTrashed()->findOrFail($id)->forceDelete();
         return redirect()->route('admin.users.trashed')->with('success', 'Pengguna berhasil dihapus permanen.');
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9

@@ -31,7 +31,10 @@ class RoomController extends Controller
      */
     public function store(Request $request, Property $property)
     {
+<<<<<<< HEAD
         $this->authorize('manage-data');
+=======
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'capacity' => 'nullable|string|max:255',

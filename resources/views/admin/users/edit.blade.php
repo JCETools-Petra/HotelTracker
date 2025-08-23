@@ -1,7 +1,11 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+<<<<<<< HEAD
             {{ __('Edit Pengguna') }}
+=======
+            {{ __('Edit Pengguna: ') . $user->name }}
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
         </h2>
     </x-slot>
 
@@ -31,7 +35,10 @@
                         <div class="mt-4">
                             <x-input-label for="role" :value="__('Peran (Role)')" />
                             <select name="role" id="role" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" required onchange="togglePropertySelect(this.value)">
+<<<<<<< HEAD
                                 <option value="">-- Pilih Peran --</option>
+=======
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
                                 @foreach($roles as $roleValue => $roleLabel)
                                     <option value="{{ $roleValue }}" {{ old('role', $user->role) == $roleValue ? 'selected' : '' }}>
                                         {{ $roleLabel }}
@@ -45,7 +52,11 @@
                         <div class="mt-4" id="property-select-container" style="display: none;">
                             <x-input-label for="property_id" :value="__('Properti yang Dikelola')" />
                             <select name="property_id" id="property_id" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
+<<<<<<< HEAD
                                 <option value="">-- Tidak Terikat Properti --</option>
+=======
+                                <option value="">-- Pilih Properti --</option>
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
                                 @foreach($properties as $property)
                                     <option value="{{ $property->id }}" {{ old('property_id', $user->property_id) == $property->id ? 'selected' : '' }}>
                                         {{ $property->name }}
@@ -55,6 +66,7 @@
                             <x-input-error :messages="$errors->get('property_id')" class="mt-2" />
                         </div>
                         
+<<<<<<< HEAD
                         {{-- Password --}}
                         <div class="mt-4">
                             <x-input-label for="password" :value="__('Password (Kosongkan jika tidak ingin mengubah)')" />
@@ -65,13 +77,27 @@
                         {{-- Konfirmasi Password --}}
                         <div class="mt-4">
                             <x-input-label for="password_confirmation" :value="__('Konfirmasi Password')" />
+=======
+                        {{-- Password (Opsional) --}}
+                        <div class="mt-4">
+                            <x-input-label for="password" :value="__('Password Baru (Opsional)')" />
+                            <x-text-input id="password" class="block mt-1 w-full" type="password" name="password" autocomplete="new-password" />
+                            <x-input-error :messages="$errors->get('password')" class="mt-2" />
+                        </div>
+                        <div class="mt-4">
+                            <x-input-label for="password_confirmation" :value="__('Konfirmasi Password Baru')" />
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
                             <x-text-input id="password_confirmation" class="block mt-1 w-full" type="password" name="password_confirmation" autocomplete="new-password" />
                         </div>
 
                         <div class="flex items-center justify-end mt-6">
                             <a href="{{ route('admin.users.index') }}" class="text-sm text-gray-600 dark:text-gray-400 hover:underline mr-4">Batal</a>
                             <x-primary-button>
+<<<<<<< HEAD
                                 {{ __('Update Pengguna') }}
+=======
+                                {{ __('Perbarui Pengguna') }}
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
                             </x-primary-button>
                         </div>
                     </form>
@@ -86,8 +112,13 @@
             const propertySelectContainer = document.getElementById('property-select-container');
             const propertySelect = document.getElementById('property_id');
             
+<<<<<<< HEAD
             // !! PERUBAHAN ADA DI BARIS INI !!
             const rolesRequiringProperty = ['pengguna_properti', 'sales', 'online_ecommerce'];
+=======
+            // Tentukan peran mana saja yang membutuhkan properti
+            const rolesRequiringProperty = ['pengguna_properti', 'sales'];
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
 
             if (rolesRequiringProperty.includes(role)) {
                 propertySelectContainer.style.display = 'block';
@@ -99,12 +130,19 @@
             }
         }
 
+<<<<<<< HEAD
         // Panggil fungsi ini saat halaman dimuat untuk menangani role yang sudah ada
         document.addEventListener('DOMContentLoaded', function() {
             const roleSelect = document.getElementById('role');
             if (roleSelect.value) {
                 togglePropertySelect(roleSelect.value);
             }
+=======
+        // Panggil fungsi ini saat halaman pertama kali dimuat
+        document.addEventListener('DOMContentLoaded', function() {
+            const roleSelect = document.getElementById('role');
+            togglePropertySelect(roleSelect.value);
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
         });
     </script>
     @endpush

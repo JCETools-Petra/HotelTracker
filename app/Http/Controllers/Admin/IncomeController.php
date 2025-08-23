@@ -24,6 +24,7 @@ class IncomeController extends Controller
     /**
      * Menyimpan data pendapatan baru ke database.
      */
+<<<<<<< HEAD
     // app/Http/Controllers/Admin/IncomeController.php
 
     public function store(Request $request, Property $property)
@@ -33,6 +34,14 @@ class IncomeController extends Controller
         // TAMBAHKAN VALIDASI UNTUK AFILIASI
         $validatedData = $request->validate([
             'date' => ['required', 'date', Rule::unique('daily_incomes')->where('property_id', $property->id)],
+=======
+    public function store(Request $request, Property $property)
+    {
+        // Validasi semua field, termasuk jumlah kamar
+        $validatedData = $request->validate([
+            'date' => ['required', 'date', Rule::unique('daily_incomes')->where('property_id', $property->id)],
+            // Validasi Jumlah Kamar
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
             'offline_rooms' => 'nullable|integer|min:0',
             'online_rooms' => 'nullable|integer|min:0',
             'ta_rooms' => 'nullable|integer|min:0',
@@ -40,8 +49,12 @@ class IncomeController extends Controller
             'corp_rooms' => 'nullable|integer|min:0',
             'compliment_rooms' => 'nullable|integer|min:0',
             'house_use_rooms' => 'nullable|integer|min:0',
+<<<<<<< HEAD
             'afiliasi_rooms' => 'nullable|integer|min:0', // <-- TAMBAHKAN INI
 
+=======
+            // Validasi Pendapatan
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
             'offline_room_income' => 'nullable|numeric|min:0',
             'online_room_income' => 'nullable|numeric|min:0',
             'ta_income' => 'nullable|numeric|min:0',
@@ -49,15 +62,20 @@ class IncomeController extends Controller
             'corp_income' => 'nullable|numeric|min:0',
             'compliment_income' => 'nullable|numeric|min:0',
             'house_use_income' => 'nullable|numeric|min:0',
+<<<<<<< HEAD
             'afiliasi_room_income' => 'nullable|numeric|min:0', // <-- TAMBAHKAN INI
 
             'mice_room_income' => 'nullable|numeric|min:0', 
+=======
+            'mice_income' => 'nullable|numeric|min:0', // MICE sekarang bisa diinput manual oleh admin
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
             'breakfast_income' => 'nullable|numeric|min:0',
             'lunch_income' => 'nullable|numeric|min:0',
             'dinner_income' => 'nullable|numeric|min:0',
             'others_income' => 'nullable|numeric|min:0',
         ]);
 
+<<<<<<< HEAD
         // Hapus 'mice_room_income' dari array agar tidak coba disimpan
         $miceIncomeFromForm = $validatedData['mice_room_income'] ?? 0;
         unset($validatedData['mice_room_income']);
@@ -74,6 +92,14 @@ class IncomeController extends Controller
         $income->save();
 
         return redirect()->route('admin.properties.show', $property)->with('success', 'Data pendapatan berhasil ditambahkan.');
+=======
+        $validatedData['property_id'] = $property->id;
+        $validatedData['user_id'] = auth()->id();
+
+        DailyIncome::create($validatedData);
+
+        return redirect()->route('admin.properties.show', $property)->with('success', 'Data pendapatan untuk tanggal ' . $request->date . ' berhasil ditambahkan.');
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
     }
 
     /**
@@ -93,6 +119,7 @@ class IncomeController extends Controller
      */
     public function update(Request $request, DailyIncome $income)
     {
+<<<<<<< HEAD
         // 1. Validasi semua input, termasuk MICE yang hanya ada di form Admin
         $validatedData = $request->validate([
             'date' => ['required', 'date', Rule::unique('daily_incomes')->where('property_id', $income->property_id)->ignore($income->id)],
@@ -113,12 +140,35 @@ class IncomeController extends Controller
             'afiliasi_rooms' => 'nullable|integer|min:0',
             'afiliasi_room_income' => 'nullable|numeric|min:0',
             'mice_room_income' => 'nullable|numeric|min:0', // Admin bisa input MICE
+=======
+        // Validasi semua field, termasuk jumlah kamar
+        $validatedData = $request->validate([
+            'date' => ['required', 'date', Rule::unique('daily_incomes')->where('property_id', $income->property_id)->ignore($income->id)],
+             // Validasi Jumlah Kamar
+            'offline_rooms' => 'nullable|integer|min:0',
+            'online_rooms' => 'nullable|integer|min:0',
+            'ta_rooms' => 'nullable|integer|min:0',
+            'gov_rooms' => 'nullable|integer|min:0',
+            'corp_rooms' => 'nullable|integer|min:0',
+            'compliment_rooms' => 'nullable|integer|min:0',
+            'house_use_rooms' => 'nullable|integer|min:0',
+            // Validasi Pendapatan
+            'offline_room_income' => 'nullable|numeric|min:0',
+            'online_room_income' => 'nullable|numeric|min:0',
+            'ta_income' => 'nullable|numeric|min:0',
+            'gov_income' => 'nullable|numeric|min:0',
+            'corp_income' => 'nullable|numeric|min:0',
+            'compliment_income' => 'nullable|numeric|min:0',
+            'house_use_income' => 'nullable|numeric|min:0',
+            'mice_income' => 'nullable|numeric|min:0',
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
             'breakfast_income' => 'nullable|numeric|min:0',
             'lunch_income' => 'nullable|numeric|min:0',
             'dinner_income' => 'nullable|numeric|min:0',
             'others_income' => 'nullable|numeric|min:0',
         ]);
 
+<<<<<<< HEAD
         // ======================= AWAL PERUBAHAN =======================
 
         // Ambil nilai MICE dari form untuk kalkulasi, tapi jangan disimpan
@@ -161,6 +211,11 @@ class IncomeController extends Controller
         $income->update($updateData);
 
         return redirect()->route('admin.properties.show', $income->property_id)->with('success', 'Data pendapatan berhasil diperbarui.');
+=======
+        $income->update($validatedData);
+
+        return redirect()->route('admin.properties.show', $income->property_id)->with('success', 'Data pendapatan untuk tanggal ' . $request->date . ' berhasil diperbarui.');
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
     }
 
     /**

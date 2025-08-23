@@ -358,7 +358,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     maintainAspectRatio: false,
                     scales: {
                         y: { beginAtZero: true, stacked: false, ticks: { callback: function(value) { return 'Rp ' + value.toLocaleString('id-ID'); } }, title: { display: true, text: 'Total Pendapatan (Rp)' } },
+<<<<<<< HEAD
                         x: { title: { display: true, text: 'Periode ({{ $useDailyView ? "Harian" : "Bulanan" }})' } }
+=======
+                        x: { title: { display: true, text: 'Periode (Bulan)' } }
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
                     },
                     plugins: {
                         legend: { position: 'top' },

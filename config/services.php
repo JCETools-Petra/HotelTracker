@@ -34,9 +34,12 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+<<<<<<< HEAD
     
     'fonnte' => [
         'token' => env('FONNTE_TOKEN'),
     ],
+=======
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
 
 ];

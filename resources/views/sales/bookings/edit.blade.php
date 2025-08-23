@@ -55,6 +55,7 @@
                                        <x-input-error :messages="$errors->get('end_time')" class="mt-2" />
                                     </div>
                                 </div>
+<<<<<<< HEAD
 
                                 {{-- ======================= AWAL BLOK YANG DIUBAH ======================= --}}
                                 <div class="mt-4">
@@ -64,6 +65,12 @@
                                     <x-input-error :messages="$errors->get('total_price')" class="mt-2" />
                                 </div>
                                 {{-- ======================= AKHIR BLOK YANG DIUBAH ====================== --}}
+=======
+                                <div class="mt-4">
+                                    <x-input-label for="total_price" :value="__('Total Harga (Otomatis dari BEO)')" />
+                                    <x-text-input type="text" name="total_price_display" id="total_price_display" class="block mt-1 w-full bg-gray-100 dark:bg-gray-700" value="Rp {{ number_format($booking->total_price, 0, ',', '.') }}" readonly />
+                                </div>
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
                             </div>
 
                             {{-- Kolom Kanan --}}
@@ -77,8 +84,18 @@
                                     <x-input-label :value="__('Hotel')" />
                                     <x-text-input type="text" :value="$property->name" class="mt-1 block w-full bg-gray-100 dark:bg-gray-700" readonly />
                                 </div>
+<<<<<<< HEAD
                                 <div class="mt-4">
                                     <x-input-label for="room_id" :value="__('Ruang yang Digunakan')" />
+=======
+
+                                {{-- ============================================= --}}
+                                {{-- >> PERBAIKAN UTAMA ADA DI BLOK INI << --}}
+                                {{-- ============================================= --}}
+                                <div class="mt-4">
+                                    <x-input-label for="room_id" :value="__('Ruang yang Digunakan')" />
+                                    {{-- Loop diubah menjadi $rooms, bukan $properties --}}
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
                                     <select id="room_id" name="room_id" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm" required>
                                         <option value="">-- Pilih Ruangan --</option>
                                         @foreach($rooms as $room)
@@ -89,6 +106,12 @@
                                     </select>
                                     <x-input-error :messages="$errors->get('room_id')" class="mt-2" />
                                 </div>
+<<<<<<< HEAD
+=======
+                                {{-- ============================================= --}}
+                                {{-- >> AKHIR DARI PERBAIKAN << --}}
+                                {{-- ============================================= --}}
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
                                 
                                 <div class="mt-4">
                                     <x-input-label for="person_in_charge" :value="__('Penanggung Jawab Acara')" />
@@ -123,4 +146,8 @@
             </div>
         </div>
     </div>
+<<<<<<< HEAD
 </x-sales-layout>
+=======
+</x-sales-layout>
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9

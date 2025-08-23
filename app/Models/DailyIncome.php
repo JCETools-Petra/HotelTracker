@@ -14,6 +14,10 @@ class DailyIncome extends Model
      *
      * @var array<int, string>
      */
+<<<<<<< HEAD
+=======
+    // ======================= AWAL BLOK YANG DIUBAH =======================
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
     protected $fillable = [
         'property_id',
         'user_id',
@@ -27,7 +31,10 @@ class DailyIncome extends Model
         'corp_rooms',
         'compliment_rooms',
         'house_use_rooms',
+<<<<<<< HEAD
         'afiliasi_rooms',
+=======
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
 
         // Kolom pendapatan
         'offline_room_income',
@@ -37,6 +44,7 @@ class DailyIncome extends Model
         'corp_income',
         'compliment_income',
         'house_use_income',
+<<<<<<< HEAD
         'afiliasi_room_income',
         'breakfast_income',
         'lunch_income',
@@ -52,6 +60,16 @@ class DailyIncome extends Model
         'arr',
         'occupancy',
     ];
+=======
+        'mice_income',
+        // 'fnb_income' dihapus dan diganti dengan 3 di bawah ini
+        'breakfast_income',
+        'lunch_income',
+        'dinner_income',
+        'others_income',
+    ];
+    // ======================= AKHIR BLOK YANG DIUBAH ======================
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
 
     /**
      * The attributes that should be cast.
@@ -62,13 +80,24 @@ class DailyIncome extends Model
         'date' => 'date',
     ];
 
+<<<<<<< HEAD
     /**
      * Accessor untuk menghitung total F&B secara otomatis.
+=======
+    // ======================= BLOK BARU DITAMBAHKAN =======================
+    /**
+     * Accessor untuk menghitung total F&B secara otomatis.
+     * Ini memastikan kode lama yang mungkin masih memanggil ->fnb_income tetap berfungsi.
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
      */
     public function getFbIncomeAttribute(): float
     {
         return $this->breakfast_income + $this->lunch_income + $this->dinner_income;
     }
+<<<<<<< HEAD
+=======
+    // ====================================================================
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
 
     /**
      * Mendapatkan properti yang memiliki pendapatan ini.
@@ -85,6 +114,7 @@ class DailyIncome extends Model
     {
         return $this->belongsTo(User::class);
     }
+<<<<<<< HEAD
 
     /**
      * Recalculates and updates all total fields for this daily income record.
@@ -132,4 +162,6 @@ class DailyIncome extends Model
         // Save all changes to the database
         $this->save();
     }
+=======
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
 }

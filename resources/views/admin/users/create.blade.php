@@ -85,8 +85,13 @@
             const propertySelectContainer = document.getElementById('property-select-container');
             const propertySelect = document.getElementById('property_id');
             
+<<<<<<< HEAD
             // !! PERUBAHAN ADA DI BARIS INI !!
             const rolesRequiringProperty = ['pengguna_properti', 'sales', 'online_ecommerce'];
+=======
+            // Peran mana saja yang membutuhkan properti
+            const rolesRequiringProperty = ['pengguna_properti', 'sales'];
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
 
             if (rolesRequiringProperty.includes(role)) {
                 propertySelectContainer.style.display = 'block';
@@ -107,4 +112,8 @@
         });
     </script>
     @endpush
+<<<<<<< HEAD
 </x-app-layout>
+=======
+</x-app-layout>
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9

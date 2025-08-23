@@ -9,6 +9,7 @@
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
+<<<<<<< HEAD
                     {{-- ======================= TAMBAHKAN BLOK INI ======================= --}}
                     @if ($errors->any())
                         <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative" role="alert">
@@ -22,6 +23,8 @@
                     @endif
                     {{-- ================================================================= --}}
                     
+=======
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
                     <form method="POST" action="{{ route('property.income.update', ['dailyIncome' => $dailyIncome->id]) }}">
                         @csrf
                         @method('PUT')
@@ -108,6 +111,7 @@
                                 <x-input-label for="house_use_income" :value="__('House Use (Pendapatan)')" />
                                 <x-text-input id="house_use_income" class="block mt-1 w-full" type="number" name="house_use_income" :value="old('house_use_income', $dailyIncome->house_use_income)" />
                             </div>
+<<<<<<< HEAD
                             <div>
                                 <x-input-label for="afiliasi_rooms" :value="__('Afiliasi (Kamar)')" />
                                 <x-text-input id="afiliasi_rooms" class="block mt-1 w-full" type="number" name="afiliasi_rooms" :value="old('afiliasi_rooms', $dailyIncome->afiliasi_rooms)" />
@@ -117,6 +121,9 @@
                                 <x-text-input id="afiliasi_room_income" class="block mt-1 w-full" type="number" name="afiliasi_room_income" :value="old('afiliasi_room_income', $dailyIncome->afiliasi_room_income)" />
                             </div>
 
+=======
+                            
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
                             <!-- Other Incomes (no rooms) -->
                             <div class="col-span-full border-t pt-4"></div>
                             

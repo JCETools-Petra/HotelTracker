@@ -63,7 +63,10 @@ class BookingController extends Controller
              return redirect()->back()->with('error', 'Akun Anda tidak terikat ke properti manapun.');
         }
 
+<<<<<<< HEAD
         // Validasi input dari form, termasuk total_price
+=======
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
         $validatedData = $request->validate([
             'booking_date' => 'required|date',
             'client_name' => 'required|string|max:255',
@@ -76,6 +79,7 @@ class BookingController extends Controller
             'notes' => 'nullable|string',
             'room_id' => 'required|exists:rooms,id',
             'mice_category_id' => 'nullable|exists:mice_categories,id',
+<<<<<<< HEAD
             'total_price' => 'required|numeric|min:0', // Validasi untuk harga manual
         ]);
 
@@ -87,6 +91,17 @@ class BookingController extends Controller
         $bookingData['payment_status'] = 'Pending';
 
         // Membuat record booking baru di database
+=======
+        ]);
+
+        $bookingData = $validatedData;
+        $bookingData['event_type'] = $request->input('event_type', 'MICE');
+        $bookingData['booking_number'] = 'BKN-' . date('Ymd') . '-' . Str::random(4);
+        $bookingData['property_id'] = $salesUser->property_id;
+        $bookingData['total_price'] = 0;
+        $bookingData['payment_status'] = 'Pending';
+
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
         Booking::create($bookingData);
 
         return redirect()->route('sales.bookings.index')->with('success', 'Booking baru berhasil ditambahkan.');

@@ -9,13 +9,21 @@
                     {{ __('Dashboard') }}
                 </x-nav-link>
 
+<<<<<<< HEAD
                 {{-- Tombol Tambah Properti hanya untuk Admin --}}
                 @can('manage-data')
+=======
+                @if(auth()->user()->role == 'admin')
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
                     <a href="{{ route('admin.properties.create') }}"
                        class="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2 bg-blue-600 dark:bg-blue-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 dark:hover:bg-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
                         {{ __('+ Tambah Properti') }}
                     </a>
+<<<<<<< HEAD
                 @endcan
+=======
+                @endif
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
             </nav>
         </div>
     </x-slot>
@@ -43,10 +51,16 @@
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nama Properti</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Dibuat Pada</th>
                                     
+<<<<<<< HEAD
                                     {{-- Kolom Aksi hanya untuk Admin --}}
                                     @can('manage-data')
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Aksi</th>
                                     @endcan
+=======
+                                    @if(auth()->user()->role == 'admin')
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Aksi</th>
+                                    @endif
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
                                 </tr>
                             </thead>
                             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -54,12 +68,16 @@
                                     <tr>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ $property->id }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+<<<<<<< HEAD
                                             {{-- Semua peran bisa melihat detail pendapatan --}}
+=======
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
                                             <a href="{{ route('admin.properties.show', $property->id) }}" class="hover:underline">
                                                 {{ $property->name }}
                                             </a>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+<<<<<<< HEAD
                                             {{ $property->created_at ? $property->created_at->isoFormat('D MMM YY, HH:mm') : '-' }}
                                         </td>
                                         
@@ -68,6 +86,17 @@
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                                                 <a href="{{ route('admin.properties.show', $property) }}" class="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-200">Pendapatan</a>
                                                 <a href="{{ route('admin.properties.rooms.index', $property) }}" class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-200">Ruangan</a>
+=======
+                                            {{ $property->created_at ? $property->created_at->isoFormat('D MMM YYYY, HH:mm') : '-' }}
+                                        </td>
+
+                                        @if(auth()->user()->role == 'admin')
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                                
+                                                <a href="{{ route('admin.properties.show', $property) }}" class="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-200">Pendapatan</a>
+                                                <a href="{{ route('admin.properties.rooms.index', $property) }}" class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-200">Ruangan</a>
+                                                
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
                                                 <a href="{{ route('admin.properties.edit', $property->id) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200">Edit</a>
                                                 
                                                 <form method="POST" action="{{ route('admin.properties.destroy', $property->id) }}" class="inline-block" onsubmit="return confirm('Yakin ingin menghapus properti ini?');">
@@ -75,6 +104,7 @@
                                                     @method('DELETE')
                                                     <button type="submit" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200">Hapus</button>
                                                 </form>
+<<<<<<< HEAD
 
                                                 {{-- !! PERUBAHAN ADA DI BARIS INI !! --}}
                                                 <a href="{{ route('admin.pricing-rules.index', $property->id) }}" class="text-cyan-600 hover:text-cyan-900 dark:text-cyan-400 dark:hover:text-cyan-200 ml-4 font-bold">
@@ -87,6 +117,14 @@
                                     <tr>
                                         {{-- Sesuaikan colspan berdasarkan hak akses --}}
                                         <td colspan="@can('manage-data') 4 @else 3 @endcan" class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500 dark:text-gray-400">
+=======
+                                            </td>
+                                        @endif
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="{{ auth()->user()->role == 'admin' ? '4' : '3' }}" class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500 dark:text-gray-400">
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
                                             Tidak ada properti ditemukan.
                                         </td>
                                     </tr>

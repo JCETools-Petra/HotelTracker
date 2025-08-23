@@ -21,7 +21,11 @@
                     </div>
                     <div class="mt-4">
                         <x-input-label for="mice_category_id" :value="__('Kategori MICE')" />
+<<<<<<< HEAD
                         <select name="mice_category_id" id="mice_category_id" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm">
+=======
+                        <select name="mice_category_id" id="mice_category_id" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
                             <option value="">-- Pilih Kategori (Opsional) --</option>
                             @foreach ($miceCategories as $category)
                                 <option value="{{ $category->id }}" {{ old('mice_category_id') == $category->id ? 'selected' : '' }}>
@@ -48,6 +52,7 @@
                            <x-input-error :messages="$errors->get('end_time')" class="mt-2" />
                         </div>
                     </div>
+<<<<<<< HEAD
 
                     {{-- ======================= AWAL BLOK YANG DIUBAH ======================= --}}
                     <div class="mt-4">
@@ -56,6 +61,8 @@
                         <x-input-error :messages="$errors->get('total_price')" class="mt-2" />
                     </div>
                     {{-- ======================= AKHIR BLOK YANG DIUBAH ====================== --}}
+=======
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
                 </div>
 
                 {{-- Kolom Kanan --}}
@@ -71,6 +78,10 @@
                     </div>
                     <div class="mt-4">
                         <x-input-label for="room_id" :value="__('Ruang yang Digunakan')" />
+<<<<<<< HEAD
+=======
+                        {{-- PERBAIKAN: class yang benar dan @error ditambahkan --}}
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
                         <select id="room_id" name="room_id" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" required>
                             <option value="">-- Pilih Ruangan --</option>
                             @foreach($rooms as $room)
@@ -88,7 +99,11 @@
                     </div>
                     <div class="mt-4">
                         <x-input-label for="status" :value="__('Status')" />
+<<<<<<< HEAD
                         <select name="status" id="status" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm" required>
+=======
+                        <select name="status" id="status" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" required>
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
                             <option value="Booking Sementara" @selected(old('status') == 'Booking Sementara')>Booking Sementara</option>
                             <option value="Booking Pasti" @selected(old('status') == 'Booking Pasti')>Booking Pasti</option>
                             <option value="Cancel" @selected(old('status') == 'Cancel')>Cancel</option>
@@ -97,7 +112,11 @@
                     </div>
                      <div class="mt-4">
                         <x-input-label for="notes" :value="__('Catatan Khusus')" />
+<<<<<<< HEAD
                         <textarea name="notes" id="notes" rows="3" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm">{{ old('notes') }}</textarea>
+=======
+                        <textarea name="notes" id="notes" rows="3" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">{{ old('notes') }}</textarea>
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
                         <x-input-error :messages="$errors->get('notes')" class="mt-2" />
                     </div>
                 </div>
@@ -111,4 +130,8 @@
             </div>
         </form>
     </div>
+<<<<<<< HEAD
 </x-sales-layout>
+=======
+</x-sales-layout>
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9

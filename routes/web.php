@@ -17,10 +17,13 @@ use App\Http\Controllers\Sales\DocumentController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\SettingController;
+<<<<<<< HEAD
 use App\Http\Controllers\Admin\PricingRuleController;
 use App\Http\Controllers\Ecommerce\DashboardController;
 use App\Http\Controllers\Ecommerce\ReservationController;
 use App\Http\Controllers\Ecommerce\BarDisplayController;
+=======
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
 
 /*
 |--------------------------------------------------------------------------
@@ -37,8 +40,11 @@ Route::get('/', function () {
             return redirect()->route('property.dashboard');
         } elseif ($user->role === 'sales') {
             return redirect()->route('sales.dashboard');
+<<<<<<< HEAD
         } elseif ($user->role === 'online_ecommerce') {
             return redirect()->route('ecommerce.dashboard');
+=======
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
         }
         return redirect()->route('dashboard');
     }
@@ -57,8 +63,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
             return redirect()->route('admin.dashboard');
         } elseif ($user->role === 'pengguna_properti') {
             return redirect()->route('property.dashboard');
+<<<<<<< HEAD
         } elseif ($user->role === 'online_ecommerce') {
             return redirect()->route('ecommerce.dashboard');
+=======
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
         } elseif ($user->role === 'sales') {
             return redirect()->route('sales.dashboard');
         }
@@ -71,6 +80,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('property.')
         ->group(function () {
             Route::get('/dashboard', [PropertyIncomeController::class, 'dashboard'])->name('dashboard');
+<<<<<<< HEAD
             
             // Logika Kalender & Reservasi sekarang di sini
             Route::get('calendar', [PropertyIncomeController::class, 'calendar'])->name('calendar.index');
@@ -83,13 +93,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::resource('reservations', ReservationController::class);
 
             // Rute-rute pendapatan yang sudah ada
+=======
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
             Route::get('/income/create', [PropertyIncomeController::class, 'create'])->name('income.create');
             Route::post('/income', [PropertyIncomeController::class, 'store'])->name('income.store');
             Route::get('/income', [PropertyIncomeController::class, 'index'])->name('income.index');
             Route::get('/income/{dailyIncome}/edit', [PropertyIncomeController::class, 'edit'])->name('income.edit');
             Route::put('/income/{dailyIncome}', [PropertyIncomeController::class, 'update'])->name('income.update');
             Route::delete('/income/{dailyIncome}', [PropertyIncomeController::class, 'destroy'])->name('income.destroy');
+<<<<<<< HEAD
             Route::post('/occupancy/update', [PropertyIncomeController::class, 'updateOccupancy'])->name('occupancy.update');
+=======
+            Route::get('/income/export/excel', [PropertyIncomeController::class, 'exportIncomesExcel'])->name('income.export.excel');
+            Route::get('/income/export/csv', [PropertyIncomeController::class, 'exportIncomesCsv'])->name('income.export.csv');
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
         });
 
     // Rute untuk Admin dan Owner
@@ -105,6 +122,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             
             Route::resource('users', AdminUserController::class)->except(['show']);
             Route::get('users/trashed', [AdminUserController::class, 'trashedIndex'])->name('users.trashed');
+<<<<<<< HEAD
             Route::put('users/{id}/restore', [AdminUserController::class, 'restore'])->name('users.restore');
             Route::delete('users/{id}/force-delete', [AdminUserController::class, 'forceDelete'])->name('users.forceDelete');
             
@@ -113,6 +131,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
             
             Route::resource('properties', AdminPropertyController::class);
             Route::resource('properties.incomes', IncomeController::class)->shallow()->except(['index', 'show']);
+=======
+            Route::put('users/{id}/restore', [AdminUserController::class, 'restore'])->name('users.restore');  
+            Route::delete('users/{id}/force-delete', [AdminUserController::class, 'forceDelete'])->name('users.forceDelete');
+            
+            // [FIX] Pindahkan route spesifik SEBELUM route resource
+            Route::get('/properties/compare', [AdminPropertyController::class, 'showComparisonForm'])->name('properties.compare_page');
+            Route::get('/properties/compare/results', [AdminPropertyController::class, 'showComparisonResults'])->name('properties.compare.results');
+            
+            // ==========================================================
+            // >> AWAL PERUBAHAN <<
+            // ==========================================================
+            Route::resource('properties', AdminPropertyController::class);
+            // Daftarkan route untuk Incomes di dalam Properties
+            Route::resource('properties.incomes', IncomeController::class)->shallow()->except(['index', 'show']);
+            // ==========================================================
+            // >> AKHIR PERUBAHAN <<
+            // ==========================================================
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
             
             Route::resource('revenue-targets', RevenueTargetController::class);
             Route::resource('price-packages', PricePackageController::class);
@@ -124,6 +160,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('calendar', [CalendarController::class, 'index'])->name('calendar.index');
             Route::get('calendar/events', [CalendarController::class, 'events'])->name('calendar.events');
 
+<<<<<<< HEAD
             // === AWAL BLOK YANG DIPERBAIKI ===
             // Hapus route lama yang konflik
             // Route::get('properties/{property}/pricing-rule', [PricingRuleController::class, 'edit'])->name('pricing-rules.edit');
@@ -142,6 +179,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('unified-calendar', [AdminDashboardController::class, 'unifiedCalendar'])->name('calendar.unified');
             Route::get('unified-calendar/events', [AdminDashboardController::class, 'getUnifiedCalendarEvents'])->name('calendar.unified.events');        
             Route::get('bar-prices', [BarDisplayController::class, 'index'])->name('bar-prices.index');
+=======
+            // Hapus baris lama yang menyebabkan kebingungan
+            // Route::resource('incomes', IncomeController::class)->except(['show']);
+
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
         });
     
     // Grup route untuk Sales
@@ -154,6 +196,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('calendar', [CalendarController::class, 'index'])->name('calendar.index');
             Route::get('calendar/events', [CalendarController::class, 'events'])->name('calendar.events');
             
+<<<<<<< HEAD
+=======
+            // [FIX] Pindahkan route spesifik SEBELUM route resource
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
             Route::get('bookings/{booking}/beo', [BookingController::class, 'beo'])->name('bookings.beo');
             Route::post('bookings/{booking}/beo', [BookingController::class, 'storeBeo'])->name('bookings.storeBeo');
             Route::get('bookings/{booking}/beo/show', [BookingController::class, 'showBeo'])->name('bookings.showBeo');
@@ -163,6 +209,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('bookings/{booking}/beo/pdf', [DocumentController::class, 'generateBeo'])->name('documents.beo');
             
             Route::resource('bookings', BookingController::class);
+<<<<<<< HEAD
         });
 
     // === PERUBAHAN DI BLOK INI ===
@@ -173,6 +220,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->group(function () {
             Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
         });
+=======
+    });
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
 });
 
 require __DIR__.'/auth.php';
