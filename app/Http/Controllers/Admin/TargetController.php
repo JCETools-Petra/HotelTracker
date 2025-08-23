@@ -64,7 +64,14 @@ class TargetController extends Controller
      */
     public function store(Request $request)
     {
+<<<<<<< HEAD
         $this->authorize('manage-data');
+=======
+<<<<<<< HEAD
+        $this->authorize('manage-data');
+=======
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
+>>>>>>> origin/master
         // Anda menggunakan Rule::unique() di sini, jadi class Rule perlu diimpor.
         $validatedData = $request->validate([
             'property_id' => 'required|integer|exists:properties,id',

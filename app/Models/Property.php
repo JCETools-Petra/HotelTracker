@@ -12,6 +12,10 @@ class Property extends Model
     use HasFactory;
 
     protected $fillable = [
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> origin/master
     'name',
     'chart_color',
     'address',
@@ -21,6 +25,7 @@ class Property extends Model
     'bar_4', // <-- TAMBAHKAN
     'bar_5', // <-- TAMBAHKAN
 ];
+<<<<<<< HEAD
 
     // =======================================================
     // !! RELASI YANG HILANG ADA DI SINI !!
@@ -37,19 +42,65 @@ class Property extends Model
 
     // == RELASI LAMA ANDA (TETAP DIPERTAHANKAN) ==
     public function manager(): HasOne
+=======
+
+    // =======================================================
+    // !! RELASI YANG HILANG ADA DI SINI !!
+    // =======================================================
+    /**
+     * Setiap properti memiliki satu aturan harga.
+     */
+    public function pricingRule(): HasOne
+    {
+        return $this->hasOne(PricingRule::class);
+    }
+    // =======================================================
+
+
+    // == RELASI LAMA ANDA (TETAP DIPERTAHANKAN) ==
+    public function manager(): HasOne
+=======
+        'name',
+        'chart_color'
+    ];
+
+    // Relasi: Satu Property dikelola oleh satu User (dalam skenario Anda)
+    // Jika bisa banyak user, gunakan hasMany(User::class)
+    public function manager(): HasOne // Atau BelongsTo jika foreign key ada di properties
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
+>>>>>>> origin/master
     {
         return $this->hasOne(User::class);
     }
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+    // Relasi: Satu Property memiliki banyak DailyIncome
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
+>>>>>>> origin/master
     public function dailyIncomes(): HasMany
     {
         return $this->hasMany(DailyIncome::class);
     }
+<<<<<<< HEAD
 
+=======
+<<<<<<< HEAD
+
+    public function dailyOccupancies(): HasMany
+    {
+        return $this->hasMany(DailyOccupancy::class);
+    }
+=======
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
+>>>>>>> origin/master
     public function rooms()
     {
         return $this->hasMany(Room::class);
     }
+<<<<<<< HEAD
 
     public function incomes()
     {
@@ -60,4 +111,23 @@ class Property extends Model
         // Satu Properti bisa punya banyak Tipe Kamar
         return $this->hasMany(RoomType::class);
     }
+=======
+<<<<<<< HEAD
+
+    public function incomes()
+    {
+        return $this->hasMany(Income::class);
+    }
+    public function roomTypes(): HasMany
+    {
+        // Satu Properti bisa punya banyak Tipe Kamar
+        return $this->hasMany(RoomType::class);
+    }
+=======
+    public function incomes()
+{
+    return $this->hasMany(Income::class);
+}
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
+>>>>>>> origin/master
 }

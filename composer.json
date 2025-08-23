@@ -8,10 +8,22 @@
     "require": {
         "php": "^8.2",
         "barryvdh/laravel-dompdf": "^3.1",
+<<<<<<< HEAD
+        "doctrine/dbal": "^4.3",
+=======
+<<<<<<< HEAD
         "doctrine/dbal": "^4.3",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
+        "maatwebsite/excel": "^3.1",
+        "twilio/sdk": "^8.7"
+=======
+        "doctrine/dbal": "^4.2",
+>>>>>>> origin/master
+        "laravel/framework": "^12.0",
+        "laravel/tinker": "^2.10.1",
         "maatwebsite/excel": "^3.1"
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

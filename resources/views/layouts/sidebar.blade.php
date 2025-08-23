@@ -94,11 +94,26 @@
                     </x-slot>
                     {{ __('Log Aktivitas') }}
                 </x-side-nav-link>
+<<<<<<< HEAD
+                {{--<x-side-nav-link :href="route('admin.calendar.index')" :active="request()->routeIs('admin.calendar.index')">
+=======
                 <x-side-nav-link :href="route('admin.calendar.index')" :active="request()->routeIs('admin.calendar.index')">
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
                     <x-slot name="icon">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                     </x-slot>
                     {{ __('Event Calendar') }}
+<<<<<<< HEAD
+                </x-side-nav-link>--}}
+                <x-side-nav-link :href="route('admin.calendar.unified')" :active="request()->routeIs('admin.calendar.unified')">
+                    <x-slot name="icon">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                    </x-slot>
+                    {{ __('Kalender Terpusat') }}
+=======
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
                 </x-side-nav-link>
                 <x-side-nav-link :href="route('admin.settings.index')" :active="request()->routeIs('admin.settings.*')">
                  <x-slot name="icon">
@@ -138,6 +153,41 @@
             @elseif(Auth::user()->role === 'pengguna_properti')
                 <x-side-nav-link :href="route('property.dashboard')" :active="request()->routeIs('property.dashboard')">
                     <x-slot name="icon">
+<<<<<<< HEAD
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                    </x-slot>
+                    {{ __('Dashboard Properti') }}
+                </x-side-nav-link>
+                
+                <x-side-nav-link :href="route('property.calendar.index')" :active="request()->routeIs('property.calendar.index')">
+                    <x-slot name="icon">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </x-slot>
+                    {{ __('Kalender') }}
+                </x-side-nav-link>
+                
+                <x-side-nav-link :href="route('property.reservations.index')" :active="request()->routeIs('property.reservations.*')">
+                    <x-slot name="icon">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002-2h2a2 2 0 002 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                    </x-slot>
+                    {{ __('Reservasi') }}
+                </x-side-nav-link>
+
+                <x-side-nav-link :href="route('property.income.index')" :active="request()->routeIs('property.income.*')">
+                     <x-slot name="icon">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                    </x-slot>
+                    {{ __('Pendapatan') }}
+                </x-side-nav-link>
+                @elseif(Auth::user()->role === 'online_ecommerce')
+                <x-side-nav-link :href="route('ecommerce.dashboard')" :active="request()->routeIs('ecommerce.dashboard')">
+    <x-slot name="icon">
+        {{-- Ikon Dashboard --}}
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+    </x-slot>
+    {{ __('Dashboard') }}
+    </x-side-nav-link>
+=======
                          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
                     </x-slot>
                     {{ __('Dashboard Properti') }}
@@ -149,6 +199,7 @@
                     </x-slot>
                     {{ __('Riwayat Pendapatan') }}
                 </x-side-nav-link>
+<<<<<<< HEAD
                 @elseif(Auth::user()->role === 'online_ecommerce')
                 <x-side-nav-link :href="route('ecommerce.dashboard')" :active="request()->routeIs('ecommerce.dashboard')">
                     <x-slot name="icon">
@@ -156,6 +207,9 @@
                     </x-slot>
                     {{ __('Dashboard') }}
                 </x-side-nav-link>
+=======
+>>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
+>>>>>>> origin/master
             @endif
         @endauth
     </nav>

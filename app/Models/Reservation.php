@@ -10,8 +10,20 @@ class Reservation extends Model
 {
     use HasFactory;
 
+<<<<<<< HEAD
     protected $fillable = [
         'property_id',
+=======
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    // app/Models/Reservation.php
+    protected $fillable = [
+        'property_id',
+        'room_type_id', // <-- TAMBAHKAN INI
+>>>>>>> origin/master
         'source',
         'final_price',
         'guest_name',
@@ -19,10 +31,39 @@ class Reservation extends Model
         'checkin_date',
         'checkout_date',
         'number_of_rooms',
+<<<<<<< HEAD
     ];
 
     public function property(): BelongsTo
     {
         return $this->belongsTo(Property::class);
     }
+=======
+        'user_id',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'checkin_date' => 'date',
+        'checkout_date' => 'date',
+    ];
+
+    /**
+     * Mendapatkan pengguna yang membuat reservasi ini.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    // Anda bisa menambahkan relasi ke Property jika ada modelnya
+    // public function property(): BelongsTo
+    // {
+    //     return $this->belongsTo(Property::class);
+    // }
+>>>>>>> origin/master
 }
