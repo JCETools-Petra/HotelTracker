@@ -4,15 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-<<<<<<< HEAD
-    "content-hash": "f5c4a095c28d49a4f2403f5d1e98cc2f",
-=======
-<<<<<<< HEAD
     "content-hash": "6be198ae5cb8a1daaa96dfc6e0157368",
-=======
-    "content-hash": "83184bb675dc6496c832f2a8dea2d713",
->>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
->>>>>>> origin/master
     "packages": [
         {
             "name": "barryvdh/laravel-dompdf",
@@ -457,10 +449,6 @@
         },
         {
             "name": "doctrine/dbal",
-<<<<<<< HEAD
-            "version": "4.3.1",
-=======
-<<<<<<< HEAD
             "version": "4.3.1",
             "source": {
                 "type": "git",
@@ -476,29 +464,6 @@
             "require": {
                 "doctrine/deprecations": "^1.1.5",
                 "php": "^8.2",
-=======
-            "version": "4.2.4",
->>>>>>> origin/master
-            "source": {
-                "type": "git",
-                "url": "https://github.com/doctrine/dbal.git",
-                "reference": "ac336c95ea9e13433d56ca81c308b39db0e1a2a7"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/doctrine/dbal/zipball/ac336c95ea9e13433d56ca81c308b39db0e1a2a7",
-                "reference": "ac336c95ea9e13433d56ca81c308b39db0e1a2a7",
-                "shasum": ""
-            },
-            "require": {
-<<<<<<< HEAD
-                "doctrine/deprecations": "^1.1.5",
-                "php": "^8.2",
-=======
-                "doctrine/deprecations": "^0.5.3|^1",
-                "php": "^8.1",
->>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
->>>>>>> origin/master
                 "psr/cache": "^1|^2|^3",
                 "psr/log": "^1|^2|^3"
             },
@@ -509,15 +474,7 @@
                 "phpstan/phpstan": "2.1.17",
                 "phpstan/phpstan-phpunit": "2.0.6",
                 "phpstan/phpstan-strict-rules": "^2",
-<<<<<<< HEAD
                 "phpunit/phpunit": "11.5.23",
-=======
-<<<<<<< HEAD
-                "phpunit/phpunit": "11.5.23",
-=======
-                "phpunit/phpunit": "10.5.46",
->>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
->>>>>>> origin/master
                 "slevomat/coding-standard": "8.16.2",
                 "squizlabs/php_codesniffer": "3.13.1",
                 "symfony/cache": "^6.3.8|^7.0",
@@ -578,15 +535,7 @@
             ],
             "support": {
                 "issues": "https://github.com/doctrine/dbal/issues",
-<<<<<<< HEAD
                 "source": "https://github.com/doctrine/dbal/tree/4.3.1"
-=======
-<<<<<<< HEAD
-                "source": "https://github.com/doctrine/dbal/tree/4.3.1"
-=======
-                "source": "https://github.com/doctrine/dbal/tree/4.2.4"
->>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
->>>>>>> origin/master
             },
             "funding": [
                 {
@@ -602,15 +551,7 @@
                     "type": "tidelift"
                 }
             ],
-<<<<<<< HEAD
             "time": "2025-07-22T10:09:51+00:00"
-=======
-<<<<<<< HEAD
-            "time": "2025-07-22T10:09:51+00:00"
-=======
-            "time": "2025-06-15T23:15:01+00:00"
->>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
->>>>>>> origin/master
         },
         {
             "name": "doctrine/deprecations",
@@ -6796,7 +6737,6 @@
             "time": "2024-12-21T16:25:41+00:00"
         },
         {
-<<<<<<< HEAD
             "name": "twilio/sdk",
             "version": "8.7.0",
             "source": {
@@ -6847,8 +6787,6 @@
             "time": "2025-07-24T08:04:30+00:00"
         },
         {
-=======
->>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
             "name": "vlucas/phpdotenv",
             "version": "v5.6.2",
             "source": {
@@ -9426,20 +9364,12 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-<<<<<<< HEAD
     "stability-flags": {},
-=======
-    "stability-flags": [],
->>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
         "php": "^8.2"
     },
-<<<<<<< HEAD
     "platform-dev": {},
-=======
-    "platform-dev": [],
->>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
     "plugin-api-version": "2.6.0"
 }

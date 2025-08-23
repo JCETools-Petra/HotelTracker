@@ -11,10 +11,6 @@ Stack trace:
 #8 {main}
   thrown in /home/apsx2353/public_html/hoteliermarket.my.id/vendor/symfony/http-foundation/Response.php on line 322
 [24-Jun-2025 07:02:28 UTC] PHP Fatal error:  Cannot use App\Models\Booking as Booking because the name is already in use in /home/apsx2353/public_html/hoteliermarket.my.id/app/Http/Controllers/Admin/DashboardController.php on line 16
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> origin/master
 [10-Jul-2025 21:45:18 UTC] PHP Fatal error:  Uncaught ErrorException: Cannot modify header information - headers already sent by (output started at __mnx_runtime:1) in /home/apsx2353/public_html/hoteliermarket.my.id/vendor/symfony/http-foundation/Response.php:322
 Stack trace:
 #0 /home/apsx2353/public_html/hoteliermarket.my.id/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(256): Illuminate\Foundation\Bootstrap\HandleExceptions->handleError()
@@ -8847,9 +8843,4 @@ Stack trace:
 #7 [internal function]: Illuminate\Foundation\Bootstrap\HandleExceptions->Illuminate\Foundation\Bootstrap\{closure}()
 #8 {main}
   thrown in /home/apsx2353/public_html/hoteliermarket.my.id/vendor/symfony/http-foundation/Response.php on line 322
-<<<<<<< HEAD
-=======
 [11-Aug-2025 13:56:00 UTC] PHP Fatal error:  Cannot use Carbon\Carbon as Carbon because the name is already in use in /home/apsx2353/public_html/hoteliermarket.my.id/app/Http/Controllers/PropertyIncomeController.php on line 19
-=======
->>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
->>>>>>> origin/master

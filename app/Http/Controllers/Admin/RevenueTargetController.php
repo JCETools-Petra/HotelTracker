@@ -61,14 +61,7 @@ class RevenueTargetController extends Controller
      */
     public function store(Request $request)
     {
-<<<<<<< HEAD
         $this->authorize('manage-data');
-=======
-<<<<<<< HEAD
-        $this->authorize('manage-data');
-=======
->>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
->>>>>>> origin/master
         $request->validate([
             'property_id' => 'required|exists:properties,id',
             'month_year' => [

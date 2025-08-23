@@ -10,10 +10,6 @@ class Reservation extends Model
 {
     use HasFactory;
 
-<<<<<<< HEAD
-    protected $fillable = [
-        'property_id',
-=======
     /**
      * The attributes that are mass assignable.
      *
@@ -23,7 +19,6 @@ class Reservation extends Model
     protected $fillable = [
         'property_id',
         'room_type_id', // <-- TAMBAHKAN INI
->>>>>>> origin/master
         'source',
         'final_price',
         'guest_name',
@@ -31,14 +26,6 @@ class Reservation extends Model
         'checkin_date',
         'checkout_date',
         'number_of_rooms',
-<<<<<<< HEAD
-    ];
-
-    public function property(): BelongsTo
-    {
-        return $this->belongsTo(Property::class);
-    }
-=======
         'user_id',
     ];
 
@@ -65,5 +52,4 @@ class Reservation extends Model
     // {
     //     return $this->belongsTo(Property::class);
     // }
->>>>>>> origin/master
 }

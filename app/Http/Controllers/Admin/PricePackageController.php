@@ -21,14 +21,7 @@ class PricePackageController extends Controller
 
     public function store(Request $request)
     {
-<<<<<<< HEAD
         $this->authorize('manage-data');
-=======
-<<<<<<< HEAD
-        $this->authorize('manage-data');
-=======
->>>>>>> 53544687d3a99f485bc9b6a4bf95626ea03e58e9
->>>>>>> origin/master
         $request->validate([
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
