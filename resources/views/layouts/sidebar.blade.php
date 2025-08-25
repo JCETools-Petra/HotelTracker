@@ -1,32 +1,30 @@
 <aside class="flex-shrink-0 w-64 bg-white dark:bg-gray-800 border-r dark:border-gray-700 flex flex-col">
     <div class="h-16 flex items-center justify-center border-b dark:border-gray-700 px-4">
-        <a href="{{ route('dashboard') }}">
-            {{-- ======================= AWAL BLOK YANG DIUBAH ======================= --}}
+        <a href="{{ route('dashboard') }}" class="flex items-center space-x-2">
             @php
-                // Menggunakan kunci 'logo_path' dan pengaturan ukuran 'sidebar_logo_size'
-                $logoPath = $appSettings['logo_path'] ?? null;
-                $sidebarLogoSize = $appSettings['sidebar_logo_size'] ?? 40; // Default 40px
-                $appName = $appSettings['app_name'] ?? config('app.name', 'Laravel');
+                // Menggunakan helper untuk mendapatkan pengaturan dengan aman
+                $logoPath = setting('logo_path');
+                $sidebarLogoSize = setting('sidebar_logo_size', 40); // Default 40px
+                $appName = setting('app_name', config('app.name', 'Laravel'));
             @endphp
 
             @if($logoPath)
                 {{-- Jika ada logo kustom, tampilkan --}}
-                <img src="{{ asset('storage/' . $logoPath) }}" 
-                     alt="App Logo" 
+                <img src="{{ asset('storage/' . $logoPath) }}"
+                     alt="App Logo"
                      style="height: {{ $sidebarLogoSize }}px;"
                      class="w-auto">
             @else
                 {{-- Jika tidak, tampilkan nama aplikasi sebagai teks --}}
                 <span class="text-lg font-bold text-gray-800 dark:text-gray-200">{{ $appName }}</span>
             @endif
-            {{-- ======================= AKHIR BLOK YANG DIUBAH ====================== --}}
         </a>
     </div>
 
     <nav class="flex-grow p-4 space-y-2">
         @auth
             {{-- ============================ --}}
-            {{--    MENU UNTUK ADMIN & OWNER    --}}
+            {{--   MENU UNTUK ADMIN & OWNER   --}}
             {{-- ============================ --}}
             @if(Auth::user()->role === 'admin' || Auth::user()->role === 'owner')
                 <x-side-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
@@ -35,7 +33,7 @@
                     </x-slot>
                     {{ __('Dashboard Admin') }}
                 </x-side-nav-link>
-                
+
                 <x-side-nav-link :href="route('admin.kpi.analysis')" :active="request()->routeIs('admin.kpi.analysis')">
                     <x-slot name="icon">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
@@ -78,7 +76,11 @@
                     {{ __('Manajemen Properti') }}
                 </x-side-nav-link>
                 
+                {{-- === PERUBAHAN 1: Menambahkan ikon Kategori MICE === --}}
                 <x-side-nav-link :href="route('admin.mice-categories.index')" :active="request()->routeIs('admin.mice-categories.*')">
+                    <x-slot name="icon">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.653-.125-1.274-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.653.125-1.274.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    </x-slot>
                     {{ __('Kategori MICE') }}
                 </x-side-nav-link>
 
@@ -88,35 +90,65 @@
                     </x-slot>
                     {{ __('Manajemen Harga') }}
                 </x-side-nav-link>
+
                 <x-side-nav-link :href="route('admin.activity_log.index')" :active="request()->routeIs('admin.activity_log.index')">
                      <x-slot name="icon">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
                     </x-slot>
                     {{ __('Log Aktivitas') }}
                 </x-side-nav-link>
-                {{--<x-side-nav-link :href="route('admin.calendar.index')" :active="request()->routeIs('admin.calendar.index')">
-                    <x-slot name="icon">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                    </x-slot>
-                    {{ __('Event Calendar') }}
-                </x-side-nav-link>--}}
+
                 <x-side-nav-link :href="route('admin.calendar.unified')" :active="request()->routeIs('admin.calendar.unified')">
                     <x-slot name="icon">
                         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                         </svg>
                     </x-slot>
                     {{ __('Kalender Terpusat') }}
                 </x-side-nav-link>
-                <x-side-nav-link :href="route('admin.settings.index')" :active="request()->routeIs('admin.settings.*')">
-                 <x-slot name="icon">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                </x-slot>
-                {{ __('Pengaturan') }}
+
+                {{-- === PERUBAHAN 2: Menambahkan ikon Inventaris === --}}
+                <x-side-nav-link :href="route('admin.inventories.index')" :active="request()->routeIs('admin.inventories.*')">
+                    <x-slot name="icon">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-14L4 7m0 10l8 4m-8-14v10l8 4"></path></svg>
+                    </x-slot>
+                    {{ __('Inventaris') }}
                 </x-side-nav-link>
 
+                {{-- === PERUBAHAN 3: Menambahkan ikon Laporan Amenities === --}}
+                <x-side-nav-link :href="route('admin.reports.amenities')" :active="request()->routeIs('admin.reports.amenities')">
+                    <x-slot name="icon">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V7a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    </x-slot>
+                    {{ __('Laporan Amenities') }}
+                </x-side-nav-link>
+
+                <x-side-nav-link :href="route('admin.settings.index')" :active="request()->routeIs('admin.settings.*')">
+                   <x-slot name="icon">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </x-slot>
+                    {{ __('Pengaturan') }}
+                </x-side-nav-link>
+
+            {{-- ============================ --}}
+            {{--   MENU UNTUK HOUSEKEEPING    --}}
+            {{-- ============================ --}}
+            @elseif(Auth::user()->role === 'hk')
+                <x-side-nav-link :href="route('housekeeping.inventory.index')" :active="request()->routeIs('housekeeping.inventory.*')">
+                    <x-slot name="icon">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+                    </x-slot>
+                    {{ __('Inventaris Kamar') }}
+                </x-side-nav-link>
+                 {{-- === TAMBAHKAN LINK INI === --}}
+                <x-side-nav-link :href="route('housekeeping.inventory.history')" :active="request()->routeIs('housekeeping.inventory.history')">
+                    <x-slot name="icon">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </x-slot>
+                    {{ __('Riwayat') }}
+                </x-side-nav-link>
             {{-- ================== --}}
-            {{--    MENU UNTUK SALES    --}}
+            {{--   MENU UNTUK SALES   --}}
             {{-- ================== --}}
             @elseif(Auth::user()->role === 'sales')
                 <x-side-nav-link :href="route('sales.dashboard')" :active="request()->routeIs('sales.dashboard')">
@@ -139,9 +171,9 @@
                     </x-slot>
                     {{ __('Event Calendar') }}
                 </x-side-nav-link>
-            
+
             {{-- ============================ --}}
-            {{--    MENU UNTUK PENGGUNA PROPERTI    --}}
+            {{--   MENU UNTUK PENGGUNA PROPERTI   --}}
             {{-- ============================ --}}
             @elseif(Auth::user()->role === 'pengguna_properti')
                 <x-side-nav-link :href="route('property.dashboard')" :active="request()->routeIs('property.dashboard')">
@@ -150,14 +182,14 @@
                     </x-slot>
                     {{ __('Dashboard Properti') }}
                 </x-side-nav-link>
-                
+
                 <x-side-nav-link :href="route('property.calendar.index')" :active="request()->routeIs('property.calendar.index')">
                     <x-slot name="icon">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                     </x-slot>
                     {{ __('Kalender') }}
                 </x-side-nav-link>
-                
+
                 <x-side-nav-link :href="route('property.reservations.index')" :active="request()->routeIs('property.reservations.*')">
                     <x-slot name="icon">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002-2h2a2 2 0 002 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
@@ -171,14 +203,17 @@
                     </x-slot>
                     {{ __('Pendapatan') }}
                 </x-side-nav-link>
-                @elseif(Auth::user()->role === 'online_ecommerce')
+
+            {{-- ============================ --}}
+            {{--   MENU UNTUK E-COMMERCE      --}}
+            {{-- ============================ --}}
+            @elseif(Auth::user()->role === 'online_ecommerce')
                 <x-side-nav-link :href="route('ecommerce.dashboard')" :active="request()->routeIs('ecommerce.dashboard')">
-    <x-slot name="icon">
-        {{-- Ikon Dashboard --}}
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-    </x-slot>
-    {{ __('Dashboard') }}
-    </x-side-nav-link>
+                    <x-slot name="icon">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                    </x-slot>
+                    {{ __('Dashboard') }}
+                </x-side-nav-link>
             @endif
         @endauth
     </nav>

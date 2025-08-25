@@ -27,13 +27,14 @@ class UserController extends Controller
     {
         $properties = Property::orderBy('name')->get();
         
-        // ## PERUBAHAN 1: Tambahkan 'online_ecommerce' ke daftar peran ##
+        // ## PERUBAHAN 1: Tambahkan 'hk' ke daftar peran ##
         $roles = [
             'admin' => 'Admin',
             'owner' => 'Owner',
+            'hk' => 'Housekeeping (HK)', // <-- DITAMBAHKAN
             'pengguna_properti' => 'Pengguna Properti',
             'sales' => 'Sales',
-            'online_ecommerce' => 'Online Ecommerce', // <-- DITAMBAHKAN
+            'online_ecommerce' => 'Online Ecommerce',
         ];
 
         // Kirim variabel $roles ke view
@@ -47,13 +48,13 @@ class UserController extends Controller
     {
         $this->authorize('manage-data');
 
-        // ## PERUBAHAN 2: Tambahkan 'online_ecommerce' ke validasi ##
+        // ## PERUBAHAN 2: Tambahkan 'hk' ke validasi dan required_if ##
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => ['required', 'string', \Illuminate\Validation\Rule::in(['admin', 'owner', 'pengguna_properti', 'sales', 'online_ecommerce'])],
-            'property_id' => ['nullable', 'required_if:role,pengguna_properti,sales,online_ecommerce', 'exists:properties,id'],
+            'role' => ['required', 'string', \Illuminate\Validation\Rule::in(['admin', 'owner', 'hk', 'pengguna_properti', 'sales', 'online_ecommerce'])],
+            'property_id' => ['nullable', 'required_if:role,pengguna_properti,sales,online_ecommerce,hk', 'exists:properties,id'],
         ]);
 
         $data = $request->only('name', 'email', 'role', 'property_id');
@@ -84,13 +85,14 @@ class UserController extends Controller
     {
         $properties = Property::orderBy('name')->get();
 
-        // ## PERUBAHAN 3: Tambahkan 'online_ecommerce' ke daftar peran ##
+        // ## PERUBAHAN 3: Tambahkan 'hk' ke daftar peran ##
         $roles = [
             'admin' => 'Admin',
             'owner' => 'Owner',
+            'hk' => 'Housekeeping (HK)', // <-- DITAMBAHKAN
             'pengguna_properti' => 'Pengguna Properti',
             'sales' => 'Sales',
-            'online_ecommerce' => 'Online Ecommerce', // <-- DITAMBAHKAN
+            'online_ecommerce' => 'Online Ecommerce',
         ];
 
         // Kirim variabel $roles ke view
@@ -104,13 +106,13 @@ class UserController extends Controller
     {
         $this->authorize('manage-data');
 
-        // ## PERUBAHAN 4: Tambahkan 'online_ecommerce' ke validasi ##
+        // ## PERUBAHAN 4: Tambahkan 'hk' ke validasi dan required_if ##
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
-            'role' => ['required', 'string', \Illuminate\Validation\Rule::in(['admin', 'owner', 'pengguna_properti', 'sales', 'online_ecommerce'])],
-            'property_id' => ['nullable', 'required_if:role,pengguna_properti,sales,online_ecommerce', 'exists:properties,id'],
+            'role' => ['required', 'string', \Illuminate\Validation\Rule::in(['admin', 'owner', 'hk', 'pengguna_properti', 'sales', 'online_ecommerce'])],
+            'property_id' => ['nullable', 'required_if:role,pengguna_properti,sales,online_ecommerce,hk', 'exists:properties,id'],
         ]);
 
         $data = $request->only('name', 'email', 'role', 'property_id');

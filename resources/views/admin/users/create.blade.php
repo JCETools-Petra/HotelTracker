@@ -65,6 +65,7 @@
                         <div class="mt-4">
                             <x-input-label for="password_confirmation" :value="__('Konfirmasi Password')" />
                             <x-text-input id="password_confirmation" class="block mt-1 w-full" type="password" name="password_confirmation" required autocomplete="new-password" />
+                            <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
                         </div>
 
                         <div class="flex items-center justify-end mt-6">
@@ -86,7 +87,8 @@
             const propertySelect = document.getElementById('property_id');
             
             // !! PERUBAHAN ADA DI BARIS INI !!
-            const rolesRequiringProperty = ['pengguna_properti', 'sales', 'online_ecommerce'];
+            // Menambahkan 'hk' ke dalam array rolesRequiringProperty
+            const rolesRequiringProperty = ['pengguna_properti', 'sales', 'online_ecommerce', 'hk'];
 
             if (rolesRequiringProperty.includes(role)) {
                 propertySelectContainer.style.display = 'block';

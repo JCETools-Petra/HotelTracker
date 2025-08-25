@@ -6,34 +6,33 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Room extends Model
+class HotelRoom extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $table = 'hotel_rooms';
+
     protected $fillable = [
-        'name',
-        'capacity',
-        'notes',
         'property_id',
         'room_number',
-        'room_type_id', // Pastikan kolom ini ada
+        'room_type_id',
+        'capacity',
+        'notes',
     ];
 
-    // Hubungan ke Property
     public function property()
     {
         return $this->belongsTo(Property::class);
     }
 
-    // Hubungan ke RoomType
     public function roomType()
     {
         return $this->belongsTo(RoomType::class);
     }
 
-    // Hubungan ke amenities (inventories)
     public function amenities()
     {
-        return $this->belongsToMany(Inventory::class, 'room_amenities')->withPivot('quantity');
+        return $this->belongsToMany(Inventory::class, 'room_amenities', 'room_id', 'inventory_id')
+            ->withPivot('quantity');
     }
 }

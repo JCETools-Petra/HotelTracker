@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Property;
 use App\Models\Room;
+use App\Models\RoomType; // Tambahkan ini
 use Illuminate\Http\Request;
 
 class RoomController extends Controller
@@ -14,7 +15,11 @@ class RoomController extends Controller
      */
     public function index(Property $property)
     {
-        $rooms = $property->rooms()->orderBy('name')->get();
+        // HANYA TAMPILKAN RUANGAN DENGAN TIPE 'mice'
+        $rooms = $property->rooms()->whereHas('roomType', function ($query) {
+            $query->where('type', 'mice');
+        })->with('roomType')->latest()->paginate(10);
+        
         return view('admin.rooms.index', compact('property', 'rooms'));
     }
 
@@ -23,7 +28,9 @@ class RoomController extends Controller
      */
     public function create(Property $property)
     {
-        return view('admin.rooms.create', compact('property'));
+        // HANYA AMBIL TIPE RUANGAN 'mice'
+        $roomTypes = RoomType::where('type', 'mice')->get();
+        return view('admin.rooms.create', compact('property', 'roomTypes'));
     }
 
     /**
@@ -31,17 +38,21 @@ class RoomController extends Controller
      */
     public function store(Request $request, Property $property)
     {
-        $this->authorize('manage-data');
+        // $this->authorize('manage-data'); // Pastikan Anda memiliki otorisasi ini
+
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'capacity' => 'nullable|string|max:255',
+            'room_number' => 'required|string|max:255|unique:rooms,room_number,NULL,id,property_id,'.$property->id,
+            'room_type_id' => 'required|exists:room_types,id',
+            'capacity' => 'nullable|integer',
             'notes' => 'nullable|string',
         ]);
+        
+        $validated['property_id'] = $property->id;
 
         $property->rooms()->create($validated);
 
         return redirect()->route('admin.properties.rooms.index', $property)
-                         ->with('success', 'Ruangan berhasil ditambahkan.');
+                         ->with('success', 'Kamar berhasil ditambahkan.');
     }
 
     /**
@@ -50,7 +61,8 @@ class RoomController extends Controller
     public function edit(Room $room)
     {
         $property = $room->property;
-        return view('admin.rooms.edit', compact('room', 'property'));
+        $roomTypes = RoomType::all();
+        return view('admin.rooms.edit', compact('room', 'property', 'roomTypes'));
     }
 
     /**
@@ -58,16 +70,19 @@ class RoomController extends Controller
      */
     public function update(Request $request, Room $room)
     {
+        // $this->authorize('manage-data'); // Pastikan Anda memiliki otorisasi ini
+
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'capacity' => 'nullable|string|max:255',
+            'room_number' => 'required|string|max:255|unique:rooms,room_number,'.$room->id.',id,property_id,'.$room->property->id,
+            'room_type_id' => 'required|exists:room_types,id',
+            'capacity' => 'nullable|integer',
             'notes' => 'nullable|string',
         ]);
 
         $room->update($validated);
 
         return redirect()->route('admin.properties.rooms.index', $room->property)
-                         ->with('success', 'Ruangan berhasil diperbarui.');
+                         ->with('success', 'Kamar berhasil diperbarui.');
     }
 
     /**
@@ -75,10 +90,11 @@ class RoomController extends Controller
      */
     public function destroy(Room $room)
     {
+        // $this->authorize('manage-data'); // Pastikan Anda memiliki otorisasi ini
         $property = $room->property;
         $room->delete();
 
         return redirect()->route('admin.properties.rooms.index', $property)
-                         ->with('success', 'Ruangan berhasil dihapus.');
+                         ->with('success', 'Kamar berhasil dihapus.');
     }
 }

@@ -1,20 +1,35 @@
-{{-- Nama Ruangan --}}
+{{-- Nomor Kamar --}}
 <div>
-    <x-input-label for="name" :value="__('Nama Ruangan')" />
-    <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name', $room->name ?? '')" required autofocus />
-    <x-input-error :messages="$errors->get('name')" class="mt-2" />
+    <x-input-label for="room_number" :value="__('Nomor Kamar')" />
+    <x-text-input id="room_number" class="block mt-1 w-full" type="text" name="room_number" :value="old('room_number', $room->room_number ?? '')" required autofocus placeholder="Contoh: 101, 205, A-1" />
+    <x-input-error :messages="$errors->get('room_number')" class="mt-2" />
 </div>
 
-{{-- Kapasitas --}}
+{{-- Tipe Kamar --}}
 <div class="mt-4">
-    <x-input-label for="capacity" :value="__('Kapasitas')" />
-    <x-text-input id="capacity" class="block mt-1 w-full" type="text" name="capacity" :value="old('capacity', $room->capacity ?? '')" />
+    <x-input-label for="room_type_id" :value="__('Tipe Kamar')" />
+    <select id="room_type_id" name="room_type_id" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" required>
+        <option value="">-- Pilih Tipe Kamar --</option>
+        {{-- Loop ini mengasumsikan Anda mengirim $roomTypes dari controller --}}
+        @foreach($roomTypes as $type)
+            <option value="{{ $type->id }}" @selected(old('room_type_id', $room->room_type_id ?? '') == $type->id)>
+                {{ $type->name }}
+            </option>
+        @endforeach
+    </select>
+    <x-input-error :messages="$errors->get('room_type_id')" class="mt-2" />
+</div>
+
+{{-- Kapasitas (Opsional) --}}
+<div class="mt-4">
+    <x-input-label for="capacity" :value="__('Kapasitas (Opsional)')" />
+    <x-text-input id="capacity" class="block mt-1 w-full" type="number" name="capacity" :value="old('capacity', $room->capacity ?? '')" />
     <x-input-error :messages="$errors->get('capacity')" class="mt-2" />
 </div>
 
-{{-- Catatan --}}
+{{-- Catatan (Opsional) --}}
 <div class="mt-4">
-    <x-input-label for="notes" :value="__('Catatan')" />
+    <x-input-label for="notes" :value="__('Catatan (Opsional)')" />
     <textarea id="notes" name="notes" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">{{ old('notes', $room->notes ?? '') }}</textarea>
     <x-input-error :messages="$errors->get('notes')" class="mt-2" />
 </div>

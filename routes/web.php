@@ -21,6 +21,9 @@ use App\Http\Controllers\Admin\PricingRuleController;
 use App\Http\Controllers\Ecommerce\DashboardController;
 use App\Http\Controllers\Ecommerce\ReservationController;
 use App\Http\Controllers\Ecommerce\BarDisplayController;
+use App\Http\Controllers\Admin\InventoryController as AdminInventoryController;
+use App\Http\Controllers\Admin\RoomController as AdminRoomController;
+use App\Http\Controllers\Housekeeping\InventoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,6 +42,8 @@ Route::get('/', function () {
             return redirect()->route('sales.dashboard');
         } elseif ($user->role === 'online_ecommerce') {
             return redirect()->route('ecommerce.dashboard');
+        } elseif ($user->role === 'hk') { // BARIS INI DITAMBAHKAN
+            return redirect()->route('housekeeping.inventory.index');
         }
         return redirect()->route('dashboard');
     }
@@ -61,6 +66,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             return redirect()->route('ecommerce.dashboard');
         } elseif ($user->role === 'sales') {
             return redirect()->route('sales.dashboard');
+        } elseif ($user->role === 'hk') { // BARIS INI DITAMBAHKAN
+            return redirect()->route('housekeeping.inventory.index');
         }
         abort(403, 'Tidak ada dashboard yang sesuai untuk peran Anda.');
     })->name('dashboard');
@@ -93,56 +100,59 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
 
     // Rute untuk Admin dan Owner
-    Route::middleware(['role:admin,owner'])
-        ->prefix('admin')
-        ->name('admin.')
-        ->group(function () {
-            Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-            Route::get('/dashboard/export/excel', [AdminDashboardController::class, 'exportPropertiesSummaryExcel'])->name('dashboard.export.excel');
-            Route::get('/dashboard/export/csv', [AdminDashboardController::class, 'exportPropertiesSummaryCsv'])->name('dashboard.export.csv');
-            Route::get('/sales-analytics', [AdminDashboardController::class, 'salesAnalytics'])->name('sales.analytics');
-            Route::get('/kpi-analysis', [AdminDashboardController::class, 'kpiAnalysis'])->name('kpi.analysis');
-            
-            Route::resource('users', AdminUserController::class)->except(['show']);
-            Route::get('users/trashed', [AdminUserController::class, 'trashedIndex'])->name('users.trashed');
-            Route::put('users/{id}/restore', [AdminUserController::class, 'restore'])->name('users.restore');
-            Route::delete('users/{id}/force-delete', [AdminUserController::class, 'forceDelete'])->name('users.forceDelete');
-            
-            Route::get('/properties/compare', [AdminPropertyController::class, 'showComparisonForm'])->name('properties.compare_page');
-            Route::get('/properties/compare/results', [AdminPropertyController::class, 'showComparisonResults'])->name('properties.compare.results');
-            
-            Route::resource('properties', AdminPropertyController::class);
-            Route::resource('properties.incomes', IncomeController::class)->shallow()->except(['index', 'show']);
-            
-            Route::resource('revenue-targets', RevenueTargetController::class);
-            Route::resource('price-packages', PricePackageController::class);
-            Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
-            Route::post('settings', [SettingController::class, 'store'])->name('settings.store');
-            Route::resource('mice-categories', App\Http\Controllers\Admin\MiceCategoryController::class);
-            Route::resource('properties.rooms', App\Http\Controllers\Admin\RoomController::class)->shallow();
-            Route::get('/activity-log', [App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('activity_log.index');
-            Route::get('calendar', [CalendarController::class, 'index'])->name('calendar.index');
-            Route::get('calendar/events', [CalendarController::class, 'events'])->name('calendar.events');
+    Route::middleware(['auth', 'role:admin,owner'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard/export/excel', [AdminDashboardController::class, 'exportPropertiesSummaryExcel'])->name('dashboard.export.excel');
+        Route::get('/dashboard/export/csv', [AdminDashboardController::class, 'exportPropertiesSummaryCsv'])->name('dashboard.export.csv');
+        Route::get('/sales-analytics', [AdminDashboardController::class, 'salesAnalytics'])->name('sales.analytics');
+        Route::get('/kpi-analysis', [AdminDashboardController::class, 'kpiAnalysis'])->name('kpi.analysis');
 
-            // === AWAL BLOK YANG DIPERBAIKI ===
-            // Hapus route lama yang konflik
-            // Route::get('properties/{property}/pricing-rule', [PricingRuleController::class, 'edit'])->name('pricing-rules.edit');
-            
-            // Gunakan grup route baru ini
-            Route::prefix('properties/{property}/pricing-rule')->name('pricing-rules.')->group(function () {
-                Route::get('/', [PricingRuleController::class, 'index'])->name('index');
-                Route::post('/store-room-type', [PricingRuleController::class, 'storeRoomType'])->name('room-type.store');
-                Route::put('/update-pricing-rule/{roomType}', [PricingRuleController::class, 'updatePricingRule'])->name('rule.update');
-                Route::delete('/destroy-room-type/{roomType}', [PricingRuleController::class, 'destroyRoomType'])->name('room-type.destroy');
+        Route::resource('users', AdminUserController::class)->except(['show']);
+        Route::get('users/trashed', [AdminUserController::class, 'trashedIndex'])->name('users.trashed');
+        Route::put('users/{id}/restore', [AdminUserController::class, 'restore'])->name('users.restore');
+        Route::delete('users/{id}/force-delete', [AdminUserController::class, 'forceDelete'])->name('users.forceDelete');
+
+        Route::get('/properties/compare', [AdminPropertyController::class, 'showComparisonForm'])->name('properties.compare_page');
+        Route::get('/properties/compare/results', [AdminPropertyController::class, 'showComparisonResults'])->name('properties.compare.results');
+        
+        Route::resource('properties', AdminPropertyController::class);
+        Route::resource('properties.incomes', App\Http\Controllers\Admin\IncomeController::class)->shallow()->except(['index', 'show']);
+        Route::resource('revenue-targets', RevenueTargetController::class);
+        Route::resource('price-packages', PricePackageController::class);
+        Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
+        Route::post('settings', [SettingController::class, 'store'])->name('settings.store');
+        Route::resource('mice-categories', MiceCategoryController::class);
+        Route::resource('properties.rooms', AdminRoomController::class)->shallow();
+        Route::get('/activity-log', [ActivityLogController::class, 'index'])->name('activity_log.index');
+
+        // Rute untuk Pricing Rules
+        Route::prefix('properties/{property}/pricing-rule')->name('pricing-rules.')->group(function () {
+            Route::get('/', [PricingRuleController::class, 'index'])->name('index');
+            Route::post('/store-room-type', [PricingRuleController::class, 'storeRoomType'])->name('room-type.store');
+            Route::put('/update-pricing-rule/{roomType}', [PricingRuleController::class, 'updatePricingRule'])->name('rule.update');
+            Route::delete('/destroy-room-type/{roomType}', [PricingRuleController::class, 'destroyRoomType'])->name('room-type.destroy');
             Route::put('/update-property-bars', [PricingRuleController::class, 'updatePropertyBars'])->name('property-bars.update');
-            });
-            Route::post('properties/{property}/occupancy', [AdminPropertyController::class, 'updateOccupancy'])->name('properties.occupancy.update');
-            Route::get('calendar', [CalendarController::class, 'index'])->name('calendar.index');
-            Route::get('calendar/events', [CalendarController::class, 'events'])->name('calendar.events');
-            Route::get('unified-calendar', [AdminDashboardController::class, 'unifiedCalendar'])->name('calendar.unified');
-            Route::get('unified-calendar/events', [AdminDashboardController::class, 'getUnifiedCalendarEvents'])->name('calendar.unified.events');        
-            Route::get('bar-prices', [BarDisplayController::class, 'index'])->name('bar-prices.index');
         });
+        
+        Route::post('properties/{property}/occupancy', [AdminPropertyController::class, 'updateOccupancy'])->name('properties.occupancy.update');
+
+        // Rute Kalender & Laporan
+        Route::get('calendar', [CalendarController::class, 'index'])->name('calendar.index');
+        Route::get('calendar/events', [CalendarController::class, 'events'])->name('calendar.events');
+        Route::get('unified-calendar', [AdminDashboardController::class, 'unifiedCalendar'])->name('calendar.unified');
+        Route::get('unified-calendar/events', [AdminDashboardController::class, 'getUnifiedCalendarEvents'])->name('calendar.unified.events');
+        
+        // Rute Inventaris
+        Route::resource('inventories', AdminInventoryController::class)->names('inventories');
+        Route::get('/reports/amenities', [AdminInventoryController::class, 'report'])->name('reports.amenities');
+        Route::resource('properties.rooms', App\Http\Controllers\Admin\RoomController::class)->shallow();
+
+        // Rute baru untuk mengelola Kamar Hotel
+        Route::resource('properties.hotel_rooms', App\Http\Controllers\Admin\HotelRoomController::class)->shallow()->names('properties.hotel-rooms');
+    });
     
     // Grup route untuk Sales
     Route::middleware(['role:sales'])
@@ -173,6 +183,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->group(function () {
             Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
         });
+
+    Route::middleware(['auth', 'role:hk'])->prefix('housekeeping')->name('housekeeping.')->group(function () {
+        Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
+        Route::post('/inventory/select-room', [InventoryController::class, 'selectRoom'])->name('inventory.select-room');
+        Route::get('/rooms/{room}/assign', [InventoryController::class, 'assign'])->name('inventory.assign');
+        Route::post('/rooms/{room}/assign', [InventoryController::class, 'updateInventory'])->name('inventory.update');
+
+        // === TAMBAHKAN RUTE BARU UNTUK HISTORY ===
+        Route::get('/history', [InventoryController::class, 'history'])->name('inventory.history');
+    });
 });
 
 require __DIR__.'/auth.php';

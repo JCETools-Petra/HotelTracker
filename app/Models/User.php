@@ -56,4 +56,9 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->belongsTo(Property::class);
     }
+
+    public function isHousekeeper()
+{
+    return $this->role === 'hk';
+}
 }
